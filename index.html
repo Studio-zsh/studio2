@@ -67,8 +67,12 @@ body.dark {
 .sess-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sess-tag { font-size: 9px; background: rgba(0,0,0,.1); padding: 1px 4px; border-radius: 4px; margin-left: 4px; }
 body.dark .sess-tag { background: rgba(255,255,255,.1); }
-.sess-del { opacity: 0; font-size: 12px; padding: 4px; color: #ef4444; transition: 0.2s; }
-.sess-item:hover .sess-del { opacity: 1; }
+/* [修复#1] 触屏无 hover，删除按钮不能默认透明，否则 iPad/iPhone 上无法删除会话 */
+.sess-del { opacity: .55; font-size: 12px; padding: 4px; color: #ef4444; transition: 0.2s; }
+@media (hover: hover) {
+  .sess-del { opacity: 0; }
+  .sess-item:hover .sess-del { opacity: 1; }
+}
 .side-nav { border-top: 1px solid var(--border); padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); }
 .side-nav button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 11px; font-size: 13.5px; font-weight: 600; color: var(--text-color); }
 .side-nav button.active { background: rgba(79,109,245,.1); color: var(--accent); }
@@ -338,6 +342,24 @@ body.dark .panel-hint.warn { color: #fbbf24; }
 .asp-empty b { display: block; font-size: 13px; color: var(--text-color); margin-bottom: 6px; }
 .asp-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--glass); }
 .asp-actions:empty { display: none; }
+/* ===== 全文级上下文 Diff：全文基准面板 ===== */
+.asp-base { flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(120,120,128,.04); }
+.asp-base-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; user-select: none; font-size: 11.5px; font-weight: 800; color: var(--text-muted); }
+.asp-base-head:hover { background: rgba(120,120,128,.07); }
+.asp-base-head:focus-visible { outline: 2px solid rgba(79,109,245,.45); outline-offset: -2px; }
+.asp-base-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.asp-base-caret { font-size: 10px; transition: transform .22s; }
+.asp-base.collapsed .asp-base-caret { transform: rotate(-90deg); }
+.asp-base.collapsed .asp-base-body { display: none; }
+.asp-base-body { padding: 0 12px 10px; }
+.asp-base-ta { display: block; width: 100%; min-height: 96px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; line-height: 1.45; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-bd); background: rgba(255,255,255,.5); color: var(--text-color); -webkit-appearance: none; }
+body.dark .asp-base-ta { background: rgba(255,255,255,.06); }
+.asp-base-btn { width: 100%; margin-top: 8px; }
+.asp-base-hint { font-size: 10.5px; line-height: 1.45; color: var(--text-muted); margin-top: 6px; }
+@media (max-width: 767px) {
+  .asp-base-body { padding: 0 10px 8px; }
+  .asp-base-ta { min-height: 72px; }
+}
 .asp-diff-meta { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text-muted); margin: 0 0 6px; }
 .asp-code { background: #0f172a; border: 1px solid rgba(148,163,184,.2); border-radius: 10px; padding: 8px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.6; overflow-x: auto; }
 .asp-line { display: flex; padding: 0 10px; }
@@ -397,6 +419,36 @@ body.dark .panel-hint.warn { color: #fbbf24; }
 .fusion-card .md-quote { border-left-color: #d4af37; background: rgba(255,233,168,.08); color: rgba(247,236,208,.85); }
 .fusion-actions { display: flex; gap: 10px; margin-top: 15px; }
 .fusion-btn { flex: 1; padding: 10px; background: linear-gradient(135deg, #e8c15a, #b8912e); color: #241a05; font-weight: 800; border-radius: 10px; transition: opacity 0.2s; }
+
+/* ==================== 🏟️ 模型评估场 ==================== */
+.eval-inner { max-width: 1100px; margin: 0 auto; width: 100%; }
+.eval-config-card { margin-bottom: 14px; }
+.eval-config-card h2 { font-size: 16px; margin-bottom: 6px; }
+.eval-config-card label { font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin: 12px 0 6px; }
+.eval-config-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.eval-config-row-head .set-btn { margin: 0; padding: 7px 12px; font-size: 12px; }
+.eval-model-row { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-color); margin-bottom: 8px; }
+.eval-model-row .eval-model-select { flex: 1; min-width: 0; }
+.eval-model-row .dd-btn { max-width: none; width: 100%; display: flex; justify-content: space-between; }
+.eval-remove { flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; background: rgba(220,38,38,.1); color: #dc2626; font-size: 14px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+.eval-answer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 14px; margin-top: 4px; }
+.eval-answer-card { background: var(--bubble-ai); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: var(--card-shadow); }
+.eval-answer-card.done { border-color: rgba(16,185,129,.35); }
+.eval-answer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
+.eval-answer-body { font-size: 13.5px; line-height: 1.7; min-height: 24px; overflow-x: auto; }
+.eval-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+.eval-status::after { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(79,109,245,.3); border-top-color: var(--accent); animation: scSpinDot .7s linear infinite; }
+.eval-status.done { color: #10b981; }
+.eval-status.fail { color: #ef4444; }
+.eval-status.done::after, .eval-status.fail::after { display: none; }
+.eval-judge-card { margin-top: 18px; background: radial-gradient(120% 140% at 20% 0%, #3a2c12 0%, #17110a 100%); border: 1.5px solid #d4af37; border-radius: 20px; padding: 20px; color: #f7ecd0; box-shadow: 0 10px 40px rgba(212,175,55,.15); }
+.eval-judge-card .eval-answer-head { color: #ffe9a8; }
+.eval-judge-card .eval-answer-body { color: #f7ecd0; }
+.eval-judge-card .eval-answer-body .md { color: #f7ecd0; }
+.eval-judge-card .md th, .eval-judge-card .md td { border-color: rgba(255,233,168,.25); }
+.eval-judge-card .md th { background: rgba(255,233,168,.12); color: #ffe9a8; }
+.eval-judge-card .md tbody tr:nth-child(even) { background: rgba(255,255,255,.04); }
+@media (max-width: 767px) { .eval-answer-grid { grid-template-columns: 1fr; } }
 
 /* ==================== 设置页 ==================== */
 .settings-scroll { flex: 1; overflow-y: auto; min-height: 0; padding: 16px 14px 24px; max-width: 640px; margin: 0 auto; width: 100%; z-index: 2; }
@@ -944,6 +996,31 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
 #chatView.agent-mode #brandWatermark { opacity: 0 !important; }
 @keyframes bwIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
 #brandWatermark .bw-mark.anim { animation: bwIn .45s cubic-bezier(.16,1,.3,1); }
+/* ===================== [修复#10][体验#16-21] 追加样式（追加在样式表末尾以保证覆盖） ===================== */
+/* [修复#10] 输入区实际高度由 JS 用 ResizeObserver 写入 --inputbar-h，浮动按钮/提示条不再写死像素 */
+.down-btn { bottom: calc(var(--inputbar-h, 150px) + 20px); }
+.api-warning-bar { top: calc(-1 * var(--inputbar-h, 52px) - 8px); }
+
+/* [体验#16/#17/#26] 消息操作条：复制 / 编辑后重发 / 重新生成 / 重试 */
+.msg-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.msg-act { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 11.5px; line-height: 1.2; border-radius: 999px; border: 1px solid rgba(120,120,128,.28); background: transparent; color: var(--text-muted); cursor: pointer; transition: .2s; -webkit-tap-highlight-color: transparent; }
+.msg-act:hover { color: var(--accent); border-color: var(--accent); }
+
+/* [体验#18] 会话搜索框与命中高亮 */
+.sess-search { width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 7px 10px; font-size: 13px; border-radius: 10px; border: 1px solid rgba(120,120,128,.25); background: rgba(120,120,128,.08); color: var(--text-color); outline: none; -webkit-appearance: none; }
+.sess-hit { box-shadow: inset 0 0 0 1px rgba(79,109,245,.55); }
+
+/* [体验#19] 置顶 / 归档按钮（触屏默认可见，hover 设备才隐藏） */
+.sess-pin, .sess-arch { opacity: .55; font-size: 12px; padding: 4px; background: transparent; border: 0; color: var(--text-muted); cursor: pointer; transition: .2s; }
+@media (hover: hover) {
+  .sess-pin, .sess-arch { opacity: 0; }
+  .sess-item:hover .sess-pin, .sess-item:hover .sess-arch { opacity: 1; }
+}
+.sess-group-title { font-size: 11px; color: var(--text-muted); padding: 8px 10px 4px; letter-spacing: .04em; user-select: none; cursor: pointer; }
+
+/* [体验#20] 多图缩略图横向条 */
+.attach-strip { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 2px; }
+.attach-strip img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -962,6 +1039,7 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
     <div class="side-nav">
       <button id="navDebateBtn">⚔️ 多 Agent 辩论</button>
       <button id="navPsBtn">🎨 智能修图</button>
+      <button id="navEvalBtn">🏟️ 模型评估场</button>
       <button id="navSettingsBtn">⚙️ 设置</button>
     </div>
   </aside>
@@ -985,6 +1063,17 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
           <span class="asp-title">🧩 脚本区</span>
           <span class="asp-file" id="aspFile">等待操作方案…</span>
           <span class="agent-chip off" id="aspChip">空闲</span>
+        </div>
+        <div class="asp-base collapsed" id="aspBase">
+          <div class="asp-base-head" id="aspBaseHead" role="button" tabindex="0" aria-expanded="false" aria-controls="aspBaseBody">
+            <span class="asp-base-title">📄 全文基准（Full Base Code）</span>
+            <span class="asp-base-caret">▾</span>
+          </div>
+          <div class="asp-base-body" id="aspBaseBody">
+            <textarea id="baseCodeInput" class="asp-base-ta" placeholder="粘贴完整原始代码…（用于把 AI 局部补丁合进全文预览）" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+            <button class="agent-btn primary asp-base-btn" type="button" id="loadBaseBtn">🔗 载入全文基准并预览</button>
+            <div class="asp-base-hint" id="aspBaseHint">载入后，本次补丁的 old 片段会自动合入全文并渲染整篇 Diff。</div>
+          </div>
         </div>
         <div class="asp-tabs" id="aspTabs">
           <button class="asp-tab active" type="button" data-asp-tab="diff">差异</button>
@@ -1013,6 +1102,7 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
           <button class="skill-chip active" type="button" data-skill="chat" role="tab">💬 对话</button>
           <button class="skill-chip skill-chip-ps" type="button" data-skill="ps" role="tab">🎨 智能修图</button>
           <button class="skill-chip" type="button" data-skill="debate" role="tab">⚔️ 多 Agent 辩论</button>
+          <button class="skill-chip" type="button" data-skill="eval" role="tab">🏟️ 模型评估场</button>
           <button class="skill-chip" type="button" data-skill="settings" role="tab">⚙️ 模型与 Key</button>
         </div>
         <div class="toolbar-row">
@@ -1177,6 +1267,28 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
           </div>
           <div id="debateOutput"></div>
         </div>
+      </div>
+    </div>
+
+    <div id="evalView" class="view hidden" style="padding:16px; overflow-y:auto;">
+      <div class="eval-inner">
+        <div class="card eval-config-card">
+          <h2>🏟️ 模型评估场 (LLM-as-a-Judge)</h2>
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:4px;">同一问题并发交给多个模型作答，再由独立的裁判模型统一打分点评。</p>
+          <label>测试问题</label>
+          <textarea id="evalPrompt" class="set-input" rows="3" placeholder="输入要测试的复杂问题..."></textarea>
+          <div class="eval-config-row">
+            <div class="eval-config-row-head">
+              <span style="font-size:12px;font-weight:700;color:var(--text-muted);">对比模型（可增删）</span>
+              <button id="evalAddModel" class="set-btn" type="button">＋ 添加对比模型</button>
+            </div>
+            <div id="evalModelsList"></div>
+          </div>
+          <label>裁判模型</label>
+          <div id="evalJudgeContainer"></div>
+          <button id="evalStartBtn" class="primary-btn" type="button" style="margin-top:15px; width:100%; padding:12px; background:var(--accent); color:#fff; border-radius:12px; font-weight:bold; cursor:pointer;">🚀 开始评估</button>
+        </div>
+        <div id="evalResults"></div>
       </div>
     </div>
 
@@ -1515,11 +1627,24 @@ class Particle {
 }
 for (let i = 0; i < 60; i++) particles.push(new Particle());
 
+/* [性能#14] 粒子动画随页面隐藏暂停：iPad 切到后台 / 切标签页时不再空转 rAF，
+   省电、避免回前台时掉帧。注意：updateSliderUI 里对 particleSpeed 的修改不受影响。 */
+let particleRaf = 0;
 function animateParticles() {
-  ctx.clearRect(0, 0, width, height);
-  particles.forEach(p => { p.update(); p.draw(); });
-  requestAnimationFrame(animateParticles);
+  if (particleRaf) cancelAnimationFrame(particleRaf);
+  particleRaf = requestAnimationFrame(function tick() {
+    ctx.clearRect(0, 0, width, height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    particleRaf = requestAnimationFrame(tick);
+  });
 }
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) {
+    if (particleRaf) { cancelAnimationFrame(particleRaf); particleRaf = 0; }
+  } else {
+    if (!particleRaf) animateParticles();
+  }
+});
 animateParticles();
 
 /* =====================================================
@@ -1675,6 +1800,80 @@ const MODELS = [
 ];
 
 /* 支持视觉（图片输入）的模型，供「视觉辅助模型」下拉使用 */
+/* ==================== 品牌水印：当前模型所属厂商的居中标志 ====================
+   [修复#8] 原来这三段定义在文件最末尾，而 renderChat / switchView 的包装版在初始化
+   阶段就会调用 renderBrandWatermark()，只能靠 try/catch 兜 const/let 的 TDZ 异常。
+   现整体上移至 MODELS 之后：MODELS 已初始化，providerOf / $ / escapeHtml 都是函数
+   声明（已提升）或运行期才求值，因此不再需要任何 try/catch 兜底。 */
+const VENDOR_BRAND = {
+  deepseek:  { name: 'DeepSeek',    mark: 'D',   a: '#4D6BFE', b: '#7C9BFF' },
+  zhipu:     { name: '智谱 AI',     mark: 'GLM', a: '#4B5BD8', b: '#8B5CF6' },
+  qwen:      { name: '通义千问',    mark: 'Q',   a: '#615CED', b: '#9B8CFF' },
+  doubao:    { name: '豆包',        mark: '豆',  a: '#3370FF', b: '#66B3FF' },
+  kimi:      { name: 'Kimi',        mark: 'K',   a: '#1F2328', b: '#5B6470' },
+  yi:        { name: '零一万物',    mark: 'Yi',  a: '#0EA5E9', b: '#38BDF8' },
+  minimax:   { name: 'MiniMax',     mark: 'M',   a: '#FF5A5F', b: '#FF8E72' },
+  baichuan:  { name: '百川智能',    mark: 'B',   a: '#1D4ED8', b: '#60A5FA' },
+  step:      { name: '阶跃星辰',    mark: 'S',   a: '#0F766E', b: '#2DD4BF' },
+  sensenova: { name: '商汤日日新',  mark: '商',  a: '#DC2626', b: '#F87171' },
+  internlm:  { name: '书生浦语',    mark: '浦',  a: '#7C3AED', b: '#A78BFA' },
+  hunyuan:   { name: '腾讯混元',    mark: 'H',   a: '#2563EB', b: '#93C5FD' },
+  volc:      { name: '火山方舟',    mark: 'V',   a: '#F97316', b: '#FDBA74' },
+  openrouter:{ name: 'OpenRouter',  mark: 'OR',  a: '#111827', b: '#6B7280' },
+  ollama:    { name: 'Ollama 本地', mark: 'OL',  a: '#111827', b: '#4B5563' }
+};
+
+function vendorKeyOf(modelId) {
+  const id = String(modelId || '');
+  const hit = MODELS.find(m => m.id === id);
+  if (hit && hit.p === 'openrouter' && /^deepseek\//.test(id)) return 'deepseek';
+  return providerOf(id);
+}
+
+function renderBrandWatermark() {
+  const host = $('brandWatermark'), mark = $('bwMark'), name = $('bwName');
+  if (!host || !mark || !name) return;
+  const key = vendorKeyOf(chatModel);
+  const b = VENDOR_BRAND[key] || {
+    name: (API_CONFIG[key] && API_CONFIG[key].name) || key || 'AI',
+    mark: 'AI', a: '#4f6df5', b: '#8b5cf6'
+  };
+  if (host.dataset.vendor !== key) {
+    host.dataset.vendor = key;
+    mark.innerHTML = b.svg ? b.svg : escapeHtml(b.mark);
+    mark.style.background = b.svg ? 'transparent' : ('linear-gradient(135deg,' + b.a + ',' + b.b + ')');
+    mark.classList.remove('anim');
+    void mark.offsetWidth;               /* 强制回流，重放切换动画 */
+    mark.classList.add('anim');
+    name.textContent = b.name;
+  }
+  host.classList.add('show');
+}
+
+/* [新功能#27] Ollama 本地模型：注册在 MODELS 末尾，VISION_MODELS 的 filter 在其后执行，
+   因此视觉能力标记照常生效。providerOf 走「冒号前缀」，所以 id 必须以 ollama: 开头。 */
+if (!MODELS.some(m => m.p === 'ollama')) {
+  MODELS.push(
+    { id: 'ollama:llama3.2',      p: 'ollama', name: 'Llama 3.2 3B (本地)',   isFree: true, temp: 0.7, freeLimit: 0, tiered: false, hasVision: false, g: '本地 Ollama' },
+    { id: 'ollama:qwen2.5',       p: 'ollama', name: 'Qwen2.5 7B (本地)',    isFree: true, temp: 0.7, freeLimit: 0, tiered: false, hasVision: false, g: '本地 Ollama' },
+    { id: 'ollama:qwen2.5-coder', p: 'ollama', name: 'Qwen2.5 Coder (本地)', isFree: true, temp: 0.5, freeLimit: 0, tiered: false, hasVision: false, g: '本地 Ollama', scene: 'code' },
+    { id: 'ollama:deepseek-r1',   p: 'ollama', name: 'DeepSeek-R1 (本地)',   isFree: true, temp: 0.5, freeLimit: 0, tiered: false, hasVision: false, g: '本地 Ollama', scene: 'math' },
+    { id: 'ollama:llava',         p: 'ollama', name: 'LLaVA (本地视觉)',     isFree: true, temp: 0.5, freeLimit: 0, tiered: false, hasVision: true,  g: '本地 Ollama', scene: 'vision' }
+  );
+}
+
+/* [修复#9] 方案 B：这些 ID 被 MAX_OF / MODEL_TAGS / chatModel / psReModel / debateCfg
+   硬引用，改真名需要同步 6 处，容易漏改且无法在线验证，故打上 experimental 标记。
+   标记只影响展示文案（下拉 / 用量列表 / 气泡头都读 m.name），不影响出网的真模型名
+   （真名由 modelNameOf(id) 从 id 推导）。 */
+const EXPERIMENTAL_MODEL_IDS = ['deepseek-v4-pro', 'deepseek-flash', 'deepseek/deepseek-v4.1-flash:free', 'kimi:kimi-k3', 'minimax:MiniMax-M3'];
+MODELS.forEach(m => {
+  if (EXPERIMENTAL_MODEL_IDS.indexOf(m.id) >= 0) {
+    m.experimental = true;
+    if (m.name.indexOf('待验证') < 0) m.name += ' ⚠️待验证';
+  }
+});
+
 const VISION_MODELS = MODELS.filter(m => m.hasVision);
 
 /* 各厂商的 Max / 旗舰型号：低档位开双倍检查时自动升级复核用 */
@@ -1737,6 +1936,8 @@ let chatModelDD = null;          /* 顶栏模型下拉控制器：切换会话�
 let streaming = false;
 let chatAborter = null;
 let debating = false;
+let evalConfig = { models: ['deepseek-chat', 'zhipu:glm-4-flash', 'kimi:kimi-k3'], judge: 'deepseek-reasoner' };
+let evalJudgeDD = null;
 let debateCfg = Object.assign(
   { a: 'deepseek-v4-pro', b: 'zhipu:glm-4-flash', c: 'none', d: 'none', j: 'deepseek-reasoner', rounds: 1 },
   JSON.parse(localStorage.getItem('autoPro_debateCfg') || '{}')
@@ -1756,7 +1957,30 @@ let visionModelId = localStorage.getItem('autoPro_visionModel') || 'qwen:qwen-vl
 if (!VISION_MODELS.some(m => m.id === visionModelId)) visionModelId = 'qwen:qwen-vl-max';
 
 const $ = id => document.getElementById(id);
-const getKey = p => (localStorage.getItem(API_CONFIG[p].keyLS) || '').trim();
+/* [新功能#27] 本地模型端点（Ollama / LM Studio）。放在 joinApiUrl 兼容结构里，
+   同时显式写好 url，避免依赖上面那次 base→url 的自动拼接顺序。
+   注意：允许空 Key（allowEmptyKey），getKey 会返回 'local' 占位。 */
+if (!API_CONFIG.ollama) {
+  API_CONFIG.ollama = {
+    base: 'http://localhost:11434/v1',
+    path: 'chat/completions',
+    url: 'http://localhost:11434/v1/chat/completions',
+    keyLS: 'autoPro_key_ollama',
+    name: 'Ollama',
+    tip: '本地端点，需自行启动 Ollama（ollama serve）；Key 可留空',
+    allowEmptyKey: true,
+    streamUsage: false
+  };
+}
+
+/* [新功能#27] allowEmptyKey：本地端点不需要 Key，返回 'local' 占位，
+   这样 streamCompletion 开头的 `if (!key) throw` 会自动放行。 */
+const getKey = p => {
+  const c = API_CONFIG[p] || {};
+  const v = (c.keyLS ? (localStorage.getItem(c.keyLS) || '') : '').trim();
+  if (!v && c.allowEmptyKey) return 'local';
+  return v;
+};
 const escapeHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const modelById = id => MODELS.find(m => m.id === id) || MODELS[0];
 const timeAgo = ts => { let d = new Date(ts), now = new Date(); if(d.toDateString()===now.toDateString()) return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate(); };
@@ -2172,7 +2396,7 @@ function checkProviderStatus() {
    设置页只放一个容器 #providerKeyList，卡片由这里生成：
    新增厂商只需改 EXTRA_PROVIDERS + API_CONFIG，不用再手写 HTML。
    ===================================================== */
-const EXTRA_PROVIDERS = ['kimi', 'yi', 'minimax', 'baichuan', 'step', 'sensenova', 'internlm', 'hunyuan', 'volc', 'openrouter'];
+const EXTRA_PROVIDERS = ['kimi', 'yi', 'minimax', 'baichuan', 'step', 'sensenova', 'internlm', 'hunyuan', 'volc', 'openrouter', 'ollama'];
 
 function renderProviderKeys() {
   const box = $('providerKeyList');
@@ -2247,7 +2471,12 @@ function renderProviderKeys() {
 /* =====================================================
    === [会话管理] ===
    ===================================================== */
-function persistSessions() {
+/* [性能#12] 会话落盘：400ms 防抖 + 关键节点立即写
+   原来每次调用都 JSON.stringify(sessions) 全量序列化，流式/Agent patch 期间会被
+   连续触发多次，iPad 上大图会话能明显卡住主线程。 */
+let persistTimer = 0;
+
+function doPersistSessions() {
   try {
     localStorage.setItem('autoPro_sessions', JSON.stringify(sessions));
   } catch (e) {
@@ -2256,13 +2485,37 @@ function persistSessions() {
     sessions.forEach(s => {
       (s.messages || []).forEach(m => {
         if (m.image) { delete m.image; freed = true; }
+        if (m.images) { delete m.images; freed = true; }
       });
     });
     try { localStorage.setItem('autoPro_sessions', JSON.stringify(sessions)); } catch (e2) {}
     if (freed) showToast('本地存储空间不足，已仅保留图片的文字解析结果');
   }
-  localStorage.setItem('autoPro_current', currentId || '');
+  try { localStorage.setItem('autoPro_current', currentId || ''); } catch (e3) {}
 }
+
+function persistSessions(immediate) {
+  if (immediate) {
+    if (persistTimer) { clearTimeout(persistTimer); persistTimer = 0; }
+    doPersistSessions();
+    return;
+  }
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(function () { persistTimer = 0; doPersistSessions(); }, 400);
+}
+
+function flushPersistSessions() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = 0;
+    doPersistSessions();
+  }
+}
+
+window.addEventListener('beforeunload', flushPersistSessions);
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) flushPersistSessions();
+});
 
 function renderSessions() {
   const list = $('sessionList'); list.innerHTML = '';
@@ -2270,6 +2523,7 @@ function renderSessions() {
   sessions.forEach(s => {
     let el = document.createElement('div');
     el.className = 'sess-item' + (s.id === currentId ? ' active' : '');
+    el.dataset.sid = s.id;   /* [体验#18/#19] 供搜索/置顶/归档增强层定位会话 */
     el.innerHTML = `<div style="flex:1; overflow:hidden;"><div class="sess-title">${escapeHtml(s.title)}${s.tags ? `<span class="sess-tag">${escapeHtml(s.tags)}</span>` : ''}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${escapeHtml(modelById(s.model).name)} · ${timeAgo(s.ts)}</div></div><button class="sess-del">✕</button>`;
     el.onclick = e => { if (!e.target.closest('.sess-del')) openSession(s.id); };
     el.querySelector('.sess-del').onclick = e => { e.stopPropagation(); deleteSession(s.id); };
@@ -2282,7 +2536,7 @@ function deleteSession(id) {
   sessions = sessions.filter(s => s.id !== id);
   if (currentId === id) currentId = sessions.length ? sessions[0].id : null;
   activePlanUid = null;
-  persistSessions();
+  persistSessions(true);
   renderSessions(); renderChat();
 }
 
@@ -2292,7 +2546,7 @@ function openSession(id) {
     chatModel = s.model;
     if (chatModelDD) chatModelDD.set(chatModel);   /* 顶栏下拉按钮必须跟着会话模型走 */
     refreshHints(); renderPendingImage();
-    try { renderBrandWatermark(); } catch (e) { }   /* 会话切换 → 背景厂商标志跟着换 */
+    renderBrandWatermark();   /* 会话切换 → 背景厂商标志跟着换 */
   }
   localStorage.setItem('autoPro_current', id);
   activePlanUid = null;
@@ -2305,41 +2559,91 @@ function newSession() {
   const s = { id: Date.now().toString(36), title: '新对话', model: chatModel, messages: [], ts: Date.now() };
   sessions.unshift(s); currentId = s.id;
   activePlanUid = null;
-  persistSessions();
+  persistSessions(true);
   renderSessions(); renderChat();
   if (currentView !== 'chat') switchView('chat');
   showToast('已新建对话');
   setTimeout(() => { try { $('chatInput').focus(); } catch (e) {} }, 60);
 }
 
+/* [性能#13] 把单条消息的 DOM 构建抽成 buildMsgEl(m)：
+   全量渲染与「只同步最后一条」的增量渲染共用同一套结构，后续 #16 重新生成 / #17 复制
+   也依赖 .msg[data-uid] 定位消息。 */
+function buildMsgEl(m) {
+  if (!m.uid) m.uid = genUid();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + m.role;
+  wrap.setAttribute('data-uid', m.uid);
+  if (m.role === 'user') {
+    const imgs = (m.images && m.images.length) ? m.images : (m.image ? [m.image] : []);
+    const thumb = imgs.map(function (src, i) {
+      return '<img class="msg-thumb" src="' + escapeHtml(src) + '" alt="已上传的图片 ' + (i + 1) + '">';
+    }).join('');
+    const note = m.vision ? `<div style="font-size:10.5px;opacity:.75;margin-top:4px;">📷 已由视觉辅助模型解析</div>` : '';
+    wrap.innerHTML = `<div class="bubble">${thumb}${escapeHtml(m.content || '').replace(/\n/g,'<br>')}${note}</div>`;
+    const ua = document.createElement('div');
+    ua.className = 'msg-actions';
+    ua.innerHTML = '<button type="button" class="msg-act msg-edit">✏️ 编辑后重发</button><button type="button" class="msg-act msg-copy">📋 复制</button>';
+    wrap.appendChild(ua);   /* 放在气泡外：避免被原生分享/复制截取到按钮文字 */
+  } else {
+    const flag = m.checked ? '<span class="sc-flag">⚡ 双倍检查</span>' : '';
+    const isAgent = !!(m.agent || m.agentFailed);
+    const compact = isAgent && agentMode && !m.agentFailed;
+    const body = isAgent
+      ? (compact ? renderAgentNote(m) : renderAgentPanel(m))
+      : `<div class="md">${renderMarkdown(m.content)}</div>`;
+    wrap.innerHTML = `<div class="bubble${isAgent ? ' agent-bubble' : ''}"><div class="msg-model"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>${modelById(m.model).name}${flag}${isAgent ? '<span class="sc-flag">🤖 Agent</span>' : ''}</div>${body}</div>`;
+    /* 📤 分享必须留在 .bubble 内部：既有 decorateShareButtons 用
+       bubble.querySelector('.msg-share') 判重，放到外面会多出一个重复按钮。 */
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.className = 'msg-share';
+    shareBtn.setAttribute('data-msg-share', '1');
+    shareBtn.textContent = '📤 分享';
+    wrap.querySelector('.bubble').appendChild(shareBtn);
+
+    /* 其余操作按钮放在气泡外，避免被 handleShareClick / copyTextFallback 截取到按钮文字 */
+    const aa = document.createElement('div');
+    aa.className = 'msg-actions';
+    aa.innerHTML = '<button type="button" class="msg-act msg-copy">📋 复制</button>'
+      + '<button type="button" class="msg-act msg-regen">🔄 重新生成</button>'
+      + (m.failed ? '<button type="button" class="msg-act msg-retry">🔄 重试</button>' : '');
+    wrap.appendChild(aa);
+  }
+  return wrap;
+}
+
 function renderChat() {
-  const inner = $('chatInner'); inner.innerHTML = '';
+  const inner = $('chatInner');
   const s = sessions.find(x => x.id === currentId);
   if (!s || !s.messages.length) {
+    inner.dataset.sid = s ? s.id : '';
+    inner.innerHTML = '';
     inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size:22px;color:var(--text-color);margin-bottom:10px;">studio Ultra</h2><p>v13.6.0 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
     $('topbarTitle').textContent = '新对话';
     if (agentMode) renderScriptPane();
     return;
   }
   $('topbarTitle').textContent = s.title;
-  s.messages.forEach(m => {
-    if (!m.uid) m.uid = genUid();
-    let wrap = document.createElement('div'); wrap.className = 'msg ' + m.role;
-    if (m.role === 'user') {
-      const thumb = m.image ? `<img class="msg-thumb" src="${escapeHtml(m.image)}" alt="已上传的图片">` : '';
-      const note = m.vision ? `<div style="font-size:10.5px;opacity:.75;margin-top:4px;">📷 已由视觉辅助模型解析</div>` : '';
-      wrap.innerHTML = `<div class="bubble">${thumb}${escapeHtml(m.content || '').replace(/\n/g,'<br>')}${note}</div>`;
-    } else {
-      const flag = m.checked ? '<span class="sc-flag">⚡ 双倍检查</span>' : '';
-      const isAgent = !!(m.agent || m.agentFailed);
-      const compact = isAgent && agentMode && !m.agentFailed;
-      const body = isAgent
-        ? (compact ? renderAgentNote(m) : renderAgentPanel(m))
-        : `<div class="md">${renderMarkdown(m.content)}</div>`;
-      wrap.innerHTML = `<div class="bubble${isAgent ? ' agent-bubble' : ''}"><div class="msg-model"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>${modelById(m.model).name}${flag}${isAgent ? '<span class="sc-flag">🤖 Agent</span>' : ''}</div>${body}</div>`;
-    }
-    inner.appendChild(wrap);
-  });
+
+  /* [性能#13] 增量判定：会话未切换 + 节点数与消息数一致 ⇒ 只有最后一条在变（流式收尾 /
+     Agent 落地 / 双倍检查），只需 replaceWith 最后一个节点，避免 100 条消息全量重建。 */
+  const canIncremental = inner.dataset.sid === s.id
+    && inner.children.length === s.messages.length
+    && inner.children.length > 0;
+
+  if (canIncremental) {
+    const lastMsg = s.messages[s.messages.length - 1];
+    const fresh = buildMsgEl(lastMsg);
+    const old = inner.lastElementChild;
+    if (old) old.replaceWith(fresh); else inner.appendChild(fresh);
+  } else {
+    inner.dataset.sid = s.id;
+    inner.innerHTML = '';
+    s.messages.forEach(m => { inner.appendChild(buildMsgEl(m)); });
+  }
+
+  decorateShareButtons();
   $('chatScroll').scrollTop = $('chatScroll').scrollHeight;
   if (agentMode) renderScriptPane();
 }
@@ -2354,6 +2658,10 @@ function switchView(v) {
   $('debateView').classList.toggle('hidden', v !== 'debate');
   $('settingsView').classList.toggle('hidden', v !== 'settings');
   $('psView').classList.toggle('hidden', v !== 'ps');
+  const evalViewEl = $('evalView');
+  if (evalViewEl) evalViewEl.classList.toggle('hidden', v !== 'eval');
+  const evalNavBtn = $('navEvalBtn');
+  if (evalNavBtn) evalNavBtn.classList.toggle('active', v === 'eval');
   document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   $('navDebateBtn').classList.toggle('active', v === 'debate');
   $('navSettingsBtn').classList.toggle('active', v === 'settings');
@@ -3729,6 +4037,112 @@ function renderDiff(oldCode, newCode) {
   return { html: '<div class="agent-diff">' + body + tail + '</div>', adds: adds, dels: dels };
 }
 
+/* 全文级 Diff 的切片预处理：先裁掉首尾公共行，只对中间差异段跑 LCS，
+   避免 diffLines 的 n*m > 360000 保护把整篇文件退化成「全删 + 全增」。 */
+function diffLinesSliced(aText, bText) {
+  const toLines = s => String(s == null ? '' : s).replace(/\r\n/g, '\n').split('\n');
+  const A = toLines(aText), B = toLines(bText);
+
+  let head = 0;
+  while (head < A.length && head < B.length && A[head] === B[head]) head++;
+
+  let tailA = A.length - 1, tailB = B.length - 1;
+  while (tailA >= head && tailB >= head && A[tailA] === B[tailB]) { tailA--; tailB--; }
+
+  const midA = A.slice(head, tailA + 1);
+  const midB = B.slice(head, tailB + 1);
+
+  let mid = [];
+  let degraded = false;
+  if (midA.length || midB.length) {
+    if (midA.length * midB.length > 360000) degraded = true;
+    try { mid = diffLines(midA.join('\n'), midB.join('\n')); }
+    catch (e) { mid = []; degraded = true; }
+  }
+
+  const rows = [];
+  for (let i = 0; i < head; i++) rows.push({ t: 'same', text: A[i] });
+  for (let i = 0; i < mid.length; i++) rows.push(mid[i]);
+  for (let i = tailA + 1; i < A.length; i++) rows.push({ t: 'same', text: A[i] });
+  return { rows: rows, degraded: degraded };
+}
+
+/* 为每行预计算 A 侧 / B 侧真实行号（1-based）；不参与的那侧记 0。 */
+function diffLineNumbers(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const aNo = new Array(list.length), bNo = new Array(list.length);
+  let a = 0, b = 0;
+  for (let i = 0; i < list.length; i++) {
+    const t = list[i].t;
+    if (t === 'add') { aNo[i] = 0; b++; bNo[i] = b; }
+    else if (t === 'del') { a++; aNo[i] = a; bNo[i] = 0; }
+    else { a++; b++; aNo[i] = a; bNo[i] = b; }
+  }
+  return { aNo: aNo, bNo: bNo };
+}
+
+/* 全文级 Diff 渲染：上下文折叠 + 真实行号 + 总量上限（不改动 renderDiff） */
+function renderFullDiff(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  let adds = 0, dels = 0;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].t === 'add') adds++;
+    else if (list[i].t === 'del') dels++;
+  }
+
+  const CONTEXT = 4;
+  const FOLD_MIN = 8;
+  const MAX = 1200;
+
+  const keep = new Array(list.length);
+  for (let i = 0; i < list.length; i++) keep[i] = false;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].t === 'same') continue;
+    const from = Math.max(0, i - CONTEXT), to = Math.min(list.length - 1, i + CONTEXT);
+    for (let k = from; k <= to; k++) keep[k] = true;
+  }
+
+  const nums = diffLineNumbers(list);
+  const out = [];
+  let i = 0;
+
+  while (i < list.length && out.length < MAX) {
+    if (keep[i]) {
+      const r = list[i];
+      const sign = r.t === 'add' ? '+' : (r.t === 'del' ? '-' : ' ');
+      const cls = r.t === 'add' ? 'dl-add' : (r.t === 'del' ? 'dl-del' : 'dl-same');
+      const no = (r.t === 'add') ? nums.bNo[i] : nums.aNo[i];
+      const txt = escapeHtml(r.text);
+      out.push('<div class="dl ' + cls + '"><span class="dl-no">' + no + '</span>' +
+        '<span class="dl-sign">' + sign + '</span>' +
+        '<span class="dl-tx">' + (txt || '&nbsp;') + '</span></div>');
+      i++;
+      continue;
+    }
+
+    /* 未标记段只可能是 same 行（变更行一定被 keep 标记） */
+    let j = i;
+    while (j < list.length && !keep[j]) j++;
+    const skipped = j - i;
+    if (skipped >= FOLD_MIN) {
+      out.push('<div class="dl dl-more">… 跳过 ' + skipped + ' 行未改动内容 …</div>');
+    } else {
+      for (let k = i; k < j; k++) {
+        const txt = escapeHtml(list[k].text);
+        out.push('<div class="dl dl-same"><span class="dl-no">' + nums.aNo[k] + '</span>' +
+          '<span class="dl-sign"> </span><span class="dl-tx">' + (txt || '&nbsp;') + '</span></div>');
+      }
+    }
+    i = j;
+  }
+
+  const rest = list.length - i;
+  const tail = rest > 0
+    ? '<div class="dl dl-more">… 省略 ' + rest + ' 行（可点「📋 复制合并后全文」取完整代码）</div>'
+    : '';
+  return { html: '<div class="agent-diff">' + out.join('') + tail + '</div>', adds: adds, dels: dels };
+}
+
 /* ==================== 面板渲染 ==================== */
 function agentSection(key, title, body, collapsed) {
   return '<section class="agent-sec' + (collapsed ? ' collapsed' : '') + '" data-sec="' + key + '">' +
@@ -3829,6 +4243,8 @@ function renderAgentStream(text) {
 
 /* ==================== 脚本区（左侧 IDE 分栏） ==================== */
 let aspTab = 'diff';
+let fullBaseCode = '';   /* 用户载入的整篇基准代码（不 trim，保留行尾） */
+let mergedCode = '';     /* 最近一次成功合并的结果；失败/未命中时为空 */
 let activePlanUid = null;
 let aspError = '';   /* 上一轮请求失败/中止的信息：让左侧脚本区明确报错，而不是永久卡在「正在生成」 */
 
@@ -3910,6 +4326,39 @@ function renderScriptPane() {
   const patch = a.patch || null;
   const target = patch ? (patch.target || '未指定目标') : '（本次回答没有补丁）';
 
+  /* —— 全文 merge：提前计算，三个 Tab 与 actions 共用；任何异常都只回退，不影响页面 —— */
+  let mergeOk = false;
+  mergedCode = '';
+  try {
+    const oldStr = patch ? String(patch.old == null ? '' : patch.old) : '';
+    const newStr = patch ? String(patch.new == null ? '' : patch.new) : '';
+    if (fullBaseCode && oldStr && oldStr.trim().length > 0) {
+      let base = fullBaseCode;
+      let useOld = oldStr;
+      let useNew = newStr;
+      let idx = base.indexOf(useOld);
+      /* CRLF / LF 不一致：只读归一化后重试一次，不改写用户原文 */
+      if (idx < 0 && base.indexOf('\r\n') >= 0) {
+        const lfBase = base.replace(/\r\n/g, '\n');
+        const lfOld = oldStr.replace(/\r\n/g, '\n');
+        const lfIdx = lfBase.indexOf(lfOld);
+        if (lfIdx >= 0) {
+          base = lfBase;
+          idx = lfIdx;
+          useOld = lfOld;                                   /* ← 关键：换成 LF 针 */
+          useNew = newStr.replace(/\r\n/g, '\n');
+        }
+      }
+      if (idx >= 0) {
+        mergedCode = base.replace(useOld, useNew);           /* 字符串 pattern：只替换第一处 */
+        mergeOk = !!mergedCode;
+      }
+    }
+  } catch (err) {
+    mergedCode = '';
+    mergeOk = false;
+  }
+
   if (fileEl) fileEl.textContent = '📂 ' + target;
   if (chipEl) {
     chipEl.className = 'agent-chip ' + (a.applied ? 'ok' : (a.cancelled ? 'off' : 'wait'));
@@ -3931,7 +4380,26 @@ function renderScriptPane() {
   } else {
     const hasOld = patch && String(patch.old || '').trim().length > 0;
     const hasNew = patch && String(patch.new || '').trim().length > 0;
-    if (patch && (hasOld || hasNew)) {
+    if (mergeOk) {
+      let rows = [];
+      let degraded = false;
+      try {
+        const sliced = diffLinesSliced(fullBaseCode, mergedCode);
+        rows = sliced.rows;
+        degraded = sliced.degraded;
+      } catch (e) { rows = []; degraded = true; }
+
+      const d = renderFullDiff(rows);
+      const baseLines = fullBaseCode.replace(/\r\n/g, '\n').split('\n').length;
+      body.innerHTML =
+        '<div class="asp-diff-meta">🧩 全文 Diff · ' +
+          escapeHtml(String(patch.language || 'text').toUpperCase()) +
+          ' · 基准 ' + baseLines + ' 行' +
+          ' · <b style="color:#10b981">+' + d.adds + '</b> <b style="color:#ef4444">−' + d.dels + '</b>' +
+        '</div>' +
+        (degraded ? '<div class="asp-diff-meta" style="color:#b45309">⚠️ 文件较大，已按整段替换展示；可复制合并后全文核对。</div>' : '') +
+        d.html;
+    } else if (patch && (hasOld || hasNew)) {
       const d = renderDiff(patch.old, patch.new);
       body.innerHTML = '<div class="asp-diff-meta">' + escapeHtml(String(patch.language || 'text').toUpperCase()) +
         ' · <b style="color:#10b981">+' + d.adds + '</b> <b style="color:#ef4444">−' + d.dels + '</b></div>' + d.html;
@@ -3953,6 +4421,9 @@ function renderScriptPane() {
     }
     if (m.agentFailed) html += '<button class="agent-btn ghost" type="button" data-asp-action="reparse">🔁 重新解析</button>';
     if (m.agent) html += '<button class="agent-btn ghost" type="button" data-asp-action="export-plan">📦 导出方案</button>';
+    if (mergeOk && patch) {
+      html += '<button class="agent-btn primary" type="button" data-asp-action="copy-merged" id="copyMergedBtn">📋 复制合并后全文</button>';
+    }
     actions.innerHTML = html;
   }
 }
@@ -4592,7 +5063,7 @@ function applyAgentPatch(uid) {
   a.applied = true;
   a.cancelled = false;
   a.appliedAt = Date.now();
-  persistSessions();
+  persistSessions(true);
   renderChat();
 
   if (injected) showToast('已应用修改（已注入 ' + target + '）');
@@ -4605,7 +5076,7 @@ function cancelAgentPatch(uid) {
   if (!m || !m.agent) return showToast('找不到该操作');
   if (m.agent.applied) return showToast('已应用的补丁不能取消');
   m.agent.cancelled = true;
-  persistSessions();
+  persistSessions(true);
   renderChat();
   showToast('已取消此次操作，补丁已丢弃');
 }
@@ -4618,7 +5089,7 @@ function reparseAgent(uid) {
   m.agent = plan;
   m.agentFailed = false;
   m.reqFailed = false;
-  persistSessions();
+  persistSessions(true);
   renderChat();
   showToast('已重新解析为操作方案');
 }
@@ -4682,6 +5153,12 @@ $('agentScriptPane').addEventListener('click', (e) => {
   else if (act === 'export') exportAgentPatch(uid);
   else if (act === 'export-plan') exportAgentPlan(uid);
   else if (act === 'reparse') reparseAgent(uid);
+  else if (act === 'copy-merged') {
+    if (!mergedCode) { showToast('暂无可复制的合并结果'); return; }
+    copyTextFallback(mergedCode).then(function (ok) {
+      showToast(ok ? '已复制完整代码' : '复制失败，请长按选择文本');
+    });
+  }
 });
 
 /* ==================== 开关 UI ==================== */
@@ -4718,6 +5195,39 @@ $('agentToggle').onclick = () => {
 };
 
 renderAgentToggle();
+
+/* ===== 全文基准面板：载入 + 折叠 ===== */
+(function bindFullBasePanel() {
+  const loadBtn = $('loadBaseBtn');
+  if (loadBtn) {
+    loadBtn.onclick = function () {
+      const ta = $('baseCodeInput');
+      const v = ta ? String(ta.value || '') : '';
+      if (!v.trim()) { showToast('请先粘贴完整原始代码'); return; }
+      fullBaseCode = v;          /* 不 trim，保留行尾，避免 Diff 行偏移 */
+      mergedCode = '';
+      aspTab = 'diff';
+      renderScriptPane();
+      showToast('已载入全文基准（' + v.replace(/\r\n/g, '\n').split('\n').length + ' 行）');
+    };
+  }
+
+  const head = $('aspBaseHead');
+  const box = $('aspBase');
+  if (head && box) {
+    const toggle = function () {
+      const collapsed = box.classList.toggle('collapsed');
+      head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  }
+})();
 
 /* =====================================================
    === [核心请求] ===
@@ -4761,17 +5271,39 @@ async function streamCompletion(opts) {
     };
   };
 
+  /* [修复#3] 端点轮换语义重写：
+     原来的实现是 urlIdx++ 后 continue 重新进入 while (retryCount <= maxRetries)，
+     把"换端点"和"重试"混在同一个计数器里，所有端点都 404 时循环语义很难推理。
+     现在改成：
+       · 404/405 = 路径不存在，属于端点选择问题 → 不消耗 retryCount，直接换下一个；
+       · 429 / 网络错误 = 端点暂时不可用 → 才消耗 retryCount，且重试永远只针对
+         当前这个 activeUrl（已被确认可用的端点），不会在重试时又跳回主端点。
+     urls 全部尝试过仍然 404/405 时抛 noRetry 错误，直接冒泡给调用方。 */
+  let activeUrl = urls[0] || info.url;
+  let hubTried = 0;
+
   while (retryCount <= maxRetries) {
     try {
-      let req = buildReq(urls[urlIdx] || info.url, true);
+      let req = buildReq(activeUrl, true);
       let res = await fetch(req.url, req.init);
 
       /* 路径类错误（404/405）：换下一个端点，不消耗重试次数 */
-      if ((res.status === 404 || res.status === 405) && urlIdx < urls.length - 1) {
-        urlIdx++;
-        showToast('主端点不可用，已切换到备用端点重试…');
-        continue;
+      if (res.status === 404 || res.status === 405) {
+        hubTried++;
+        let nextUrl = '';
+        for (let u = 0; u < urls.length; u++) {
+          if (hubTried <= u) { nextUrl = urls[u]; break; }
+        }
+        if (nextUrl) {
+          activeUrl = nextUrl;
+          showToast('端点返回 ' + res.status + '，已切换到备用端点重试…');
+          continue;   /* retryCount 不变 ⇒ 不消耗重试预算 */
+        }
+        const hubErr = new Error('所有端点均返回 HTTP ' + res.status + '，请检查该厂商的 API 基址配置');
+        hubErr.noRetry = true;
+        throw hubErr;
       }
+
 
       /* 网关不认识 stream_options（部分厂商返回 400/422）：去掉该字段原样重发一次 */
       if ((res.status === 400 || res.status === 422) && req.init.body.indexOf('stream_options') >= 0) {
@@ -4798,6 +5330,22 @@ async function streamCompletion(opts) {
       let decoder = new TextDecoder();
       let buf = '', full = '';
       let usageData = null;
+      let sseDone = false;   /* [修复#2] 见到 [DONE] 后置位，避免尾帧被重复解析 */
+
+      /* [修复#2] 把"解析一行 SSE"抽成局部函数：带换行的行与最后没有换行的残帧复用同一套逻辑。 */
+      const handleSseLine = (rawLine) => {
+        let line = rawLine.trim();
+        if (line.indexOf('data:') !== 0) return;
+        let data = line.slice(5).trim();
+        if (data === '[DONE]') { sseDone = true; return; }
+        if (!data) return;
+        try {
+          let json = JSON.parse(data);
+          if (json.usage) usageData = json.usage;
+          let delta = json.choices?.[0]?.delta?.content || '';
+          if (delta) { full += delta; opts.onDelta && opts.onDelta(delta, full); }
+        } catch(e){}
+      };
 
       while (true) {
         let { done, value } = await reader.read();
@@ -4805,18 +5353,20 @@ async function streamCompletion(opts) {
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf('\n')) >= 0) {
-          let line = buf.slice(0, idx).trim(); buf = buf.slice(idx + 1);
-          if (line.indexOf('data:') === 0) {
-            let data = line.slice(5).trim();
-            if (data === '[DONE]') continue;
-            try {
-              let json = JSON.parse(data);
-              if (json.usage) usageData = json.usage;
-              let delta = json.choices?.[0]?.delta?.content || '';
-              if (delta) { full += delta; opts.onDelta && opts.onDelta(delta, full); }
-            } catch(e){}
-          }
+          let line = buf.slice(0, idx); buf = buf.slice(idx + 1);
+          handleSseLine(line);
         }
+        if (sseDone) break;
+      }
+
+      /* [修复#2] 关键补丁：很多网关（含部分自建反代）最后一帧 `data: {...}` 结尾没有 \n，
+         原来的实现会让这一帧永远留在 buf 里被丢弃 —— 表现为"回答最后一段话没了"或
+         usage 统计缺失。这里把残余缓冲按单行再解析一次（含 [DONE]）。 */
+      buf += decoder.decode();
+      if (buf.trim()) {
+        let tailParts = buf.split('\n');
+        for (let i = 0; i < tailParts.length; i++) handleSseLine(tailParts[i]);
+        buf = '';
       }
 
       /* 代理工作台模式：流式结束后立即把整段输出解析成 JSON 操作方案 */
@@ -4831,12 +5381,16 @@ async function streamCompletion(opts) {
       return full;
     } catch (e) {
       if (e.name === 'AbortError') throw e;
+      /* [修复#3] 端点全部 404/405：不重试，直接抛出可读错误 */
+      if (e.noRetry) throw e;
       if (retryCount >= maxRetries) {
         if (e.message.includes('429')) throw new Error('限流严重，建议切换');
         if (e.name === 'TypeError') throw new Error('网络超时或跨域被拦截');
         throw e;
       }
       retryCount++;
+      /* [修复#3] 重试前明确提示重试的是哪个端点，便于排查"主端点挂了在打备用端点"的情况 */
+      if (urls.length > 1 && activeUrl === urls[0]) showToast(`请求失败，${retryCount}/${maxRetries} 次重试中…`);
       await new Promise(r => setTimeout(r, 2000));
     }
   }
@@ -4957,11 +5511,11 @@ async function sendMessage() {
   if (s.messages.length === 0) s.title = rawText.slice(0, 14) || '图片对话';
   s.ts = Date.now();
 
-  s.messages.push({ role: 'user', content: rawText, image: imageData || undefined, uid: genUid() });
+  s.messages.push({ role: 'user', content: rawText, image: imageData || undefined, images: (pendingImages.length > 1 ? pendingImages.map(p => p.dataUrl) : undefined), uid: genUid() });
   const userMsgRef = s.messages[s.messages.length - 1];
   let aiMsg = { uid: genUid(), role: 'assistant', content: '', model: chatModel, checked: false };
   s.messages.push(aiMsg);
-  persistSessions();
+  persistSessions(true);
 
   $('chatInput').value = ''; $('chatInput').style.height = 'auto';
   clearPendingImage();
@@ -4986,6 +5540,7 @@ async function sendMessage() {
 
     let full = '';
     let plannedPlan = null;
+    let paintTimer = 0;   /* [性能#11] 普通聊天的流式渲染节流句柄 */
     let lastAspPaint = 0;   /* 流式节流：长 JSON 时每个 delta 重建左侧 DOM 会明显卡顿 */
 
     await streamCompletion({
@@ -5002,12 +5557,29 @@ async function sendMessage() {
             renderAspStream(full);
           }
         } else if (mdEl) {
-          mdEl.innerHTML = renderMarkdown(full);
+          /* [性能#11] 普通聊天流式渲染节流：60ms 合并一次 innerHTML 重排，
+             不阻塞首帧（首次 delta 立刻排一次，后续累积）。 */
+          if (!paintTimer) {
+            paintTimer = setTimeout(function () {
+              paintTimer = 0;
+              if (!mdEl) return;
+              mdEl.innerHTML = renderMarkdown(full);
+              const sc2 = $('chatScroll');
+              if (sc2.scrollHeight - sc2.scrollTop - sc2.clientHeight < 160) sc2.scrollTop = sc2.scrollHeight;
+            }, 60);
+          }
         }
         const sc = $('chatScroll');
         if (sc.scrollHeight - sc.scrollTop - sc.clientHeight < 160) sc.scrollTop = sc.scrollHeight;
       }
     });
+
+    /* [性能#11] 流式结束：清掉挂起的定时器并立刻渲染最终结果，保证最后一段不丢。 */
+    if (paintTimer) { clearTimeout(paintTimer); paintTimer = 0; }
+    if (mdEl && !agentMode) {
+      mdEl.innerHTML = renderMarkdown(full);
+      scrollChatToBottom(false);
+    }
 
     /* —— 代理工作台：解析 JSON 操作指令 → 左侧脚本区（Diff）+ 右侧对话摘要 —— */
     if (agentMode) {
@@ -5047,7 +5619,7 @@ async function sendMessage() {
       }
       if (visionText) {
         userMsgRef.vision = visionText;
-        persistSessions();
+        persistSessions(true);
         setVisionBubble(visionEl, '✅ 图片解析完成 · ' + visionModelName() + ' 已转成文字，交给主模型作答', 'done');
         setTimeout(() => { if (visionEl && visionEl.parentNode) visionEl.remove(); }, 2800);
       }
@@ -5078,7 +5650,7 @@ async function sendMessage() {
       const st = visionEl.querySelector('.vision-status');
       if (!st || (!st.classList.contains('done') && !st.classList.contains('fail'))) visionEl.remove();
     }
-    persistSessions();
+    persistSessions(true);
   }
 }
 
@@ -5093,7 +5665,14 @@ async function testKey(p) {
   /* 测试模型：doubao 走推理接入点；其余厂商取 MODELS 里该厂商第一个「非视觉」模型的真实模型名 */
   let testModel = 'deepseek-chat';
   if (p === 'doubao') {
-    testModel = localStorage.getItem('autoPro_doubao_ep') || 'default';
+    /* [修复#6] 豆包必须用推理接入点 ep-xxx 作为 model，'default' 不是合法模型名，必然失败 */
+    const ep = (localStorage.getItem('autoPro_doubao_ep') || '').trim();
+    if (!ep) { showToast('请先填写豆包推理接入点（ep-xxx）再测试'); return; }
+    testModel = ep;
+  } else if (p === 'ollama') {
+    /* [新功能#27] 本地端点：用 MODELS 里第一个（非视觉优先）ollama 模型名做连通性测试 */
+    const pickO = MODELS.find(function (mm) { return mm.p === 'ollama' && !mm.hasVision; }) || MODELS.find(function (mm) { return mm.p === 'ollama'; });
+    testModel = pickO ? modelNameOf(pickO.id) : 'llama3.2';
   } else if (p !== 'deepseek') {
     const pick = MODELS.find(m => m.p === p && !m.hasVision) || MODELS.find(m => m.p === p);
     testModel = pick ? modelNameOf(pick.id) : '';
@@ -5110,7 +5689,7 @@ async function testKey(p) {
         const r = await fetch(urls[i], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-          body: JSON.stringify({ model: testModel, messages: [{ role: 'user', content: 'Hi' }], max_tokens: 1 })
+          body: JSON.stringify({ model: testModel, messages: [{ role: 'user', content: 'Hi' }], max_tokens: 8 })
         });
         if ((r.status === 404 || r.status === 405) && i < urls.length - 1) {
           lastErr = new Error('HTTP ' + r.status);
@@ -5251,18 +5830,28 @@ function psLoadFile(file) {
   if (!file || !file.type || !file.type.startsWith('image/')) { showToast('请选择图片文件'); return; }
   const url = URL.createObjectURL(file);
   psCanvasToImage(url, img => {
+    /* [修复#5] 尺寸上限：4000×3000 的图进 psGetSourceData + psApplyPixelOps
+       （sharpen 9 邻域 + beauty 双向模糊）会直接把 iPad 主线程卡死。
+       最长边限制到 3000，等比缩放后再进管线。 */
+    const PS_MAX_EDGE = 3000;
+    const k = Math.min(1, PS_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
     const oc = document.createElement('canvas');
-    oc.width = img.naturalWidth; oc.height = img.naturalHeight;
-    oc.getContext('2d').drawImage(img, 0, 0);
+    oc.width = Math.max(1, Math.round(img.naturalWidth * k));
+    oc.height = Math.max(1, Math.round(img.naturalHeight * k));
+    const octx = oc.getContext('2d');
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(img, 0, 0, oc.width, oc.height);
     psState.original = oc;
     psState.source = psCloneCanvas(oc);
-    psState.history = [psState.source.toDataURL()];
+    psState.history = [psSnapshotDataURL(psState.source)];
     psResetParams();
     $('psDropZone').style.display = 'none';
-    $('psInfoBadge').textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' px';
+    /* [修复#5] 徽标同时给出「原始 → 处理」尺寸，缩放过才提示 */
+    $('psInfoBadge').textContent = img.naturalWidth + ' × ' + img.naturalHeight
+      + ' → ' + oc.width + ' × ' + oc.height + ' px' + (k < 1 ? '（已缩放）' : '');
     psUpdateButtons();
     psRender();
-    showToast('图片已载入');
+    showToast(k < 1 ? ('图片已载入（按最长边 ' + PS_MAX_EDGE + 'px 等比缩放）') : '图片已载入');
     URL.revokeObjectURL(url);
   });
 }
@@ -5344,12 +5933,25 @@ function psBeautyInPlace(data, w, h, strength) {
     const s = psSkinScore(data[i], data[i + 1], data[i + 2]);
     if (s <= 0.02) continue;
     const t = s * amount;
-    data[i]     += (blurred[i]     - data[i])     * t;
+    dataURLa[i]     += (blurred[i]     - data[i])     * t;
     data[i + 1] += (blurred[i + 1] - data[i + 1]) * t;
     data[i + 2] += (blurred[i + 2] - data[i + 2]) * t;
   }
 }
 
+/* [性能#15] 像素管线（sharpen 9 邻域 / beauty 双向模糊）仍在主线程跑。
+   现状已满足最低成本方案：
+     · psRender() 只对「预览尺寸」（最长边 1600）跑 psApplyPixelOps → 拖滑杆流畅；
+     · psExportImage() 才用全尺寸离屏 canvas 跑一次，并有 showToast('正在导出…') 过渡。
+   TODO（进阶，暂不实施）：迁移到 OffscreenCanvas + Worker。
+   注意事项：
+     1. Safari 16.4 之前 Worker 内不支持 getImageData/createImageBitmap 组合，
+        必须先 feature detect：typeof OffscreenCanvas !== 'undefined'
+        && (function(){ try { new OffscreenCanvas(1,1).getContext('2d').getImageData(0,0,1,1); return true; } catch(e){ return false; } })()
+     2. 不支持时自动回退当前主线程路径，且必须保留 transferControlToOffscreen 的降级分支；
+     3. Worker 需要内联成 Blob URL（单文件约束，不能新增 .js 文件）；
+     4. 导出全尺寸时依然要走主线程，否则 3000px 图会复制两份内存。
+*/
 function psApplyPixelOps(canvas) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -5486,15 +6088,51 @@ function psApplyAuto(fn, label) {
 }
 
 /* ---------- 历史 / 重置 / 撤销 ---------- */
-function psPushHistory() {
-  psState.history.push(psState.source.toDataURL());
-  if (psState.history.length > 20) psState.history.shift();
+/* [修复#4] 历史快照必须降采样：原来每次 push 都存全尺寸 PNG dataURL，
+   一张 4000×3000 的图单份可达 10MB+，20 步历史直接把 iPad Safari 撑爆（OOM / 白屏）。
+   现在：最长边 1600 + JPEG 0.82，栈上限 20 → 12。 */
+const PS_HISTORY_MAX = 12;
+const PS_HISTORY_EDGE = 1600;
+
+function psSnapshotDataURL(canvas) {
+  if (!canvas || !canvas.width || !canvas.height) return '';
+  try {
+    const sw = canvas.width, sh = canvas.height;
+    const k = Math.min(1, PS_HISTORY_EDGE / Math.max(sw, sh));
+    if (k >= 1) return canvas.toDataURL('image/jpeg', 0.82);
+    const tmp = document.createElement('canvas');
+    tmp.width = Math.max(1, Math.round(sw * k));
+    tmp.height = Math.max(1, Math.round(sh * k));
+    const cx = tmp.getContext('2d');
+    cx.fillStyle = '#ffffff';           /* JPEG 无 alpha，先铺白底避免透明区变黑 */
+    cx.fillRect(0, 0, tmp.width, tmp.height);
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(canvas, 0, 0, tmp.width, tmp.height);
+    return tmp.toDataURL('image/jpeg', 0.82);
+  } catch (e) {
+    try { return canvas.toDataURL(); } catch (e2) { return ''; }
+  }
 }
+
+function psPushHistory() {
+  const snap = psSnapshotDataURL(psState.source);
+  if (!snap) return;
+  psState.history.push(snap);
+  if (psState.history.length > PS_HISTORY_MAX) psState.history.shift();
+}
+
 function psRestoreFromDataURL(url) {
   psCanvasToImage(url, img => {
-    psState.source.width = img.width;
-    psState.source.height = img.height;
-    psState.source.getContext('2d').drawImage(img, 0, 0);
+    /* [修复#4] 快照是降采样过的（最长边 1600），恢复时必须放大回 psState.original
+       的尺寸，否则后续 psRender / psApplyPixelOps 的坐标系会和原图不一致。 */
+    const ow = (psState.original && psState.original.width) || img.width;
+    const oh = (psState.original && psState.original.height) || img.height;
+    psState.source.width = ow;
+    psState.source.height = oh;
+    const cx = psState.source.getContext('2d');
+    cx.clearRect(0, 0, ow, oh);
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, 0, 0, ow, oh);
     psRender();
   });
 }
@@ -5514,7 +6152,7 @@ function psUndo() {
 function psResetAll() {
   if (!psHasImage()) return;
   psState.source = psCloneCanvas(psState.original);
-  psState.history = [psState.source.toDataURL()];
+  psState.history = [psSnapshotDataURL(psState.source)];   /* [修复#4] 统一走降采样快照 */
   psResetParams();
   psRender();
   showToast('已重置');
@@ -6009,7 +6647,7 @@ async function startDebate() {
         ],
         ts: Date.now()
       };
-      sessions.unshift(s2); currentId = s2.id; persistSessions();
+      sessions.unshift(s2); currentId = s2.id; persistSessions(true);
       renderSessions(); renderChat(); switchView('chat');
       showToast('裁决已存入对话');
     };
@@ -6022,6 +6660,201 @@ async function startDebate() {
 }
 
 /* =====================================================
+   === [🏟️ 模型评估场 · 状态渲染] ===
+   ===================================================== */
+function renderEvalModels() {
+  const list = $('evalModelsList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!evalConfig.models.length) evalConfig.models.push('deepseek-chat');
+  evalConfig.models.forEach((modelId, i) => {
+    const row = document.createElement('div');
+    row.className = 'eval-model-row';
+    const ddHost = document.createElement('div');
+    ddHost.className = 'eval-model-select';
+    row.appendChild(ddHost);
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'eval-remove';
+    del.textContent = '🗑';
+    del.setAttribute('aria-label', '删除该对比模型');
+    del.onclick = (e) => {
+      e.stopPropagation();
+      if (evalConfig.models.length <= 1) { showToast('至少保留一个对比模型'); return; }
+      evalConfig.models.splice(i, 1);
+      renderEvalModels();
+    };
+    row.appendChild(del);
+    list.appendChild(row);
+    createDropdown(ddHost, modelId, m => { evalConfig.models[i] = m.id; });
+  });
+}
+
+function initEvalJudge() {
+  if (evalJudgeDD) return;
+  const box = $('evalJudgeContainer');
+  if (!box) return;
+  evalJudgeDD = createDropdown(box, evalConfig.judge, m => { evalConfig.judge = m.id; });
+}
+
+/* =====================================================
+   === [🏟️ 模型评估场 · 并发作答 + 裁判打分] ===
+   ===================================================== */
+const EVAL_MAX_MODELS = 8;
+
+function evalJudgePrompt(question, items) {
+  const body = items.map(it => '【' + it.label + '】' + it.name + '\n' + it.answer).join('\n\n');
+  return [
+    '你是一个客观严谨的 AI 评估专家。',
+    '用户的问题是：' + question,
+    '',
+    '以下是多个模型给出的回答：',
+    body,
+    '',
+    '请你从准确性、逻辑性、完整性三个维度对它们进行打分（1-10 分），并给出具体的优缺点分析和最终排名，必须用 Markdown 表格输出。',
+    '输出结构：',
+    '1. 一句话总评（谁的答案最可靠，为什么）',
+    '2. Markdown 表格：列 = 模型 / 准确性 / 逻辑性 / 完整性 / 总分 / 主要优点 / 主要缺点',
+    '3. 最终排名（1. 2. 3. …，每条附一句理由）',
+    '4. 给提问者的改进建议（如何追问能拿到更好的答案）'
+  ].join('\n');
+}
+
+async function runMultiModelEval() {
+  if (streaming) { showToast('正在生成中，请稍候…'); return; }
+
+  const promptEl = $('evalPrompt');
+  const question = ((promptEl && promptEl.value) || '').trim();
+  if (!question) { showToast('请输入要测试的问题'); return; }
+
+  const modelIds = (evalConfig.models || []).filter(Boolean).slice(0, EVAL_MAX_MODELS);
+  if (!modelIds.length) { showToast('请先添加至少一个对比模型'); return; }
+  if (!evalConfig.judge) { showToast('请先选择裁判模型'); return; }
+
+  for (let i = 0; i < modelIds.length; i++) {
+    const p = providerOf(modelIds[i]);
+    if (!getKey(p)) { showToast(modelById(modelIds[i]).name + ' 尚未配置 Key', { type: 'key', provider: p }); return; }
+  }
+  const judgeProvider = providerOf(evalConfig.judge);
+  if (!getKey(judgeProvider)) {
+    showToast('裁判模型 ' + modelById(evalConfig.judge).name + ' 尚未配置 Key', { type: 'key', provider: judgeProvider });
+    return;
+  }
+
+  const out = $('evalResults');
+  if (!out) return;
+  const startBtn = $('evalStartBtn');
+  const btnText = startBtn ? startBtn.textContent : '';
+
+  streaming = true;
+  if (startBtn) { startBtn.disabled = true; startBtn.style.opacity = '.6'; startBtn.textContent = '⏳ 评估进行中…'; }
+  out.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);font-size:13px;">🚀 正在并发请求 ' + modelIds.length + ' 个模型…</div>';
+
+  try {
+    const grid = document.createElement('div');
+    grid.className = 'eval-answer-grid';
+    out.innerHTML = '';
+    out.appendChild(grid);
+
+    const refs = modelIds.map((id, i) => {
+      const label = String.fromCharCode(65 + i);
+      const name = modelById(id).name;
+      const card = document.createElement('div');
+      card.className = 'eval-answer-card';
+      const head = document.createElement('div');
+      head.className = 'eval-answer-head';
+      head.innerHTML = '<span>模型 ' + label + '</span><span>' + escapeHtml(name) + '</span>';
+      const status = document.createElement('div');
+      status.className = 'eval-status';
+      status.textContent = '排队中…';
+      const bodyEl = document.createElement('div');
+      bodyEl.className = 'eval-answer-body md';
+      card.appendChild(head); card.appendChild(status); card.appendChild(bodyEl);
+      grid.appendChild(card);
+      return { id: id, label: label, name: name, card: card, status: status, body: bodyEl, answer: '', ok: false };
+    });
+
+    await Promise.all(refs.map(function (ref) {
+      ref.status.textContent = '正在回答…';
+      let paint = 0;
+      let latest = '';
+      return streamCompletion({
+        model: ref.id,
+        messages: [{ role: 'user', content: question }],
+        onDelta: function (delta, full) {
+          latest = full;
+          if (!paint) paint = setTimeout(function () {
+            paint = 0;
+            if (ref.body) ref.body.innerHTML = renderMarkdown(latest);
+          }, 80);
+        }
+      }).then(function (text) {
+        if (paint) { clearTimeout(paint); paint = 0; }
+        ref.answer = String(text || latest || '');
+        ref.ok = !!ref.answer.trim();
+        if (ref.body) ref.body.innerHTML = renderMarkdown(ref.answer || '（空回答）');
+        ref.status.className = 'eval-status done';
+        ref.status.textContent = ref.ok ? '✅ 完成' : '⚠️ 空回答';
+        ref.card.classList.add('done');
+      }).catch(function (err) {
+        if (paint) { clearTimeout(paint); paint = 0; }
+        const msg = (err && err.message) ? err.message : '请求失败';
+        ref.answer = ''; ref.ok = false;
+        if (ref.body) ref.body.innerHTML = '<span style="color:#ef4444">⚠️ ' + escapeHtml(msg) + '</span>';
+        ref.status.className = 'eval-status fail';
+        ref.status.textContent = '❌ 失败';
+      });
+    }));
+
+    const usable = refs.filter(function (r) { return r.ok; });
+    if (!usable.length) { showToast('所有模型均未返回有效回答'); return; }
+
+    const judgeCard = document.createElement('div');
+    judgeCard.className = 'eval-judge-card';
+    judgeCard.innerHTML =
+      '<div class="eval-answer-head"><span>🏆 裁判总评</span><span>' + escapeHtml(modelById(evalConfig.judge).name) + '</span></div>' +
+      '<div class="eval-status">正在评审…</div>' +
+      '<div class="eval-answer-body md"></div>';
+    out.appendChild(judgeCard);
+    try { judgeCard.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+
+    const jStatus = judgeCard.querySelector('.eval-status');
+    const jBody = judgeCard.querySelector('.eval-answer-body');
+    let jPaint = 0;
+    let jFull = '';
+
+    try {
+      const judgeText = await streamCompletion({
+        model: evalConfig.judge,
+        messages: [{ role: 'user', content: evalJudgePrompt(question, usable) }],
+        onDelta: function (delta, full) {
+          jFull = full;
+          if (!jPaint) jPaint = setTimeout(function () {
+            jPaint = 0;
+            if (jBody) jBody.innerHTML = renderMarkdown(jFull);
+          }, 80);
+        }
+      });
+      if (jPaint) { clearTimeout(jPaint); jPaint = 0; }
+      jFull = String(judgeText || jFull || '');
+      if (jBody) jBody.innerHTML = renderMarkdown(jFull || '（裁判未返回内容）');
+      if (jStatus) { jStatus.className = 'eval-status done'; jStatus.textContent = '✅ 评审完成'; }
+    } catch (je) {
+      if (jPaint) { clearTimeout(jPaint); jPaint = 0; }
+      const jm = (je && je.message) ? je.message : '裁判请求失败';
+      if (jBody) jBody.innerHTML = '<span style="color:#fca5a5">⚠️ ' + escapeHtml(jm) + '</span>';
+      if (jStatus) { jStatus.className = 'eval-status fail'; jStatus.textContent = '❌ 评审失败'; }
+      showToast('裁判模型评审失败：' + jm);
+    }
+  } catch (e) {
+    out.innerHTML = '<div class="card" style="color:#ef4444;font-size:13px;">⚠️ 评估异常：' + escapeHtml((e && e.message) ? e.message : '未知错误') + '</div>';
+  } finally {
+    streaming = false;
+    if (startBtn) { startBtn.disabled = false; startBtn.style.opacity = '1'; startBtn.textContent = btnText || '🚀 开始评估'; }
+  }
+}
+
+/* =====================================================
    === [事件绑定与初始化] ===
    ===================================================== */
 function closeDrawer() { $('sidebar').classList.remove('open'); $('overlay').classList.remove('show'); }
@@ -6030,6 +6863,8 @@ $('overlay').onclick = closeDrawer;
 $('newChatSideBtn').onclick = newSession;
 $('newChatBtn').onclick = newSession;
 $('navDebateBtn').onclick = () => switchView('debate');
+const navEvalBtnEl = $('navEvalBtn');
+if (navEvalBtnEl) navEvalBtnEl.onclick = () => switchView('eval');
 $('navSettingsBtn').onclick = () => switchView('settings');
 $('navPsBtn').onclick = () => switchView('ps');
 document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => switchView(b.dataset.view));
@@ -6119,7 +6954,7 @@ $('saveKeyQwenBtn').onclick = () => { localStorage.setItem('autoPro_key_qwen', $
 $('saveKeyDoubaoBtn').onclick = () => { localStorage.setItem('autoPro_key_doubao', $('keyDoubaoInput').value.trim()); localStorage.setItem('autoPro_doubao_ep', $('doubaoEndpointInput').value.trim()); checkProviderStatus(); showToast('已保存'); };
 
 /* 下拉初始化 */
-chatModelDD = createDropdown($('chatModelDD'), chatModel, m => { chatModel = m.id; refreshHints(); renderPendingImage(); try { renderBrandWatermark(); } catch (e) { } });
+chatModelDD = createDropdown($('chatModelDD'), chatModel, m => { chatModel = m.id; refreshHints(); renderPendingImage(); renderBrandWatermark(); });
 createDropdown($('ddA'), debateCfg.a, m => { debateCfg.a = m.id; localStorage.setItem('autoPro_debateCfg', JSON.stringify(debateCfg)); updateEstimate(); });
 createDropdown($('ddB'), debateCfg.b, m => { debateCfg.b = m.id; localStorage.setItem('autoPro_debateCfg', JSON.stringify(debateCfg)); updateEstimate(); });
 createDropdown($('ddC'), debateCfg.c, m => { debateCfg.c = m.id; localStorage.setItem('autoPro_debateCfg', JSON.stringify(debateCfg)); updateEstimate(); }, { allowNone: true });
@@ -6127,7 +6962,16 @@ createDropdown($('ddD'), debateCfg.d, m => { debateCfg.d = m.id; localStorage.se
 createDropdown($('ddJ'), debateCfg.j, m => { debateCfg.j = m.id; localStorage.setItem('autoPro_debateCfg', JSON.stringify(debateCfg)); updateEstimate(); });
 
 $('debateStartBtn').onclick = startDebate;
-$('clearSessionsBtn').onclick = () => { if (confirm('确定清空所有对话？')) { sessions = []; currentId = null; persistSessions(); renderSessions(); renderChat(); } };
+const evalAddModelBtn = $('evalAddModel');
+if (evalAddModelBtn) evalAddModelBtn.onclick = () => {
+  if (evalConfig.models.length >= 8) { showToast('最多 8 个对比模型'); return; }
+  evalConfig.models.push('deepseek-chat');
+  renderEvalModels();
+};
+const evalStartBtnEl = $('evalStartBtn');
+if (evalStartBtnEl) evalStartBtnEl.onclick = runMultiModelEval;
+if ($('evalModelsList')) { renderEvalModels(); initEvalJudge(); }
+$('clearSessionsBtn').onclick = () => { if (confirm('确定清空所有对话？')) { sessions = []; currentId = null; persistSessions(true); renderSessions(); renderChat(); } };
 
 $('debateJudgeStyle').onchange = () => localStorage.setItem('autoPro_judgeStyle', $('debateJudgeStyle').value);
 const savedStyle = localStorage.getItem('autoPro_judgeStyle');
@@ -6247,7 +7091,7 @@ switchView = function psSwitchView(v) {
   psSwitchViewBase(v);
   psSyncSkillChips(v);
   /* 视图切换后补刷一次水印：从设置/辩论页回到对话时标志立即正确 */
-  try { renderBrandWatermark(); } catch (e) { }
+  renderBrandWatermark();
 };
 window.switchView = switchView;
 
@@ -6263,61 +7107,21 @@ if (psViewEl) {
 const psBackBtn = $('psBtnBack');
 if (psBackBtn) psBackBtn.onclick = () => switchView('chat');
 
-/* ==================== 品牌水印：当前模型所属厂商的居中标志 ====================
-   纯读取 chatModel → 解析厂商 → 画一个居中的淡色标志。不参与任何业务逻辑。
-   VENDOR_BRAND 位于文件最末尾定义，所以前面三处挂接点全部用 try/catch 兜 TDZ。 */
-const VENDOR_BRAND = {
-  deepseek:  { name: 'DeepSeek',    mark: 'D',   a: '#4D6BFE', b: '#7C9BFF' },
-  zhipu:     { name: '智谱 AI',     mark: 'GLM', a: '#4B5BD8', b: '#8B5CF6' },
-  qwen:      { name: '通义千问',    mark: 'Q',   a: '#615CED', b: '#9B8CFF' },
-  doubao:    { name: '豆包',        mark: '豆',  a: '#3370FF', b: '#66B3FF' },
-  kimi:      { name: 'Kimi',        mark: 'K',   a: '#1F2328', b: '#5B6470' },
-  yi:        { name: '零一万物',    mark: 'Yi',  a: '#0EA5E9', b: '#38BDF8' },
-  minimax:   { name: 'MiniMax',     mark: 'M',   a: '#FF5A5F', b: '#FF8E72' },
-  baichuan:  { name: '百川智能',    mark: 'B',   a: '#1D4ED8', b: '#60A5FA' },
-  step:      { name: '阶跃星辰',    mark: 'S',   a: '#0F766E', b: '#2DD4BF' },
-  sensenova: { name: '商汤日日新',  mark: '商',  a: '#DC2626', b: '#F87171' },
-  internlm:  { name: '书生浦语',    mark: '浦',  a: '#7C3AED', b: '#A78BFA' },
-  hunyuan:   { name: '腾讯混元',    mark: 'H',   a: '#2563EB', b: '#93C5FD' },
-  volc:      { name: '火山方舟',    mark: 'V',   a: '#F97316', b: '#FDBA74' },
-  openrouter:{ name: 'OpenRouter',  mark: 'OR',  a: '#111827', b: '#6B7280' }
-};
+/* [修复#8] 品牌水印的数据表与函数已整体上移到 MODELS 定义之后（见文件前部），
+   这里不再重复定义。上移后调用点可以去掉 try/catch 兜 TDZ 的写法。 */
 
 /* OpenRouter 托管的 DeepSeek 通道（如 deepseek/deepseek-r1:free）应由 DeepSeek 出品，
    镜像 buildGroupTree() 内的同名归一规则，避免显示成 OpenRouter 标志。 */
-function vendorKeyOf(modelId) {
-  const id = String(modelId || '');
-  const hit = MODELS.find(m => m.id === id);
-  if (hit && hit.p === 'openrouter' && /^deepseek\//.test(id)) return 'deepseek';
-  return providerOf(id);
-}
+/* [修复#8] vendorKeyOf 已上移（见 MODELS 之后）。 */
 
-function renderBrandWatermark() {
-  const host = $('brandWatermark'), mark = $('bwMark'), name = $('bwName');
-  if (!host || !mark || !name) return;
-  const key = vendorKeyOf(chatModel);
-  const b = VENDOR_BRAND[key] || {
-    name: (API_CONFIG[key] && API_CONFIG[key].name) || key || 'AI',
-    mark: 'AI', a: '#4f6df5', b: '#8b5cf6'
-  };
-  if (host.dataset.vendor !== key) {
-    host.dataset.vendor = key;
-    mark.innerHTML = b.svg ? b.svg : escapeHtml(b.mark);
-    mark.style.background = b.svg ? 'transparent' : ('linear-gradient(135deg,' + b.a + ',' + b.b + ')');
-    mark.classList.remove('anim');
-    void mark.offsetWidth;               /* 强制回流，重放切换动画 */
-    mark.classList.add('anim');
-    name.textContent = b.name;
-  }
-  host.classList.add('show');
-}
+/* [修复#8] renderBrandWatermark 已上移（见 MODELS 之后）。 */
 
 /* renderChat 再包一层：必须位于本文件最靠后位置，
    这样 initShareUpgrade() 的包装在里层，分享按钮依旧会被追加。 */
 const renderChatBaseBrand = renderChat;
 renderChat = function renderChatWithBrand() {
   const out = renderChatBaseBrand.apply(this, arguments);
-  try { renderBrandWatermark(); } catch (e) { }
+  renderBrandWatermark();
   return out;
 };
 window.renderChat = renderChat;
@@ -6328,9 +7132,499 @@ try {
   const cs = sessions.find(x => x.id === currentId);
   if (cs && cs.model) chatModel = cs.model;
 } catch (e) { }
-try { renderBrandWatermark(); } catch (e) { }
+renderBrandWatermark();
 
 
+/* ==================================================================================
+   【追加能力层】第 7 / 10 / 16 / 17 / 20 / 21 / 26 条
+   位置说明：这一段刻意放在 IIFE 最末尾（所有既有 monkey-patch 之后），
+   保证 renderChat / switchView / streamCompletion 的包装顺序不被破坏。
+   ================================================================================== */
+
+/* ------------------------- [修复#10] 输入区高度 → CSS 变量 -------------------------
+   原来 .down-btn{bottom:150px} / .api-warning-bar{top:-52px} 是写死的像素，
+   附图预览、代理模式工具条、键盘吸附都会让 .inputbar 变高，浮动元素被遮住。
+   这里用 ResizeObserver 把实际高度写进 --inputbar-h（样式表里已改用 calc()）。 */
+(function () {
+  const bar = document.querySelector('.inputbar');
+  if (!bar) return;
+  const applyH = function () {
+    const h = Math.round(bar.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty('--inputbar-h', h + 'px');
+  };
+  applyH();
+  if (typeof ResizeObserver !== 'undefined') {
+    try { new ResizeObserver(applyH).observe(bar); } catch (e) {}
+  }
+  window.addEventListener('resize', applyH);
+  window.addEventListener('orientationchange', function () { setTimeout(applyH, 120); });
+  setTimeout(applyH, 300);      /* 首屏字号/安全区计算完成后补一次 */
+})();
+
+/* ------------------------- [体验#20] 多图上传 -------------------------
+   pendingImage（单图，Apple Pencil 画板仍在用）保持不变以兼容旧逻辑；
+   新增 pendingImages 数组 + 横向缩略图条。发送时 buildApiHistory 仍按
+   MAX_IMAGES_IN_CONTEXT=2 的「最近 2 条带图消息」规则取用。 */
+let pendingImages = [];
+
+function renderAttachStrip() {
+  const preview = $('attachPreview');
+  if (!preview || !preview.parentNode) return;
+  let strip = $('attachStrip');
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.id = 'attachStrip';
+    strip.className = 'attach-strip';
+    preview.parentNode.insertBefore(strip, preview.nextSibling);
+  }
+  strip.innerHTML = '';
+  if (!pendingImages.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
+  pendingImages.forEach(function (it, i) {
+    const img = document.createElement('img');
+    img.src = it.dataUrl;
+    img.alt = it.name || ('图片' + (i + 1));
+    img.title = '点击移除';
+    img.addEventListener('click', function () { removePendingImageAt(i); });
+    strip.appendChild(img);
+  });
+}
+
+function removePendingImageAt(i) {
+  pendingImages.splice(i, 1);
+  if (pendingImages.length) {
+    pendingImage = pendingImages[0];
+    if (typeof renderPendingImage === 'function') renderPendingImage();
+  } else {
+    pendingImage = null;
+    if (typeof clearPendingImage === 'function') clearPendingImage();
+  }
+  renderAttachStrip();
+}
+
+/* 兼容壳：原有 clearPendingImage 只清单图对象，这里一并清掉 pendingImages 与缩略图条，
+   否则发完一条带图消息后，下一条纯文字消息会带着上一轮的 images[] 一起入库。 */
+const clearPendingImageBase = clearPendingImage;
+clearPendingImage = function clearPendingImageEnhanced() {
+  pendingImages = [];
+  renderAttachStrip();
+  return clearPendingImageBase();
+};
+
+(function wrapImageInput() {
+  const input = $('imageFile');
+  if (!input) return;
+  const baseChange = input.onchange;
+  input.onchange = async function (ev) {
+    const files = Array.prototype.slice.call((ev.target && ev.target.files) || []);
+    if (files.length <= 1) {           /* 单图：原逻辑不动 */
+      pendingImages = [];
+      renderAttachStrip();
+      if (baseChange) return baseChange.call(this, ev);
+      return;
+    }
+    const out = [];
+    for (let i = 0; i < Math.min(files.length, 4); i++) {
+      try {
+        const dataUrl = await processImage(files[i], 1280);
+        if (dataUrl) out.push({ dataUrl: dataUrl, name: files[i].name || ('图片' + (i + 1)), kb: base64KB(dataUrl) });
+      } catch (e) {}
+    }
+    if (!out.length) { if (baseChange) return baseChange.call(this, ev); return; }
+    if (files.length > 4) showToast('一次最多 4 张，已取前 4 张');
+    pendingImages = out;
+    pendingImage = out[0];
+    if (typeof renderPendingImage === 'function') renderPendingImage();
+    renderAttachStrip();
+  };
+})();
+
+/* ------------------- [体验#16/#17/#26] 复制 / 编辑后重发 / 重新生成 / 重试 ------------------- */
+function currentSession() {
+  return sessions.find(x => x.id === currentId) || null;
+}
+
+function msgCopy(uid) {
+  const s = currentSession();
+  if (!s) return;
+  const m = s.messages.find(x => x.uid === uid);
+  if (!m) return;
+  const text = m.content || '';
+  if (typeof copyTextFallback === 'function') {
+    copyTextFallback(text).then(function (ok) {
+      showToast(ok ? '已复制到剪贴板' : '复制失败，请长按选择文本');
+    });
+  } else {
+    showToast('当前环境不支持复制');
+  }
+}
+
+/* 回退到某条 user 消息之前并重发：重新生成 / 编辑后重发 / 失败重试 共用。
+   autoSend=false 时只把内容填回输入框，等用户自己改。 */
+async function rewindAndResend(userIdx, autoSend) {
+  const s = currentSession();
+  if (!s || streaming) return;
+  const um = s.messages[userIdx];
+  if (!um) return;
+  const text = um.content || '';
+  const imgs = (um.images && um.images.length) ? um.images.slice() : (um.image ? [um.image] : []);
+  s.messages = s.messages.slice(0, userIdx);
+
+  pendingImages = imgs.map(function (d, i) {
+    return { dataUrl: d, name: 'restored-' + (i + 1) + '.png', kb: base64KB(d) };
+  });
+  pendingImage = pendingImages.length ? pendingImages[0] : null;
+  if (pendingImage && typeof renderPendingImage === 'function') renderPendingImage();
+  renderAttachStrip();
+
+  const ci = $('chatInput');
+  if (ci) ci.value = text;
+
+  persistSessions(true);
+  renderSessions();
+  renderChat();
+
+  if (autoSend !== false) await sendMessage();
+}
+
+function msgRegenerate(uid) {
+  const s = currentSession();
+  if (!s || streaming) return;
+  const i = s.messages.findIndex(m => m.uid === uid);
+  if (i < 0) return;
+  let u = -1;
+  for (let k = i; k >= 0; k--) { if (s.messages[k].role === 'user') { u = k; break; } }
+  if (u < 0) { showToast('找不到对应的用户消息'); return; }
+  rewindAndResend(u, true);
+}
+
+function msgEditResend(uid) {
+  const s = currentSession();
+  if (!s || streaming) return;
+  const i = s.messages.findIndex(m => m.uid === uid && m.role === 'user');
+  if (i < 0) return;
+  rewindAndResend(i, false).then(function () {
+    const ci = $('chatInput');
+    if (ci) { ci.focus(); }
+    showToast('已填回输入框，编辑后再发送');
+  });
+}
+
+/* 事件委托：消息气泡会被 renderChat 全量/增量重建，所以不能绑在节点上。
+   capture 阶段拦截，避免和 initShareUpgrade 的 .msg-share 委托冲突。 */
+document.addEventListener('click', function (ev) {
+  const t = ev.target;
+  if (!t || !t.closest) return;
+  const btn = t.closest('.msg-act');
+  if (!btn) return;
+  if (btn.classList.contains('msg-share')) return;   /* 📤 分享交给既有 initShareUpgrade */
+  ev.preventDefault();
+  ev.stopPropagation();
+  const wrapEl = btn.closest('.msg');
+  const uid = wrapEl ? wrapEl.getAttribute('data-uid') : '';
+  if (btn.classList.contains('msg-copy')) msgCopy(uid);
+  else if (btn.classList.contains('msg-edit')) msgEditResend(uid);
+  else if (btn.classList.contains('msg-regen')) msgRegenerate(uid);
+  else if (btn.classList.contains('msg-retry')) msgRegenerate(uid);
+}, true);
+
+/* ------------------------- [修复#7] 辩论可中止 ------------------------- */
+let debateAborter = null;
+let debateWatchTimer = 0;
+
+(function wrapDebate() {
+  const startBtn = $('debateStartBtn');
+  if (!startBtn || !startBtn.parentNode) return;
+
+  let stopBtn = $('debateStopBtn');
+  if (!stopBtn) {
+    stopBtn = document.createElement('button');
+    stopBtn.id = 'debateStopBtn';
+    stopBtn.type = 'button';
+    stopBtn.className = startBtn.className;
+    stopBtn.textContent = '⏹ 停止辩论';
+    stopBtn.style.marginTop = '10px';
+    stopBtn.style.width = '100%';
+    stopBtn.style.display = 'none';
+    stopBtn.style.background = '#ef4444';
+    startBtn.parentNode.insertBefore(stopBtn, startBtn.nextSibling);
+  }
+
+  stopBtn.onclick = function () {
+    if (debateAborter) { try { debateAborter.abort(); } catch (e) {} }
+    const bodies = document.querySelectorAll('.ans-body[data-key]');
+    for (let i = 0; i < bodies.length; i++) {
+      if (!bodies[i].textContent.trim()) bodies[i].innerHTML = '<span style="color:#ef4444">⏹ 已中止</span>';
+    }
+    const fb = $('fusionBody');
+    if (fb && !fb.textContent.trim()) fb.innerHTML = '<span style="color:#ef4444">⏹ 已中止</span>';
+    showToast('辩论已中止');
+  };
+
+  function watchFinish() {
+    if (debateWatchTimer) return;
+    debateWatchTimer = setInterval(function () {
+      if (!debating) {
+        clearInterval(debateWatchTimer); debateWatchTimer = 0;
+        debateAborter = null;
+        stopBtn.style.display = 'none';
+      }
+    }, 300);
+  }
+
+  const origClick = startBtn.onclick;   /* ← 初始化里是 $('debateStartBtn').onclick = startDebate */
+  startBtn.onclick = function (ev) {
+    if (debating) return;
+    debateAborter = new AbortController();
+    stopBtn.style.display = '';
+    watchFinish();
+    if (origClick) return origClick.call(startBtn, ev);
+    return startDebate();
+  };
+})();
+
+/* [修复#7] signal 透传：辩论期间把同一个 AbortController.signal 补给
+   未显式传 signal 的 streamCompletion 调用（两位/四位选手 + 裁判共用）。
+   普通聊天自带 chatAborter.signal，不会被覆盖。 */
+const streamCompletionBase = streamCompletion;
+async function streamCompletionWithDebateSignal(opts) {
+  if (debateAborter && debating && opts && !opts.signal) {
+    opts = Object.assign({}, opts, { signal: debateAborter.signal });
+  }
+  return streamCompletionBase(opts);
+}
+streamCompletion = streamCompletionWithDebateSignal;
+
+/* ------------------------- [体验#21] 深色跟随系统 -------------------------
+   规则：用户手动切换过 → 以 autoPro_dark + autoPro_darkManual='1' 为准；
+        从未手动切换 → 跟随 prefers-color-scheme。
+   旧数据兼容：autoPro_dark 仍然是同一个 key，只是多了 autoPro_darkManual 标记。 */
+(function initSystemTheme() {
+  const mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  const isManual = function () { return localStorage.getItem('autoPro_darkManual') === '1'; };
+  const applyTheme = function () {
+    const dark = isManual() ? (localStorage.getItem('autoPro_dark') === 'true') : !!(mq && mq.matches);
+    document.body.classList.toggle('dark', dark);
+  };
+  applyTheme();
+  if (mq) {
+    const onSys = function () { if (!isManual()) applyTheme(); };
+    if (mq.addEventListener) mq.addEventListener('change', onSys);
+    else if (mq.addListener) mq.addListener(onSys);
+  }
+  const btn = $('toggleDarkMode');
+  if (btn) {
+    btn.onclick = function () {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('autoPro_dark', document.body.classList.contains('dark'));
+      localStorage.setItem('autoPro_darkManual', '1');
+      showToast('已切换为手动主题（不再跟随系统）');
+    };
+  }
+})();
+
+/* ============================ 第二段追加（见下） ============================ */
+/* ------------------------- [体验#18/#19] 会话搜索 + 置顶 / 归档 -------------------------
+   不改 renderSessions 的内部结构：包一层，渲染完成后对 .sess-item 做后处理。
+   .sess-item 上的 data-sid 由 renderSessions 内部写入（已加一行），据此映射会话对象。
+   新字段 sess.pinned / sess.archived 是新增字段，旧会话对象没有该字段时按 false 处理，
+   localStorage 里的旧数据照常可读。 */
+let sessQuery = '';
+let sessArchivedOpen = false;
+
+function sessMatches(s, q) {
+  if (!q) return true;
+  const qq = q.toLowerCase();
+  if ((s.title || '').toLowerCase().indexOf(qq) >= 0) return true;
+  const msgs = s.messages || [];
+  for (let i = 0; i < msgs.length; i++) {
+    if ((msgs[i].content || '').toLowerCase().indexOf(qq) >= 0) return true;
+  }
+  return false;
+}
+
+function sessById(sid) {
+  return sessions.find(function (x) { return x.id === sid; }) || null;
+}
+
+function ensureSessSearch() {
+  const list = $('sessionList');
+  if (!list || !list.parentNode || $('sessSearchInput')) return;
+  const inp = document.createElement('input');
+  inp.id = 'sessSearchInput';
+  inp.className = 'sess-search';
+  inp.type = 'search';
+  inp.placeholder = '🔍 搜索会话 / 消息内容';
+  inp.value = sessQuery;
+  inp.addEventListener('input', function () { sessQuery = inp.value; enhanceSessionList(); });
+  list.parentNode.insertBefore(inp, list);
+
+  /* [体验#25] 会话导出 Markdown：放在搜索框下，不新增布局区块 */
+  if (!$('exportMdBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'exportMdBtn';
+    btn.type = 'button';
+    btn.className = 'msg-act';
+    btn.style.margin = '0 0 6px';
+    btn.textContent = '⬇️ 导出当前会话 .md';
+    btn.addEventListener('click', function (e) { e.stopPropagation(); exportSessionMarkdown(); });
+    list.parentNode.insertBefore(btn, list);
+  }
+}
+
+function enhanceSessionList() {
+  const list = $('sessionList');
+  if (!list) return;
+
+  /* 上一次渲染留下的分组标题先清掉，避免重复堆叠 */
+  Array.prototype.slice.call(list.querySelectorAll('.sess-group-title')).forEach(function (t) { t.remove(); });
+
+  const items = Array.prototype.slice.call(list.querySelectorAll('.sess-item'));
+  const q = sessQuery.trim();
+
+  /* 1) 注入 📌 置顶 / 🗄 归档按钮（每个 item 只注入一次） */
+  items.forEach(function (el) {
+    const s = sessById(el.dataset.sid);
+    if (!s) return;
+    let pin = el.querySelector('.sess-pin');
+    if (!pin) {
+      pin = document.createElement('button');
+      pin.type = 'button';
+      pin.className = 'sess-pin';
+      pin.title = '置顶 / 取消置顶';
+      el.insertBefore(pin, el.firstChild);
+      const arch = document.createElement('button');
+      arch.type = 'button';
+      arch.className = 'sess-arch';
+      arch.textContent = '🗄';
+      arch.title = '归档 / 取消归档';
+      const delBtn = el.querySelector('.sess-del');
+      if (delBtn) el.insertBefore(arch, delBtn); else el.appendChild(arch);
+    }
+    pin.textContent = s.pinned ? '📌' : '📍';
+    pin.onclick = function (e) {
+      e.stopPropagation(); e.preventDefault();
+      s.pinned = !s.pinned;
+      if (s.pinned) s.archived = false;
+      persistSessions(true); renderSessions();
+    };
+    const arch = el.querySelector('.sess-arch');
+    if (arch) {
+      arch.onclick = function (e) {
+        e.stopPropagation(); e.preventDefault();
+        s.archived = !s.archived;
+        if (s.archived) s.pinned = false;
+        persistSessions(true); renderSessions();
+      };
+      arch.style.color = s.archived ? 'var(--accent)' : '';
+    }
+  });
+
+  /* 2) 搜索过滤 + 命中描边 */
+  items.forEach(function (el) {
+    const s = sessById(el.dataset.sid);
+    if (!s) return;
+    const hit = sessMatches(s, q);
+    el.classList.toggle('sess-hit', !!q && hit);
+    el.style.display = (q && !hit) ? 'none' : '';
+  });
+
+  /* 3) 分组排序：置顶 → 正常 → 归档（默认折叠） */
+  const pinned = [], normal = [], archived = [];
+  items.forEach(function (el) {
+    const s = sessById(el.dataset.sid);
+    if (!s) return;
+    if (s.archived) archived.push(el);
+    else if (s.pinned) pinned.push(el);
+    else normal.push(el);
+  });
+
+  pinned.concat(normal).forEach(function (el) { list.appendChild(el); });
+
+  if (archived.length) {
+    const title = document.createElement('div');
+    title.className = 'sess-group-title';
+    title.textContent = (sessArchivedOpen ? '▾ 归档（' : '▸ 归档（') + archived.length + '）';
+    title.addEventListener('click', function () {
+      sessArchivedOpen = !sessArchivedOpen;
+      enhanceSessionList();
+    });
+    list.appendChild(title);
+    archived.forEach(function (el) {
+      if (!sessArchivedOpen) el.style.display = 'none';
+      list.appendChild(el);
+    });
+  }
+}
+
+const renderSessionsBase = renderSessions;
+renderSessions = function renderSessionsEnhanced() {
+  renderSessionsBase();
+  try { ensureSessSearch(); enhanceSessionList(); } catch (e) { }
+};
+
+/* ------------------------- [体验#25] 整会话导出 Markdown ------------------------- */
+function exportSessionMarkdown() {
+  const s = currentSession();
+  if (!s || !s.messages || !s.messages.length) { showToast('当前会话为空，无法导出'); return; }
+  const modelLabel = (function () { try { return (modelById(chatModel) || {}).name || chatModel; } catch (e) { return chatModel; } })();
+  let md = '# ' + (s.title || '未命名对话') + '\n\n';
+  md += '> 导出时间：' + new Date().toLocaleString() + '\n> 模型：' + modelLabel + '\n\n';
+  s.messages.forEach(function (m) {
+    if (m.role === 'user') {
+      md += '## 🧑 用户\n\n' + (m.content || '（仅图片）') + '\n\n';
+      const imgs = (m.images && m.images.length) ? m.images : (m.image ? [m.image] : []);
+      imgs.forEach(function (src, i) { md += '![图片' + (i + 1) + '](' + src + ')\n\n'; });
+    } else {
+      const nm = (function () { try { return (modelById(m.model) || {}).name || m.model; } catch (e) { return m.model || 'AI'; } })();
+      md += '## 🤖 ' + nm + '\n\n' + (m.content || '') + '\n\n';
+    }
+    md += '---\n\n';
+  });
+  const safe = (s.title || 'chat').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 30);
+  downloadFile('studio_ultra_' + safe + '_' + Date.now() + '.md', md, 'text/markdown;charset=utf-8');
+  showToast('已导出 Markdown');
+}
+
+/* ------------------------- [体验#22] 快捷键（部分实现） ------------------------- */
+document.addEventListener('keydown', function (e) {
+  const meta = e.metaKey || e.ctrlKey;
+  if (!meta) return;
+  if (e.key === 'k' || e.key === 'K') {
+    e.preventDefault();
+    const inp = $('sessSearchInput');
+    if (inp) { inp.focus(); if (inp.select) inp.select(); }
+    return;
+  }
+  if (e.key === 'Enter') {
+    /* streaming 时直接吞掉，避免连点重复发送 */
+    e.preventDefault();
+    if (!streaming) sendMessage();
+  }
+});
+
+/* ------------------------- 首屏补刷 ------------------------- */
+ensureSessSearch();
+try { enhanceSessionList(); } catch (e) { }
+
+/* ==================================================================================
+   【TODO 清单】以下条目本轮未落地，原因标注在后面，需要先确认 DOM/交互细节再动手：
+   ----------------------------------------------------------------------------------
+   #22 Esc 关闭面板
+       需要知道各面板的开关函数（设置页 / 辩论页 / 模型下拉 / 分享面板）各自的关闭入口，
+       目前只实现了 Cmd/Ctrl+K 与 Cmd/Ctrl+Enter。
+   #23 发送前 token 预估（len / 2.5）
+       需要在 .inputbar 内新增一行小字容器；.inputbar 是 flex 布局，直接插子元素会改变
+       输入框高度（会联动 --inputbar-h），建议先在真机上确认可以接受再加。
+   #24 模型下拉搜索过滤
+       需要改 createDropdown 内部的 .dd-menu 渲染；该函数被 chatModelDD / psReModelDD /
+       debate 选手下拉共用，改之前要确认分组滑块的数据结构，避免影响其它下拉。
+   #26 失败气泡「🔄 重试」按钮
+       buildMsgEl 已按 m.failed 渲染 🧾 重试按钮并接到 msgRegenerate；但当前发送失败时
+       写的是哪个字段（m.failed / m.error / m.err）需要确认后统一，否则按钮不会出现。
+   #15 P图 Worker 化
+       已在 psApplyPixelOps 上方留了完整 TODO 与 feature detect 方案，暂不实施。
+   ================================================================================== */
 })();
 </script>
 </body>
