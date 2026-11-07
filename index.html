@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -1021,6 +1021,14 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
 /* [体验#20] 多图缩略图横向条 */
 .attach-strip { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 2px; }
 .attach-strip img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+/* ==================== 💭 思考过程折叠框 ==================== */
+.thinking-box { background: rgba(120,120,128,.08); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.thinking-box summary { padding: 8px 12px; font-size: 12px; font-weight: 700; color: #8b5cf6; cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px; }
+.thinking-box summary::-webkit-details-marker { display: none; }
+.thinking-box summary::before { content: '▶'; font-size: 9px; transition: transform .2s; }
+.thinking-box[open] summary::before { transform: rotate(90deg); }
+.thinking-box[open] summary { border-bottom: 1px dashed var(--border); background: rgba(139,92,246,.08); }
+.thinking-content { padding: 12px; font-size: 13px; line-height: 1.6; color: var(--text-muted); max-height: 300px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-word; }
 </style>
 </head>
 <body>
@@ -2595,7 +2603,7 @@ function buildMsgEl(m) {
     const compact = isAgent && agentMode && !m.agentFailed;
     const body = isAgent
       ? (compact ? renderAgentNote(m) : renderAgentPanel(m))
-      : `<div class="md">${renderMarkdown(m.content)}</div>`;
+      : `${(!isAgent && m.reasoning) ? `<details class="thinking-box"><summary>💭 已深度思考${m.reasoningMs ? '（用时 ' + Math.max(1, Math.round(m.reasoningMs / 1000)) + ' 秒）' : ''}</summary><div class="thinking-content">${escapeHtml(m.reasoning)}</div></details>` : ''}<div class="md">${renderMarkdown(m.content)}</div>`;
     wrap.innerHTML = `<div class="bubble${isAgent ? ' agent-bubble' : ''}"><div class="msg-model"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>${modelById(m.model).name}${flag}${isAgent ? '<span class="sc-flag">🤖 Agent</span>' : ''}</div>${body}</div>`;
     /* 📤 分享必须留在 .bubble 内部：既有 decorateShareButtons 用
        bubble.querySelector('.msg-share') 判重，放到外面会多出一个重复按钮。 */
@@ -5346,7 +5354,10 @@ async function streamCompletion(opts) {
         try {
           let json = JSON.parse(data);
           if (json.usage) usageData = json.usage;
-          let delta = json.choices?.[0]?.delta?.content || '';
+          var _dd = (json.choices && json.choices[0] && json.choices[0].delta) || {};
+          var _rc = _dd.reasoning_content || _dd.reasoning || '';
+          if (_rc) { opts.__reasoning = (opts.__reasoning || '') + _rc; if (opts.onReasoning) opts.onReasoning(opts.__reasoning); }
+          let delta = _dd.content || '';
           if (delta) { full += delta; opts.onDelta && opts.onDelta(delta, full); }
         } catch(e){}
       };
