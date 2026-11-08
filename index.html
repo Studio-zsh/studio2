@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -11,10 +11,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="studio Ultra">
+<meta name="apple-mobile-web-app-title" content="O.M.N.I">
 <meta name="apple-touch-fullscreen" content="yes">
 <meta name="format-detection" content="telephone=no">
-<title>studio Ultra v13.6.0</title>
+<title>O.M.N.I v13.7.1</title>
 <style>
 /* ==================== 基础与平滑动画 ==================== */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -1029,6 +1029,42 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
 .thinking-box[open] summary::before { transform: rotate(90deg); }
 .thinking-box[open] summary { border-bottom: 1px dashed var(--border); background: rgba(139,92,246,.08); }
 .thinking-content { padding: 12px; font-size: 13px; line-height: 1.6; color: var(--text-muted); max-height: 300px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-word; }
+/* ===== 代码块复制 / 字数统计 / 快捷指令 / 思考动画与耗时 ===== */
+.code-wrap { position: relative; }
+.copy-code-btn { position: absolute; top: 8px; right: 8px; z-index: 3; padding: 3px 9px; border-radius: 8px; font-size: 11px; font-weight: 800; line-height: 1.5; color: #cbd5e1; background: rgba(148,163,184,.18); border: 1px solid rgba(148,163,184,.35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.copy-code-btn:active { transform: scale(.94); }
+.copy-code-btn.done { color: #86efac; border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.18); }
+/* 让代码块内的 code 不再套用行内橙底，只保留 <pre> 的深色背景 */
+.md pre code { background: transparent; padding: 0; color: inherit; }
+/* [BUG-2] 特异性必须高过 body.dark .md code（0,0,2,2），否则深色模式代码块仍显示行内粉字 */
+body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
+
+/* 输入框底部字数统计（独立行，绝不放进 .input-row，避免挤压 textarea） */
+.input-foot { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 4px 6px 0; }
+.char-count { font-size: 11px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; transition: color .2s; }
+.char-count.warn { color: #ef4444; }
+
+/* 快捷指令行（独立一行，绝不能放进 #skillRow：那里的点击是覆盖式绑定） */
+.prompt-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.prompt-row::-webkit-scrollbar { display: none; }
+.prompt-chip { flex: 0 0 auto; padding: 5px 10px; border-radius: 99px; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.prompt-chip:active { color: var(--accent); border-color: var(--accent); background: rgba(79,109,245,.08); }
+
+/* AI 等待呼吸灯 */
+.ai-thinking { display: inline-flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.ai-thinking .breath-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #5b7cfa, #8b5cf6); animation: aiBreath 1.1s ease-in-out infinite; }
+@keyframes aiBreath { 0%, 100% { opacity: .32; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+
+/* 模型名旁的轻量耗时标签 */
+.msg-duration { font-size: 10.5px; font-weight: 800; color: var(--text-muted); background: rgba(120,120,128,.14); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; margin-left: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* 思考面板内的 Markdown 渲染：抵消 .thinking-content 的 pre-wrap，避免块级元素间出现空行 */
+.thinking-md { white-space: normal; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif; }
+.thinking-md > *:first-child { margin-top: 0; }
+.thinking-md > *:last-child { margin-bottom: 0; }
+.thinking-md .md-p { margin: 4px 0; }
+/* [BUG-3] 思考面板内不提供代码复制：绝对定位按钮会在横向滚动时跑出可见区 */
+.thinking-md .copy-code-btn { display: none; }
 </style>
 </head>
 <body>
@@ -1038,8 +1074,11 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
 <div id="app">
   <aside id="sidebar">
     <div class="side-logo">
-      <div class="logo-mark">⚡</div>
-      <div><b>studio Ultra</b><small>v13.6.0 旗舰版</small></div>
+      <div class="logo-mark">O</div>
+      <div style="display: flex; flex-direction: column; justify-content: center;">
+        <b style="font-size: 18px; letter-spacing: 0.5px;">O.M.N.I</b>
+        <small style="text-transform: uppercase; letter-spacing: 1px; font-size: 9px; color: var(--text-muted); margin-top: 2px;">Omni-Model Neural Interface</small>
+      </div>
     </div>
     <button id="newChatSideBtn" class="new-chat-btn">＋ 新建对话</button>
     <div class="session-label">对话记录</div>
@@ -1112,6 +1151,13 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
           <button class="skill-chip" type="button" data-skill="debate" role="tab">⚔️ 多 Agent 辩论</button>
           <button class="skill-chip" type="button" data-skill="eval" role="tab">🏟️ 模型评估场</button>
           <button class="skill-chip" type="button" data-skill="settings" role="tab">⚙️ 模型与 Key</button>
+        </div>
+                <!-- 快捷指令：独立一行，与技能胶囊互不干扰 -->
+        <div class="prompt-row" id="promptRow" aria-label="快捷指令">
+          <button class="prompt-chip" type="button" data-prompt="explain">🧠 解释代码</button>
+          <button class="prompt-chip" type="button" data-prompt="bug">🐞 找 Bug</button>
+          <button class="prompt-chip" type="button" data-prompt="perf">⚡ 性能优化</button>
+          <button class="prompt-chip" type="button" data-prompt="review">✅ 代码审查</button>
         </div>
         <div class="toolbar-row">
           <div class="strength-wrapper">
@@ -1215,6 +1261,9 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
           <textarea id="chatInput" rows="1" placeholder="给 AI 发送消息…（可附一张图片）"></textarea>
           <button id="sendBtn" class="send-btn">↑</button>
           <button id="stopBtn" class="send-btn hidden" style="background:#1f2937;">■</button>
+        </div>
+        <div class="input-foot">
+          <span id="charCount" class="char-count">0 字</span>
         </div>
       </div>
     </div>
@@ -1405,7 +1454,16 @@ body.dark #brandWatermark .bw-name { opacity: .40; }
         <section class="card set-card" style="background:var(--bg-color);">
           <h3 style="color:var(--accent);">📜 版本更新日志</h3>
           <div style="font-size:12px; line-height:1.8; color:var(--text-muted); margin-top:10px;">
-            <b>v13.6.0 (当前版本)</b><br>
+            <b>v13.7.1 (当前版本)</b><br>
+            • 修复：智能修图美颜滑杆崩溃（dataURLa → data）<br>
+            • 修复：多图场景图片丢失，改为按 OpenAI 多模态规范携带最近 2 张<br>
+            • 优化：流式渲染 60ms 节流加固，长回答不再一卡一卡<br>
+            • 新增：代码块一键复制，点击显示「已复制」（分享文本自动剔除按钮）<br>
+            • 新增：输入框字数统计，超过 4000 字变红提示<br>
+            • 新增：草稿自动保存，刷新页面不丢，发送后自动清空<br>
+            • 新增：快捷指令（解释代码 / 找 Bug / 性能优化 / 代码审查）<br>
+            • 新增：DeepSeek-R1 等模型「思考过程」折叠面板、等待呼吸灯与耗时统计<br>
+            <b>v13.6.0</b><br>
             - 新增：🎨 智能修图技能（侧边栏第三个入口）—— Canvas 像素管线：自动色调/对比度/颜色、8 条滑杆（亮度·对比度·饱和度·色温·曝光·色相·锐化·暗角）、9 个滤镜预设、按住对比、撤销/重置、导出 PNG（保留原分辨率）<br>
             - 新增：🧩 技能胶囊——聊天输入条之上新增胶囊行（💬 对话 / 🎨 智能修图 / ⚔️ 多 Agent 辩论 / ⚙️ 模型与 Key），P图 与普通聊天共用同一输入区，点胶囊即切换；修图页头部提供「⬅ 返回对话」，胶囊高亮始终跟随 switchView<br>
             - 新增：🎨 智能修图彻底并入聊天——不再是独立整屏视图，而是技能胶囊「💬 对话 / 🎨 智能修图 / ⚔️ 多 Agent 辩论 / ⚙️ 模型与 Key」里的一员；点胶囊后消息区让位给修图面板，底部输入条与四颗胶囊原样保留，随时一键切回对话<br>
@@ -1830,7 +1888,7 @@ const VENDOR_BRAND = {
   hunyuan:   { name: '腾讯混元',    mark: 'H',   a: '#2563EB', b: '#93C5FD' },
   volc:      { name: '火山方舟',    mark: 'V',   a: '#F97316', b: '#FDBA74' },
   openrouter:{ name: 'OpenRouter',  mark: 'OR',  a: '#111827', b: '#6B7280' },
-  ollama:    { name: 'Ollama 本地', mark: 'OL',  a: '#111827', b: '#4B5563' }
+  ollama:    { name: 'O.M.N.I', mark: 'O',  a: '#111827', b: '#4B5563' }
 };
 
 function vendorKeyOf(modelId) {
@@ -2609,8 +2667,8 @@ function buildMsgEl(m) {
     const compact = isAgent && agentMode && !m.agentFailed;
     const body = isAgent
       ? (compact ? renderAgentNote(m) : renderAgentPanel(m))
-      : `${(!isAgent && m.reasoning) ? `<details class="thinking-box"><summary>💭 已深度思考${m.reasoningMs ? '（用时 ' + Math.max(1, Math.round(m.reasoningMs / 1000)) + ' 秒）' : ''}</summary><div class="thinking-content">${escapeHtml(m.reasoning)}</div></details>` : ''}<div class="md">${renderMarkdown(m.content)}</div>`;
-    wrap.innerHTML = `<div class="bubble${isAgent ? ' agent-bubble' : ''}"><div class="msg-model"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>${modelById(m.model).name}${flag}${isAgent ? '<span class="sc-flag">🤖 Agent</span>' : ''}</div>${body}</div>`;
+      : `${(!isAgent && m.reasoning) ? `<details class="thinking-box"><summary>🤔 已深度思考${m.duration ? '（用时 ' + escapeHtml(m.duration) + '）' : (m.reasoningMs ? '（用时 ' + Math.max(1, Math.round(m.reasoningMs / 1000)) + ' 秒）' : '')}</summary><div class="thinking-content"><div class="thinking-md">${renderMarkdown(m.reasoning)}</div></div></details>` : ''}<div class="md">${renderMarkdown(m.content)}</div>`;
+    wrap.innerHTML = `<div class="bubble${isAgent ? ' agent-bubble' : ''}"><div class="msg-model"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>${modelById(m.model).name}${flag}${isAgent ? '<span class="sc-flag">🤖 Agent</span>' : ((!isAgent && m.duration) ? '<span class="msg-duration">⏱️ 用时 ' + escapeHtml(m.duration) + '</span>' : '')}</div>${body}</div>`;
     /* 📤 分享必须留在 .bubble 内部：既有 decorateShareButtons 用
        bubble.querySelector('.msg-share') 判重，放到外面会多出一个重复按钮。 */
     const shareBtn = document.createElement('button');
@@ -2637,7 +2695,7 @@ function renderChat() {
   if (!s || !s.messages.length) {
     inner.dataset.sid = s ? s.id : '';
     inner.innerHTML = '';
-    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size:22px;color:var(--text-color);margin-bottom:10px;">studio Ultra</h2><p>v13.6.0 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
+    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size: 36px; font-weight: 900; color: var(--text-color); margin-bottom: 6px; letter-spacing: 2px;">O.M.N.I</h2><p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px;">Omni-Model Neural Interface</p><p style="font-size: 13px; color: var(--text-muted);">v13.7.1 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
     $('topbarTitle').textContent = '新对话';
     if (agentMode) renderScriptPane();
     return;
@@ -4835,7 +4893,7 @@ function initPencil() {
 function nativeShareOrCopy(text, title) {
   const body = String(text == null ? '' : text);
   if (!body) { showToast('没有可分享的内容'); return; }
-  const t = title || 'studio Ultra';
+  const t = title || 'O.M.N.I';
   if (typeof navigator.share === 'function') {
     try {
       const p = navigator.share({ title: t, text: body });
@@ -4905,7 +4963,7 @@ function handleShareClick(btn) {
     showToast('这条回复还没有内容可分享');
     return;
   }
-  let title = 'studio Ultra';
+  let title = 'O.M.N.I';
   try {
     const sess = sessions.find(function (x) { return x.id === currentId; });
     if (sess && sess.title) title = sess.title;
@@ -4972,6 +5030,140 @@ function initShareUpgrade() {
 }
 
 initVisualViewportFix();
+
+/* ==========================================================================
+   代码块一键复制 / 字数统计 / 草稿自动保存 / 快捷指令
+   ========================================================================== */
+const CHAT_INPUT_MAX = 4000;
+const DRAFT_KEY = 'autoPro_chatDraft';
+
+const PROMPT_PRESETS = {
+  explain: '请逐段解释下面这段代码的作用：先说明整体意图，再按函数/模块拆解，指出关键变量与数据流，最后给出可能的坑。\n\n```\n',
+  bug: '请对下面这段代码做严格的 Bug 审查：列出每个潜在缺陷（含边界条件、空值、并发/异步、越界、资源泄漏），给出复现条件与修复代码。\n\n```\n',
+  perf: '请分析下面这段代码的性能瓶颈：指出复杂度问题、重复计算、不必要的 DOM/IO 操作，并给出优化后的代码与预期收益。\n\n```\n',
+  review: '请按 Code Review 标准审查下面这段代码：正确性、可读性、命名、错误处理、安全性、可测试性，逐条给出问题与改进示例。\n\n```\n'
+};
+
+/* ---------- 字数统计 ---------- */
+function updateCharCount() {
+  const el = $('charCount'), inp = $('chatInput');
+  if (!el || !inp) return;
+  const n = String(inp.value || '').length;
+  el.textContent = n + ' 字';
+  el.classList.toggle('warn', n > CHAT_INPUT_MAX);
+}
+
+/* ---------- 草稿自动保存（防抖 400ms） ---------- */
+let draftTimer = 0;
+function saveDraft() {
+  const inp = $('chatInput');
+  if (!inp) return;
+  if (draftTimer) clearTimeout(draftTimer);
+  draftTimer = setTimeout(function () {
+    draftTimer = 0;
+    try {
+      const v = inp.value;
+      if (v) localStorage.setItem(DRAFT_KEY, v); else localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {}
+  }, 400);
+}
+function clearDraft() {
+  if (draftTimer) { clearTimeout(draftTimer); draftTimer = 0; }
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+}
+function ensureHeight(inp) {
+  if (!inp) return;
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 140) + 'px';
+}
+function restoreDraft() {
+  const inp = $('chatInput');
+  if (!inp) return;
+  let v = '';
+  try { v = localStorage.getItem(DRAFT_KEY) || ''; } catch (e) { v = ''; }
+  if (!v) { updateCharCount(); return; }
+  inp.value = v;
+  ensureHeight(inp);
+  updateCharCount();
+}
+
+/* ---------- 快捷指令 ---------- */
+function bindPromptChips() {
+  const row = $('promptRow');
+  if (!row || row.dataset.bound) return;
+  row.dataset.bound = '1';
+  row.addEventListener('click', function (e) {
+    const b = e.target && e.target.closest ? e.target.closest('.prompt-chip') : null;
+    if (!b) return;
+    const preset = PROMPT_PRESETS[b.getAttribute('data-prompt')];
+    const inp = $('chatInput');
+    if (!preset || !inp) return;
+    const cur = String(inp.value || '');
+    inp.value = cur.trim() ? (preset + cur) : preset;
+    inp.focus();
+    try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch (err) {}
+    ensureHeight(inp);
+    updateCharCount();
+    saveDraft();
+    scrollChatToBottom(true);
+  });
+}
+
+/* ---------- 代码块复制（document 冒泡阶段委托，不干扰其他代理） ---------- */
+function initCodeCopy() {
+  if (document.__codeCopyBound) return;
+  document.__codeCopyBound = true;
+  document.addEventListener('click', function (e) {
+    const btn = e.target && e.target.closest ? e.target.closest('.copy-code-btn') : null;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const wrap = btn.closest('.code-wrap');
+    const codeEl = wrap ? wrap.querySelector('pre code') : null;
+    const code = codeEl ? String(codeEl.textContent || '') : '';
+    if (!code) { showToast('没有可复制的代码'); return; }
+    const done = function (ok) {
+      btn.textContent = ok ? '已复制' : '复制失败';
+      btn.classList.toggle('done', !!ok);
+      setTimeout(function () {
+        btn.textContent = '复制';
+        btn.classList.remove('done');
+      }, 2000);
+      showToast(ok ? '代码已复制' : '复制失败，请长按选择');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () { done(true); },
+        function () { copyTextFallback(code).then(done); });
+    } else {
+      copyTextFallback(code).then(done);
+    }
+  }, false);
+}
+
+/* ---------- 初始化（DOM 与工具函数此时均已就绪） ---------- */
+(function initChatComposerExtras() {
+  const inp = $('chatInput');
+  if (inp) {
+    inp.addEventListener('input', function () { updateCharCount(); saveDraft(); });
+  }
+  const foot = $('charCount');
+  if (!foot) {
+    /* 兜底：若 HTML 中的 .input-foot 缺失，运行时补一个，避免字数统计不可见 */
+    try {
+      const row = document.querySelector('.input-row');
+      if (row && row.parentNode) {
+        const box = document.createElement('div');
+        box.className = 'input-foot';
+        box.innerHTML = '<span id="charCount" class="char-count">0 字</span>';
+        row.parentNode.insertBefore(box, row.nextSibling);
+      }
+    } catch (e) {}
+  }
+  bindPromptChips();
+  restoreDraft();
+  updateCharCount();
+  initCodeCopy();
+})();
 initPencil();
 initShareUpgrade();
 
@@ -5551,16 +5743,29 @@ async function sendMessage() {
   s.messages.push({ role: 'user', content: rawText, image: imageData || undefined, images: (pendingImages.length > 1 ? pendingImages.map(p => p.dataUrl) : undefined), uid: genUid() });
   const userMsgRef = s.messages[s.messages.length - 1];
   let aiMsg = { uid: genUid(), role: 'assistant', content: '', model: chatModel, checked: false };
+  /* [耗时统计] 起点必须声明在 sendMessage 顶层：finally 里要访问它 */
+  const streamStart = Date.now();
+  /* [BUG-1] 正文是否已开始到达：一旦正文出现，onReasoning 不得再写思考占位，否则会覆盖已显示的答案 */
+  let hasContentDelta = false;
+  /* [思考过程] reasoning_content 累积器，同样提升到顶层供 finally / onReasoning 共享 */
+  let reasoningText = '';
   s.messages.push(aiMsg);
   persistSessions(true);
 
   $('chatInput').value = ''; $('chatInput').style.height = 'auto';
+  clearDraft(); updateCharCount();
   clearPendingImage();
   streaming = true; $('sendBtn').classList.add('hidden'); $('stopBtn').classList.remove('hidden');
   aspError = '';
   renderChat(); renderSessions();
 
   const mdEl = $('chatInner').querySelector('.msg.assistant:last-child .md');
+  /* [等待呼吸灯] 首个字符到达前先占位，收到首个 delta / reasoning 后会被覆盖 */
+  try {
+    if (mdEl && !String(mdEl.innerHTML).trim()) {
+      mdEl.innerHTML = '<div class="ai-thinking"><span class="breath-dot"></span>AI 正在思考中…</div>';
+    }
+  } catch (e) {}
   chatAborter = new AbortController();
   const signal = chatAborter.signal;
 
@@ -5585,7 +5790,22 @@ async function sendMessage() {
       messages: history, model: chatModel, signal: signal,
       agentMode: agentMode,
       onPlan: (plan) => { plannedPlan = plan; },
+      /* [思考过程] reasoning_content 原始累积（streamCompletion 已解析 SSE），边流边反馈 */
+      onReasoning: function (txt) {
+        reasoningText = String(txt || '');
+        aiMsg.reasoning = reasoningText;
+        try {
+          const now = Date.now();
+          /* 100ms 节流：避免每个 reasoning token 都写一次 innerHTML */
+          if (mdEl && !agentMode && !hasContentDelta && now - (aiMsg._thinkPaint || 0) > 100) {
+            aiMsg._thinkPaint = now;
+            mdEl.innerHTML = '<div class="ai-thinking"><span class="breath-dot"></span>正在深度思考…（' + reasoningText.length + ' 字）</div>';
+          }
+        } catch (e) {}
+      },
       onDelta: (d, f) => {
+        /* [BUG-1] 正文一到就锁住思考占位，防止 reasoning 晚到把已渲染的回答冲掉 */
+        if (d) hasContentDelta = true;
         full = f;
         if (agentMode) {
           const now = Date.now();
@@ -5688,6 +5908,16 @@ async function sendMessage() {
     }
   } finally {
     streaming = false; $('sendBtn').classList.remove('hidden'); $('stopBtn').classList.add('hidden');
+    /* [耗时 / 思考落库] 成功、报错、手动中止三条路径都写，保证气泡显示一致 */
+    try {
+      const _elapsedMs = Date.now() - streamStart;
+      aiMsg.duration = (_elapsedMs / 1000).toFixed(1) + 's';
+      aiMsg.reasoningMs = _elapsedMs;
+      if (reasoningText) aiMsg.reasoning = reasoningText;
+      delete aiMsg._thinkPaint;
+    } catch (e) {}
+    /* 重绘一次，让「⏱️ 用时 x.xs」与思考面板真正出现在 DOM 上（此时 mdEl 已无用） */
+    try { renderChat(); } catch (e) {}
     if (visionEl && visionEl.parentNode) {
       const st = visionEl.querySelector('.vision-status');
       if (!st || (!st.classList.contains('done') && !st.classList.contains('fail'))) visionEl.remove();
@@ -6673,7 +6903,7 @@ async function startDebate() {
     }
 
     $('copyFusionBtn').onclick = () => {
-      if (navigator.clipboard) navigator.share ? nativeShareOrCopy(judgeText, 'studio Ultra · 辩论裁决') : navigator.clipboard.writeText(judgeText).then(() => showToast('已复制裁决'), () => showToast('复制失败'));
+      if (navigator.clipboard) navigator.share ? nativeShareOrCopy(judgeText, 'O.M.N.I · 辩论裁决') : navigator.clipboard.writeText(judgeText).then(() => showToast('已复制裁决'), () => showToast('复制失败'));
       else showToast('当前环境不支持复制');
     };
     $('saveFusionBtn').onclick = () => {
