@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -2104,7 +2104,13 @@ function renderMarkdown(src) {
   let blocks = [];
   let text = String(src || '');
   text = text.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, l, c) => {
-    blocks.push('<pre><code>' + escapeHtml(c) + '</code></pre>');
+    const codeLang = String(l || '').trim();
+    blocks.push(
+      '<div class="code-wrap">' +
+        '<button class="copy-code-btn" type="button" aria-label="复制代码">复制</button>' +
+        '<pre><code' + (codeLang ? ' data-lang="' + escapeHtml(codeLang) + '"' : '') + '>' + escapeHtml(c) + '</code></pre>' +
+      '</div>'
+    );
     return '\u0000B' + (blocks.length - 1) + '\u0000';
   });
 
@@ -3382,7 +3388,12 @@ async function describeImageWithVision(dataUrl, signal) {
    - useVision=false → 把历史里的图片解析结果拼进文本 Prompt */
 function buildApiHistory(list, useVision) {
   const imgIdx = [];
-  list.forEach((m, i) => { if (m.role === 'user' && m.image) imgIdx.push(i); });
+  list.forEach(function (m, i) {
+    if (m.role !== 'user') return;
+    /* v13.7.1：单图 m.image 与多图 m.images 都算「带图消息」 */
+    const hasImg = (m.images && m.images.length) ? true : !!m.image;
+    if (hasImg) imgIdx.push(i);
+  });
   const keep = imgIdx.slice(-MAX_IMAGES_IN_CONTEXT);
 
   return list.map((m, i) => {
@@ -3390,12 +3401,13 @@ function buildApiHistory(list, useVision) {
 
     const textPart = String(m.content || '').trim() || '请根据这张图片给出你的分析与建议。';
 
-    if (useVision && m.image && keep.indexOf(i) >= 0) {
+    const imgs = (m.images && m.images.length) ? m.images : (m.image ? [m.image] : []);
+    if (useVision && imgs.length && keep.indexOf(i) >= 0) {
       return {
         role: 'user',
         content: [
           { type: 'text', text: textPart },
-          { type: 'image_url', image_url: { url: m.image } }
+          ...imgs.slice(0, MAX_IMAGES_IN_CONTEXT).map(function (u) { return { type: 'image_url', image_url: { url: u } }; })
         ]
       };
     }
@@ -3403,8 +3415,8 @@ function buildApiHistory(list, useVision) {
       if (m.vision) {
         return { role: 'user', content: `[图片解析结果：${m.vision}]\n\n[用户的提问：${textPart}]` };
       }
-      if (m.image) {
-        return { role: 'user', content: `${textPart}\n\n（注：用户随消息上传了一张图片，但当前主模型无法查看图片。）` };
+      if (imgs.length) {
+        return { role: 'user', content: `${textPart}\n\n（注：用户随消息上传了 ${imgs.length} 张图片，但当前主模型无法查看图片。）` };
       }
     }
     return { role: 'user', content: m.content };
@@ -4878,7 +4890,17 @@ function handleShareClick(btn) {
   const bubble = btn.closest('.bubble') || btn.closest('.msg');
   if (!bubble) return;
   const body = bubble.querySelector('.md') || bubble;
-  const text = String(body.innerText || body.textContent || '').trim();
+  const shareSrc = body.cloneNode(true);
+  /* [v13.7.1] 代码块新增「复制」按钮：分享前克隆剔除，避免按钮文字混进分享内容 */
+  if (shareSrc.querySelectorAll) {
+    shareSrc.querySelectorAll('.copy-code-btn').forEach(function (b) { b.remove(); });
+  }
+  const shareBox = document.createElement('div');
+  shareBox.style.cssText = 'position:fixed;left:-200vw;top:0;width:680px;opacity:0;pointer-events:none;';
+  shareBox.appendChild(shareSrc);
+  document.body.appendChild(shareBox);
+  const text = String(shareBox.innerText || shareBox.textContent || '').trim();
+  shareBox.remove();
   if (!text) {
     showToast('这条回复还没有内容可分享');
     return;
@@ -5556,6 +5578,7 @@ async function sendMessage() {
     let full = '';
     let plannedPlan = null;
     let paintTimer = 0;   /* [性能#11] 普通聊天的流式渲染节流句柄 */
+    let lastChatPaint = 0; /* [v13.7.1] 首帧立即渲染标记（不复用 agentMode 的 lastAspPaint，避免语义冲突） */
     let lastAspPaint = 0;   /* 流式节流：长 JSON 时每个 delta 重建左侧 DOM 会明显卡顿 */
 
     await streamCompletion({
@@ -5574,7 +5597,11 @@ async function sendMessage() {
         } else if (mdEl) {
           /* [性能#11] 普通聊天流式渲染节流：60ms 合并一次 innerHTML 重排，
              不阻塞首帧（首次 delta 立刻排一次，后续累积）。 */
-          if (!paintTimer) {
+          if (!lastChatPaint) {
+            /* [v13.7.1] 首帧立即渲染：首字不延迟 */
+            lastChatPaint = Date.now();
+            mdEl.innerHTML = renderMarkdown(full);
+          } else if (!paintTimer) {
             paintTimer = setTimeout(function () {
               paintTimer = 0;
               if (!mdEl) return;
@@ -5948,7 +5975,7 @@ function psBeautyInPlace(data, w, h, strength) {
     const s = psSkinScore(data[i], data[i + 1], data[i + 2]);
     if (s <= 0.02) continue;
     const t = s * amount;
-    dataURLa[i]     += (blurred[i]     - data[i])     * t;
+    data[i]     += (blurred[i]     - data[i])     * t;
     data[i + 1] += (blurred[i + 1] - data[i + 1]) * t;
     data[i + 2] += (blurred[i + 2] - data[i + 2]) * t;
   }
