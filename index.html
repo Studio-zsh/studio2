@@ -11,10 +11,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="studio Ultra">
+<meta name="apple-mobile-web-app-title" content="O.M.N.I">
 <meta name="apple-touch-fullscreen" content="yes">
 <meta name="format-detection" content="telephone=no">
-<title>studio Ultra v13.7.1</title>
+<title>O.M.N.I v13.7.1</title>
 <style>
 /* ==================== 基础与平滑动画 ==================== */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -1065,6 +1065,132 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
 .thinking-md .md-p { margin: 4px 0; }
 /* [BUG-3] 思考面板内不提供代码复制：绝对定位按钮会在横向滚动时跑出可见区 */
 .thinking-md .copy-code-btn { display: none; }
+/* ==========================================================================================
+   [MOBILE-PATCH] 手机端适配补丁（v13.7.1）
+   - 全部规则限定在 max-width:767px / max-width:480px，≥768px 保持原状
+   - 无 UA / 机型判断：只用「视口宽度 + @supports 特性检测」
+   - 覆盖项 1、2、3、5、6、7、8、9、10、11、12、13、14、16、21
+   - 追加位置在 <style> 末尾，同选择器同 media 下后写者胜，故可安全覆盖既有 iPad 样式
+   ========================================================================================== */
+
+/* ------------------------------------------------------------------------------------------
+   [#1] 断点协同：≤767px（窄窗/平板竖屏/大屏手机）与 ≤480px（主流手机竖屏）两级
+   [#9][#10][#5][#7][#16] 第一级（767）
+   ------------------------------------------------------------------------------------------ */
+@media (max-width: 767px) {
+
+  /* [#9] 触控目标 ≥42px（发送 / 附件 / 铅笔 / 停止共用这两个类） */
+  .send-btn, .attach-btn {
+    width: 42px; height: 42px;
+    min-width: 42px; min-height: 42px;
+  }
+  /* [#9] 输入行内边距收紧，把纵向空间还给消息区 */
+  .input-row { padding: 5px; gap: 6px; }
+
+  /* [#10] 底部安全区：max() 兜底，老内核 env() 返回 0 时仍有余量；
+         先写一条 16px 纯 calc 值，供不支持 max() 的旧内核降级使用 */
+  .inputbar {
+    padding-bottom: 16px;
+    padding-bottom: calc(10px + max(env(safe-area-inset-bottom), 6px));
+  }
+
+  /* [#5] 代理工作台双栏堆叠：脚本区 38% → minmax(120px, 30%)，把高度让给聊天区 */
+  #chatView.agent-mode {
+    grid-template-rows: minmax(120px, 30%) minmax(0, 1fr) auto;
+  }
+
+  /* [#7] 工具行强制单行（方案 b：不加 overflow-x:auto）。
+         若给 .toolbar-row 加 overflow，overflow-y 会被计算为 auto，
+         从而裁掉绝对定位在盒外的 .strength-expanded / .cap-panel，故此处只缩小胶囊。 */
+  .toolbar-row { flex-wrap: nowrap; gap: 6px; }
+  .strength-toggle, .cap-toggle { padding: 5px 11px; font-size: 12.5px; }
+
+  /* [#16] 悬浮助手缩小（72px → 60px），core 字号同步（inset 4px 不变） */
+  #floatAssistant { width: 60px; height: 60px; }
+  .assistant-core { font-size: 26px; }
+
+  /* [#14] P图视图在窄屏的基础收敛（480 段会进一步收紧） */
+  #psView .ps-panel { max-height: none; }
+}
+
+/* ------------------------------------------------------------------------------------------
+   [#1] 小屏手机精修（480）
+   [#2][#3][#6][#8][#11][#12][#13][#14]
+   ------------------------------------------------------------------------------------------ */
+@media (max-width: 480px) {
+
+  /* [#2] 顶栏：不换行 + 标题不被挤没 */
+  .topbar {
+    gap: 6px;
+    padding-left: calc(10px + env(safe-area-inset-left));
+    padding-right: calc(10px + env(safe-area-inset-right));
+  }
+  .topbar-title { min-width: 0; font-size: 14px; }
+
+  /* [#2] 顶栏模型下拉按钮收窄 + 降字号（不换行，靠 ellipsis 截断） */
+  .topbar .dd-btn,
+  #chatModelDD .dd-btn { max-width: 110px; font-size: 12px; padding: 6px 10px; }
+
+  /* [#2] 顶栏图标按钮略微收窄，给标题留出至少 1 行文本宽度 */
+  .topbar .icon-btn { width: 34px; height: 34px; }
+
+  /* [#3] 模型下拉：铺满视口宽、限高、贴右。
+         必须作用域到 #chatModelDD —— 否则 #psModelDD / #ddA~#ddD / #ddJ / 评测场下拉会溢出 */
+  #chatModelDD .dd-menu {
+    min-width: calc(100vw - 28px);
+    max-height: 55vh;
+    right: 0;
+    left: auto;
+  }
+  /* [#3] 菜单内三级滑块 / 标题 / 条目字号缩小 */
+  #chatModelDD .grp-seg.small .grp-seg-btn { font-size: 10px; padding: 4px 1px; }
+  #chatModelDD .dd-sub-title { font-size: 9.5px; letter-spacing: 0.4px; }
+  #chatModelDD .dd-item { font-size: 12.5px; padding: 9px 10px 9px 20px; }
+
+  /* [#6] 快捷指令行占高最大：小屏直接隐藏（bindPromptChips 用事件委托，隐藏元素仍可绑定） */
+  .prompt-row { display: none; }
+
+  /* [#8] 代理条压缩 */
+  .agent-hint { display: none; }
+  .agent-toggle { padding: 5px 10px; font-size: 11.5px; }
+
+  /* [#11] 键盘弹出时给 #app 一个最小高度保护，防止老内核算出畸形 --kb-h 把界面压扁 */
+  body.kb-open #app { min-height: 320px; }
+
+  /* [#12] 消息排版：气泡更宽，正文略小 */
+  .msg.user .bubble { max-width: 88%; }
+  .msg.assistant .bubble { max-width: 96%; }
+  .md { font-size: 14.5px; line-height: 1.65; }
+  .md pre { font-size: 12px; padding: 10px; }
+
+  /* [#13] 消息操作条换行、按钮不溢出（不改任何 font-size 到输入类元素） */
+  .msg-actions { gap: 5px; }
+  .msg-act { padding: 4px 8px; font-size: 11px; white-space: nowrap; }
+
+  /* [#14] P图视图：预览区更矮、头部取消 stiky、面板不再限高 */
+  #psView .ps-preview-wrap { min-height: 240px; }
+  #psView #psPreview { max-height: 38vh; }
+  #psView .ps-head { position: static; z-index: auto; }
+  #psView .ps-panel { max-height: none; overflow: visible; }
+}
+
+/* ------------------------------------------------------------------------------------------
+   [#19] 特性检测兜底：不支持 dvh 的旧内核（老 Android WebView）用 vh 顶替
+   只影响 ≤767px，≥768px 仍走文件前面既有的 @supports not (height:100dvh) 规则
+   ------------------------------------------------------------------------------------------ */
+@supports not (height: 100dvh) {
+  @media (max-width: 767px) {
+    body.kb-open #app { height: calc(100vh - var(--kb-h)); }
+    #sidebar { height: 100vh; }
+  }
+}
+
+/* ------------------------------------------------------------------------------------------
+   [#21] 明确保持（不新增任何输入类 font-size 声明）：
+   全局 * { -webkit-tap-highlight-color: transparent } 与
+   #chatInput,.set-input,.rag-input,...,textarea,select { font-size: 16px } 均保持不变，
+   本补丁不对上述元素新增 font-size，避免 iOS/老 Android 聚焦时页面自动放大。
+   ------------------------------------------------------------------------------------------ */
 </style>
 </head>
 <body>
@@ -1074,8 +1200,11 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
 <div id="app">
   <aside id="sidebar">
     <div class="side-logo">
-      <div class="logo-mark">⚡</div>
-      <div><b>studio Ultra</b><small>v13.7.1 旗舰版</small></div>
+      <div class="logo-mark">O</div>
+      <div style="display: flex; flex-direction: column; justify-content: center;">
+        <b style="font-size: 18px; letter-spacing: 0.5px;">O.M.N.I</b>
+        <small style="text-transform: uppercase; letter-spacing: 1px; font-size: 9px; color: var(--text-muted); margin-top: 2px;">Omni-Model Neural Interface</small>
+      </div>
     </div>
     <button id="newChatSideBtn" class="new-chat-btn">＋ 新建对话</button>
     <div class="session-label">对话记录</div>
@@ -1690,13 +1819,17 @@ class Particle {
     ctx.fill(); ctx.globalAlpha = 1;
   }
 }
-for (let i = 0; i < 60; i++) particles.push(new Particle());
+/* [#17] 粒子数量按视口宽度分档：小屏手机 28 / 窄窗 40 / 平板横屏 60 */
+const PARTICLE_COUNT = (window.innerWidth <= 480) ? 28 : (window.innerWidth <= 767 ? 40 : 60);
+for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
 
 /* [性能#14] 粒子动画随页面隐藏暂停：iPad 切到后台 / 切标签页时不再空转 rAF，
    省电、避免回前台时掉帧。注意：updateSliderUI 里对 particleSpeed 的修改不受影响。 */
 let particleRaf = 0;
 function animateParticles() {
   if (particleRaf) cancelAnimationFrame(particleRaf);
+    /* [#17] 粒子数为 0 时不启动 rAF（空数组早退，避免空转） */
+    if (!particles.length) { particleRaf = 0; return; }
   particleRaf = requestAnimationFrame(function tick() {
     ctx.clearRect(0, 0, width, height);
     particles.forEach(p => { p.update(); p.draw(); });
@@ -1885,7 +2018,7 @@ const VENDOR_BRAND = {
   hunyuan:   { name: '腾讯混元',    mark: 'H',   a: '#2563EB', b: '#93C5FD' },
   volc:      { name: '火山方舟',    mark: 'V',   a: '#F97316', b: '#FDBA74' },
   openrouter:{ name: 'OpenRouter',  mark: 'OR',  a: '#111827', b: '#6B7280' },
-  ollama:    { name: 'Ollama 本地', mark: 'OL',  a: '#111827', b: '#4B5563' }
+  ollama:    { name: 'O.M.N.I', mark: 'O',  a: '#111827', b: '#4B5563' }
 };
 
 function vendorKeyOf(modelId) {
@@ -2692,7 +2825,7 @@ function renderChat() {
   if (!s || !s.messages.length) {
     inner.dataset.sid = s ? s.id : '';
     inner.innerHTML = '';
-    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size:22px;color:var(--text-color);margin-bottom:10px;">studio Ultra</h2><p>v13.7.1 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
+    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size: 36px; font-weight: 900; color: var(--text-color); margin-bottom: 6px; letter-spacing: 2px;">O.M.N.I</h2><p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px;">Omni-Model Neural Interface</p><p style="font-size: 13px; color: var(--text-muted);">v13.7.1 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
     $('topbarTitle').textContent = '新对话';
     if (agentMode) renderScriptPane();
     return;
@@ -3201,7 +3334,7 @@ function resetEdgeTimer() {
 }
 
 floatAssistant.style.left = (window.innerWidth - 76) + 'px';
-floatAssistant.style.top = (window.innerHeight - 190) + 'px';
+floatAssistant.style.top = (window.innerWidth <= 767 ? Math.max(12, Math.round(window.innerHeight * 0.72)) : (window.innerHeight - 190)) + 'px';
 resetEdgeTimer();
 
 floatAssistant.addEventListener('pointerdown', e => {
@@ -4571,7 +4704,8 @@ function initVisualViewportFix() {
   const root = document.documentElement;
   if (!vv) return;
 
-  const THRESHOLD = 90;   // 小于该像素视为工具栏收缩/抖动，不是键盘
+  /* [#11] 手机竖屏（≤480px）工具栏本身更矮，抖动幅度更大，阈值提到 120 */
+  const THRESHOLD = (window.innerWidth <= 480) ? 120 : 90;   // 小于该像素视为工具栏收缩/抖动，不是键盘
   let rafId = 0;
   let lastKb = -1;
   let scrollTimer = 0;
@@ -4584,7 +4718,9 @@ function initVisualViewportFix() {
     rafId = 0;
     const raw = Math.round(layoutHeight() - vv.height - (vv.offsetTop || 0));
     // 双指缩放（scale > 1）时不要误判成键盘
-    const kb = (vv.scale > 1.02 || raw < THRESHOLD) ? 0 : raw;
+    /* [#11] 追加 raw > layoutHeight()*0.8 的异常值过滤：老 WebView 偶尔吐出畸形 vv.height，
+       会算出接近满屏的假键盘高度，把整个界面压扁 */
+    const kb = (vv.scale > 1.02 || raw < THRESHOLD || raw > layoutHeight() * 0.8) ? 0 : raw;
     if (kb === lastKb) return;
     lastKb = kb;
     root.style.setProperty('--kb-h', kb + 'px');
@@ -4890,7 +5026,7 @@ function initPencil() {
 function nativeShareOrCopy(text, title) {
   const body = String(text == null ? '' : text);
   if (!body) { showToast('没有可分享的内容'); return; }
-  const t = title || 'studio Ultra';
+  const t = title || 'O.M.N.I';
   if (typeof navigator.share === 'function') {
     try {
       const p = navigator.share({ title: t, text: body });
@@ -4960,7 +5096,7 @@ function handleShareClick(btn) {
     showToast('这条回复还没有内容可分享');
     return;
   }
-  let title = 'studio Ultra';
+  let title = 'O.M.N.I';
   try {
     const sess = sessions.find(function (x) { return x.id === currentId; });
     if (sess && sess.title) title = sess.title;
@@ -5825,7 +5961,7 @@ async function sendMessage() {
               mdEl.innerHTML = renderMarkdown(full);
               const sc2 = $('chatScroll');
               if (sc2.scrollHeight - sc2.scrollTop - sc2.clientHeight < 160) sc2.scrollTop = sc2.scrollHeight;
-            }, 60);
+            }, CHAT_PAINT_MS);
           }
         }
         const sc = $('chatScroll');
@@ -6102,7 +6238,8 @@ function psLoadFile(file) {
     /* [修复#5] 尺寸上限：4000×3000 的图进 psGetSourceData + psApplyPixelOps
        （sharpen 9 邻域 + beauty 双向模糊）会直接把 iPad 主线程卡死。
        最长边限制到 3000，等比缩放后再进管线。 */
-    const PS_MAX_EDGE = 3000;
+    /* [#15] 小屏手机降低像素管线上限（不改 psApplyPixelOps 本体，只降采样） */
+    const PS_MAX_EDGE = (window.innerWidth <= 480) ? 2000 : 3000;
     const k = Math.min(1, PS_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
     const oc = document.createElement('canvas');
     oc.width = Math.max(1, Math.round(img.naturalWidth * k));
@@ -6361,7 +6498,7 @@ function psApplyAuto(fn, label) {
    一张 4000×3000 的图单份可达 10MB+，20 步历史直接把 iPad Safari 撑爆（OOM / 白屏）。
    现在：最长边 1600 + JPEG 0.82，栈上限 20 → 12。 */
 const PS_HISTORY_MAX = 12;
-const PS_HISTORY_EDGE = 1600;
+const PS_HISTORY_EDGE = (window.innerWidth <= 480) ? 1200 : 1600;   /* [#15] 小屏历史快照降采样 */
 
 function psSnapshotDataURL(canvas) {
   if (!canvas || !canvas.width || !canvas.height) return '';
@@ -6900,7 +7037,7 @@ async function startDebate() {
     }
 
     $('copyFusionBtn').onclick = () => {
-      if (navigator.clipboard) navigator.share ? nativeShareOrCopy(judgeText, 'studio Ultra · 辩论裁决') : navigator.clipboard.writeText(judgeText).then(() => showToast('已复制裁决'), () => showToast('复制失败'));
+      if (navigator.clipboard) navigator.share ? nativeShareOrCopy(judgeText, 'O.M.N.I · 辩论裁决') : navigator.clipboard.writeText(judgeText).then(() => showToast('已复制裁决'), () => showToast('复制失败'));
       else showToast('当前环境不支持复制');
     };
     $('saveFusionBtn').onclick = () => {
@@ -8201,6 +8338,148 @@ try { enhanceSessionList(); } catch (e) { }
    #15 P图 Worker 化
        已在 psApplyPixelOps 上方留了完整 TODO 与 feature detect 方案，暂不实施。
    ================================================================================== */
+  /* ==========================================================================================
+     [MOBILE-PATCH] 手机端行为补丁（追加在 IIFE 末尾）
+     覆盖条目：#4 侧栏左滑关闭 / #16 悬浮助手视口约束 / #18 流式节流 / #19 特性检测 / #20 滚动关下拉
+     约束：
+       - 不覆盖任何既有函数语义，也不改既有函数签名（只追加监听 + 一个新声明）
+       - 不在此处调用 initVisualViewportFix()：它会重复绑定 visualViewport 监听（该方法已在前面调用过一次）
+       - 不重排既有 monkey-patch 链（renderChat / switchView / streamCompletion / psRender / renderSessions）
+       - 只用「视口宽度 + typeof 特性检测」，不出现任何 UA / 机型判断
+       - 新标识符统一 mob* / CHAT_PAINT_MS 前缀，避免与顶层 let/const 撞名导致 SyntaxError
+     ========================================================================================== */
+
+  /* [#18] 普通聊天流式节流间隔：≤480px 放宽到 80ms，其余保持 60ms。
+     用 var 声明，提升到 IIFE 函数作用域，供上方 onDelta 内的 setTimeout 使用；
+     该引用只在用户发消息后的回调里求值，那时本行早已执行，无 TDZ 问题 */
+  var CHAT_PAINT_MS = (window.innerWidth <= 480) ? 80 : 60;
+
+  (function mobPatch() {
+    'use strict';
+
+    /* [#19] 断点判断统一入口：优先 matchMedia（特性检测），退化到 innerWidth */
+    function mobIsNarrow(maxPx) {
+      try {
+        if (window.matchMedia) return window.matchMedia('(max-width:' + maxPx + 'px)').matches;
+      } catch (e) { /* 老内核 matchMedia 异常时走兜底 */ }
+      return (window.innerWidth || 0) <= maxPx;
+    }
+
+    /* ----------------------------------------------------------------------------------------
+       [#4] 侧栏「左滑关闭」手势（仅 ≤767px，且抽屉处于打开状态）
+       判定：水平位移 < -60px 且 |垂直位移| < 80px
+       全部监听 passive: true，不阻断侧栏内部纵向滚动
+       ---------------------------------------------------------------------------------------- */
+    function mobBindSidebarSwipe() {
+      var sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+
+      var sx = 0, sy = 0, tracking = false, fired = false;
+
+      sidebar.addEventListener('touchstart', function (e) {
+        tracking = false;
+        fired = false;
+        if (!mobIsNarrow(767)) return;                            /* 平板不启用 */
+        if (!sidebar.classList.contains('open')) return;           /* 仅抽屉打开时 */
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        sx = t.clientX;
+        sy = t.clientY;
+        tracking = true;
+      }, { passive: true });
+
+      sidebar.addEventListener('touchmove', function (e) {
+        if (!tracking || fired) return;
+        var t = e.touches && e.touches[0];
+        if (!t) return;
+        var dx = t.clientX - sx;
+        var dy = t.clientY - sy;
+        if (dx < -60 && Math.abs(dy) < 80) {
+          fired = true;              /* 一次手势只触发一次 */
+          tracking = false;
+          if (typeof closeDrawer === 'function') closeDrawer();
+        }
+      }, { passive: true });
+
+      sidebar.addEventListener('touchend', function () { tracking = false; }, { passive: true });
+      sidebar.addEventListener('touchcancel', function () { tracking = false; fired = false; }, { passive: true });
+    }
+
+    /* ----------------------------------------------------------------------------------------
+       [#20] 页面滚动（捕获阶段）关闭下拉菜单
+       必须先排除内部滚动容器，否则滚动 .dd-menu 自身会冒泡到 document 把菜单立刻关掉
+       ---------------------------------------------------------------------------------------- */
+    function mobBindScrollCloseDropdowns() {
+      document.addEventListener('scroll', function (e) {
+        var t = e.target;
+        if (t && t.closest && t.closest('.dd-menu, .dd')) return;  /* 菜单内部滚动不关 */
+        if (!document.querySelector('.dd-menu.open')) return;      /* 没有打开的下拉就免查 */
+        if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+      }, true);
+    }
+
+    /* ----------------------------------------------------------------------------------------
+       [#16] 悬浮助手：尺寸随断点变化（≤767px 为 60px，其余 72px），并在视口变化后重新夹回屏幕内
+       ---------------------------------------------------------------------------------------- */
+    function mobFloatSize() {
+      return mobIsNarrow(767) ? 60 : 72;
+    }
+
+    function mobClampFloatAssistant() {
+      var el = document.getElementById('floatAssistant');
+      if (!el) return;
+      if (el.classList.contains('dragging')) return;   /* 拖动中让 drag 逻辑独占位置 */
+      if (el.style.display === 'none') return;
+
+      var size = mobFloatSize();
+      var maxL = Math.max(0, (window.innerWidth || 0) - size);
+      var maxT = Math.max(0, (window.innerHeight || 0) - size);
+
+      var curL = parseFloat(el.style.left);
+      var curT = parseFloat(el.style.top);
+      if (!isFinite(curL)) curL = maxL;
+      if (!isFinite(curT)) curT = maxT;
+
+      var nl = Math.min(Math.max(curL, 0), maxL);
+      var nt = Math.min(Math.max(curT, 0), maxT);
+
+      /* 只有真的越界才写样式，避免与 #floatAssistant 的 left/top 过渡动画互相拉扯 */
+      if (Math.abs(nl - curL) > 0.5 || Math.abs(nt - curT) > 0.5) {
+        el.style.left = nl + 'px';
+        el.style.top = nt + 'px';
+      }
+    }
+
+    function mobBindFloatClamp() {
+      var run = function () { mobClampFloatAssistant(); };
+
+      window.addEventListener('resize', run);
+
+      /* 转屏：部分内核对 orientationchange 的 innerHeight 更新有延迟，延后一拍再夹 */
+      window.addEventListener('orientationchange', function () {
+        setTimeout(run, 250);
+      });
+
+      /* [#19] 特性检测：键盘弹出会改变 visualViewport 高度，重新夹一次防止助手被顶出屏幕 */
+      if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+        window.visualViewport.addEventListener('resize', run);
+      }
+    }
+
+    /* ---- 启动（顺序无关，均为纯监听 + 一次立即执行的夹取） ---- */
+    mobBindSidebarSwipe();          /* #4  */
+    mobBindScrollCloseDropdowns();  /* #20 */
+    mobBindFloatClamp();            /* #16 */
+    mobClampFloatAssistant();       /* #16 首屏立即夹一次，兜住已经被写死的旧坐标 */
+  })();
+
+  /* ==========================================================================================
+     说明（供后续维护，不是可执行代码）：
+     [#11] --kb-h 的监听只绑一次，THRESHOLD 与异常值过滤已就地改动，此处不再调用 initVisualViewportFix()
+     [#17] 粒子档位已就地改为按宽度 28/40/60，animateParticles 另有空数组早退，故此处无需再处理
+     [#21] 本补丁未对任何输入类元素（#chatInput / .set-input / .rag-input / textarea / select …）新增
+           font-size 声明，既有 16px 规则与 -webkit-tap-highlight-color 保持不变
+     ========================================================================================== */
 })();
 </script>
 </body>
