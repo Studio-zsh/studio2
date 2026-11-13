@@ -1079,6 +1079,9 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
    ------------------------------------------------------------------------------------------ */
 @media (max-width: 767px) {
 
+  /* [#2] 顶栏不换行：标题走 min-width:0 + 省略号，图标按钮略窄，模型按钮限宽 */
+  .topbar { flex-wrap: nowrap; }
+
   /* [#9] 触控目标 ≥42px（发送 / 附件 / 铅笔 / 停止共用这两个类） */
   .send-btn, .attach-btn {
     width: 42px; height: 42px;
@@ -4980,8 +4983,8 @@ function pencilSend() {
     return;
   }
   // 写入已有的图片发送队列（与 📎 上传共用同一条链路）
-  pendingImage = { dataUrl: dataUrl, name: 'pencil-' + Date.now() + '.png', kb: base64KB(dataUrl) };
-  renderPendingImage();
+  /* [#22] 走唯一写入口：画板图必须「替换」上一轮多图，不得残留 */
+  mobSetPending([{ dataUrl: dataUrl, name: 'pencil-' + Date.now() + '.png', kb: base64KB(dataUrl) }]);
   pencilClose();
   showToast('✏️ 手写图已加入待发送');
 }
@@ -6239,8 +6242,9 @@ function psLoadFile(file) {
        （sharpen 9 邻域 + beauty 双向模糊）会直接把 iPad 主线程卡死。
        最长边限制到 3000，等比缩放后再进管线。 */
     /* [#15] 小屏手机降低像素管线上限（不改 psApplyPixelOps 本体，只降采样） */
-    const PS_MAX_EDGE = (window.innerWidth <= 480) ? 2000 : 3000;
-    const k = Math.min(1, PS_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+    /* [#15] 档位按「短边」每次调用求值；只降采样，不改 psApplyPixelOps 本体 */
+    const mobMaxEdge = psMaxEdgeNow();
+    const k = Math.min(1, mobMaxEdge / Math.max(img.naturalWidth, img.naturalHeight));
     const oc = document.createElement('canvas');
     oc.width = Math.max(1, Math.round(img.naturalWidth * k));
     oc.height = Math.max(1, Math.round(img.naturalHeight * k));
@@ -6257,7 +6261,7 @@ function psLoadFile(file) {
       + ' → ' + oc.width + ' × ' + oc.height + ' px' + (k < 1 ? '（已缩放）' : '');
     psUpdateButtons();
     psRender();
-    showToast(k < 1 ? ('图片已载入（按最长边 ' + PS_MAX_EDGE + 'px 等比缩放）') : '图片已载入');
+    showToast(k < 1 ? ('图片已载入（按最长边 ' + mobMaxEdge + 'px 等比缩放）') : '图片已载入');
     URL.revokeObjectURL(url);
   });
 }
@@ -6498,13 +6502,13 @@ function psApplyAuto(fn, label) {
    一张 4000×3000 的图单份可达 10MB+，20 步历史直接把 iPad Safari 撑爆（OOM / 白屏）。
    现在：最长边 1600 + JPEG 0.82，栈上限 20 → 12。 */
 const PS_HISTORY_MAX = 12;
-const PS_HISTORY_EDGE = (window.innerWidth <= 480) ? 1200 : 1600;   /* [#15] 小屏历史快照降采样 */
 
 function psSnapshotDataURL(canvas) {
   if (!canvas || !canvas.width || !canvas.height) return '';
   try {
     const sw = canvas.width, sh = canvas.height;
-    const k = Math.min(1, PS_HISTORY_EDGE / Math.max(sw, sh));
+    const mobHistEdge = psHistoryEdgeNow();   /* [#15] 每次调用按短边求值 */
+    const k = Math.min(1, mobHistEdge / Math.max(sw, sh));
     if (k >= 1) return canvas.toDataURL('image/jpeg', 0.82);
     const tmp = document.createElement('canvas');
     tmp.width = Math.max(1, Math.round(sw * k));
@@ -6529,7 +6533,7 @@ function psPushHistory() {
 
 function psRestoreFromDataURL(url) {
   psCanvasToImage(url, img => {
-    /* [修复#4] 快照是降采样过的（最长边 1600），恢复时必须放大回 psState.original
+    /* [修复#4] 快照是降采样过的（短边档位：≤480 为 1200 / 其余 1600），恢复时必须放大回 psState.original
        的尺寸，否则后续 psRender / psApplyPixelOps 的坐标系会和原图不一致。 */
     const ow = (psState.original && psState.original.width) || img.width;
     const oh = (psState.original && psState.original.height) || img.height;
@@ -7564,6 +7568,37 @@ $('attachBtn').onclick = () => {
 };
 
 $('imageFile').onchange = async (e) => {
+  /* [#23] 唯一 onchange：多图与单图在同一个处理函数内分支，外部不再包一层 onchange */
+  {
+    const mobFiles = Array.prototype.slice.call((e.target && e.target.files) || []);
+    if (mobFiles.length > 1) {
+      const mobBtn = $('attachBtn');
+      if (mobBtn) mobBtn.classList.add('loading');
+      try {
+        const mobPicked = mobFiles.slice(0, 4);
+        if (mobFiles.length > 4) showToast('一次最多 4 张，已取前 4 张');
+        if (mobPicked.some(function (f) { return f.type && !/^image\//i.test(f.type); })) {
+          showToast('只支持图片文件'); return;
+        }
+        if (mobPicked.some(function (f) { return f.size > 12 * 1024 * 1024; })) {
+          showToast('图片太大（>12MB），请先压缩再上传'); return;
+        }
+        const mobOut = [];
+        for (let i = 0; i < mobPicked.length; i++) {
+          try {
+            const dataUrl = await processImage(mobPicked[i], 1280);
+            if (dataUrl) mobOut.push({ dataUrl: dataUrl, name: mobPicked[i].name || ('图片' + (i + 1)), kb: base64KB(dataUrl) });
+          } catch (mobErr) {}
+        }
+        if (!mobOut.length) { showToast('图片处理失败'); mobSetPending([]); }
+        else mobSetPending(mobOut);
+      } finally {
+        e.target.value = '';
+        if (mobBtn) mobBtn.classList.remove('loading');
+      }
+      return;
+    }
+  }
   const file = (e.target.files && e.target.files[0]) || null;
   if (!file) return;
   if (file.type && !/^image\//i.test(file.type)) { showToast('只支持图片文件'); e.target.value = ''; return; }
@@ -7574,14 +7609,12 @@ $('imageFile').onchange = async (e) => {
   showToast('正在压缩图片…');
   try {
     const dataUrl = await processImage(file);
-    pendingImage = { dataUrl: dataUrl, name: file.name || '图片', kb: base64KB(dataUrl) };
-    renderPendingImage();
+    mobSetPending([{ dataUrl: dataUrl, name: file.name || '图片', kb: base64KB(dataUrl) }]);   /* [#22] 走唯一写入口 */
     const mm = modelById(chatModel);
     showToast(mm.hasVision ? '图片已就绪，将直接发给当前视觉模型' : '图片已就绪，将先用 ' + visionModelName() + ' 解析');
   } catch (err) {
     showToast('图片处理失败：' + (err && err.message ? err.message : '未知错误'));
-    pendingImage = null;
-    renderPendingImage();
+    mobSetPending([]);   /* [#22] 双队列同步清空 */
   } finally {
     e.target.value = '';
     if (btn) btn.classList.remove('loading');
@@ -7903,16 +7936,19 @@ function renderAttachStrip() {
   });
 }
 
+/* [#22] 双队列唯一写入口：pendingImage 恒等于 pendingImages[0]（或 null），
+   两套缩略图 DOM（#attachPreview 单图 / #attachStrip 多图）同步刷新。
+   注意：内部绝不调用 clearPendingImage，避免与其兼容壳互相递归。 */
+function mobSetPending(list) {
+  pendingImages = (list || []).slice();
+  pendingImage = pendingImages.length ? pendingImages[0] : null;
+  if (typeof renderPendingImage === 'function') renderPendingImage();
+  renderAttachStrip();
+}
+
 function removePendingImageAt(i) {
   pendingImages.splice(i, 1);
-  if (pendingImages.length) {
-    pendingImage = pendingImages[0];
-    if (typeof renderPendingImage === 'function') renderPendingImage();
-  } else {
-    pendingImage = null;
-    if (typeof clearPendingImage === 'function') clearPendingImage();
-  }
-  renderAttachStrip();
+  mobSetPending(pendingImages);   /* [#22] 统一走写入口，不再直写 pendingImage */
 }
 
 /* 兼容壳：原有 clearPendingImage 只清单图对象，这里一并清掉 pendingImages 与缩略图条，
@@ -7924,33 +7960,7 @@ clearPendingImage = function clearPendingImageEnhanced() {
   return clearPendingImageBase();
 };
 
-(function wrapImageInput() {
-  const input = $('imageFile');
-  if (!input) return;
-  const baseChange = input.onchange;
-  input.onchange = async function (ev) {
-    const files = Array.prototype.slice.call((ev.target && ev.target.files) || []);
-    if (files.length <= 1) {           /* 单图：原逻辑不动 */
-      pendingImages = [];
-      renderAttachStrip();
-      if (baseChange) return baseChange.call(this, ev);
-      return;
-    }
-    const out = [];
-    for (let i = 0; i < Math.min(files.length, 4); i++) {
-      try {
-        const dataUrl = await processImage(files[i], 1280);
-        if (dataUrl) out.push({ dataUrl: dataUrl, name: files[i].name || ('图片' + (i + 1)), kb: base64KB(dataUrl) });
-      } catch (e) {}
-    }
-    if (!out.length) { if (baseChange) return baseChange.call(this, ev); return; }
-    if (files.length > 4) showToast('一次最多 4 张，已取前 4 张');
-    pendingImages = out;
-    pendingImage = out[0];
-    if (typeof renderPendingImage === 'function') renderPendingImage();
-    renderAttachStrip();
-  };
-})();
+
 
 /* ------------------- [体验#16/#17/#26] 复制 / 编辑后重发 / 重新生成 / 重试 ------------------- */
 function currentSession() {
@@ -7983,12 +7993,9 @@ async function rewindAndResend(userIdx, autoSend) {
   const imgs = (um.images && um.images.length) ? um.images.slice() : (um.image ? [um.image] : []);
   s.messages = s.messages.slice(0, userIdx);
 
-  pendingImages = imgs.map(function (d, i) {
+  mobSetPending(imgs.map(function (d, i) {
     return { dataUrl: d, name: 'restored-' + (i + 1) + '.png', kb: base64KB(d) };
-  });
-  pendingImage = pendingImages.length ? pendingImages[0] : null;
-  if (pendingImage && typeof renderPendingImage === 'function') renderPendingImage();
-  renderAttachStrip();
+  }));
 
   const ci = $('chatInput');
   if (ci) ci.value = text;
@@ -8352,6 +8359,12 @@ try { enhanceSessionList(); } catch (e) { }
   /* [#18] 普通聊天流式节流间隔：≤480px 放宽到 80ms，其余保持 60ms。
      用 var 声明，提升到 IIFE 函数作用域，供上方 onDelta 内的 setTimeout 使用；
      该引用只在用户发消息后的回调里求值，那时本行早已执行，无 TDZ 问题 */
+  /* [#15] 档位阈值按「短边」每次调用求值：转屏 / 分屏后立即生效，不写死模块级常量。
+     function 声明带提升，psLoadFile / psSnapshotDataURL 运行时调用一定已可用（无 TDZ 问题） */
+  function mobViewportShortEdge() { return Math.min(window.innerWidth || 0, window.innerHeight || 0); }
+  function psMaxEdgeNow() { return mobViewportShortEdge() <= 480 ? 2000 : 3000; }
+  function psHistoryEdgeNow() { return mobViewportShortEdge() <= 480 ? 1200 : 1600; }
+
   var CHAT_PAINT_MS = (window.innerWidth <= 480) ? 80 : 60;
 
   (function mobPatch() {
@@ -8422,6 +8435,10 @@ try { enhanceSessionList(); } catch (e) { }
        [#16] 悬浮助手：尺寸随断点变化（≤767px 为 60px，其余 72px），并在视口变化后重新夹回屏幕内
        ---------------------------------------------------------------------------------------- */
     function mobFloatSize() {
+      /* [#16] 尺寸优先取实际渲染值，避免 CSS(60px) 与 JS(72) 写死值不同步 */
+      var el = document.getElementById('floatAssistant');
+      var rw = el ? Math.round(el.getBoundingClientRect().width) : 0;
+      if (rw > 0) return rw;
       return mobIsNarrow(767) ? 60 : 72;
     }
 
@@ -8468,6 +8485,27 @@ try { enhanceSessionList(); } catch (e) { }
 
     /* ---- 启动（顺序无关，均为纯监听 + 一次立即执行的夹取） ---- */
     mobBindSidebarSwipe();          /* #4  */
+    /* [#23] 多图选择只在手机断点启用：≥768px 的现有单选表现原样保留 */
+    function mobEnableMultiPick() {
+      var input = document.getElementById('imageFile');
+      if (!input) return;
+      var apply = function () {
+        var narrow = (typeof window.matchMedia === 'function')
+          ? window.matchMedia('(max-width: 767px)').matches
+          : (window.innerWidth <= 767);
+        input.multiple = narrow;
+      };
+      apply();
+      if (typeof window.matchMedia === 'function') {
+        var mq = window.matchMedia('(max-width: 767px)');
+        if (typeof mq.addEventListener === 'function') mq.addEventListener('change', apply);
+        else if (typeof mq.addListener === 'function') mq.addListener(apply);
+      } else if (typeof window.addEventListener === 'function') {
+        window.addEventListener('resize', apply);
+      }
+    }
+    mobEnableMultiPick();            /* [#23] */
+
     mobBindScrollCloseDropdowns();  /* #20 */
     mobBindFloatClamp();            /* #16 */
     mobClampFloatAssistant();       /* #16 首屏立即夹一次，兜住已经被写死的旧坐标 */
