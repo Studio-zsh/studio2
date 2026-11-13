@@ -1194,6 +1194,20 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
    #chatInput,.set-input,.rag-input,...,textarea,select { font-size: 16px } 均保持不变，
    本补丁不对上述元素新增 font-size，避免 iOS/老 Android 聚焦时页面自动放大。
    ------------------------------------------------------------------------------------------ */
+/* ==========================================================================================
+   === [I18N] 语言切换按钮：防变形（英文更长，禁止撑爆顶栏） ===
+   ========================================================================================== */
+.lang-btn{
+  flex:0 0 auto; flex-shrink:0; width:auto;
+  min-width:46px; max-width:64px; height:36px;
+  padding:0 9px; gap:4px;
+  font-size:11.5px; font-weight:800; line-height:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#langToggleText{ letter-spacing:.4px; }
+@media (max-width:480px){
+  .topbar .lang-btn{ min-width:40px; max-width:52px; height:34px; padding:0 6px; font-size:10.5px; }
+}
 </style>
 </head>
 <body>
@@ -1209,23 +1223,24 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
         <small style="text-transform: uppercase; letter-spacing: 1px; font-size: 9px; color: var(--text-muted); margin-top: 2px;">Omni-Model Neural Interface</small>
       </div>
     </div>
-    <button id="newChatSideBtn" class="new-chat-btn">＋ 新建对话</button>
-    <div class="session-label">对话记录</div>
+    <button id="newChatSideBtn" class="new-chat-btn" data-i18n="btn_new_chat">＋ 新建对话</button>
+    <div class="session-label" data-i18n="session_list_label">对话记录</div>
     <div id="sessionList" class="session-list"></div>
     <div class="side-nav">
-      <button id="navDebateBtn">⚔️ 多 Agent 辩论</button>
-      <button id="navPsBtn">🎨 智能修图</button>
-      <button id="navEvalBtn">🏟️ 模型评估场</button>
-      <button id="navSettingsBtn">⚙️ 设置</button>
+      <button id="navDebateBtn" data-i18n="nav_debate">⚔️ 多 Agent 辩论</button>
+      <button id="navPsBtn" data-i18n="nav_ps">🎨 智能修图</button>
+      <button id="navEvalBtn" data-i18n="nav_eval">🏟️ 模型评估场</button>
+      <button id="navSettingsBtn" data-i18n="nav_settings">⚙️ 设置</button>
     </div>
   </aside>
   <div id="overlay"></div>
 
   <div id="main">
     <header class="topbar">
-      <button id="menuBtn" class="icon-btn" title="打开侧边栏" aria-label="打开侧边栏">☰</button>
+      <button id="menuBtn" class="icon-btn" title="打开侧边栏" aria-label="打开侧边栏" data-i18n-title="menu_open" data-i18n-aria-label="menu_open">☰</button>
       <div id="topbarTitle" class="topbar-title">新对话</div>
-      <button id="newChatBtn" class="icon-btn" title="新建对话">＋</button>
+      <button id="newChatBtn" class="icon-btn" title="新建对话" data-i18n-title="topbar_btn_new_chat">＋</button>
+      <button id="langToggleBtn" class="icon-btn lang-btn" type="button" title="切换语言" aria-label="切换语言" data-i18n-title="lang_switch">🌐<span id="langToggleText">EN</span></button>
       <div id="chatModelDD"></div>
     </header>
 
@@ -1269,24 +1284,24 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
 
       <div class="inputbar">
         <div class="api-warning-bar" id="apiWarningBar">
-          <span class="api-warning-text" id="apiWarnText">该模型未绑定 API</span>
-          <span class="api-warning-link" id="apiWarnLink">去添加</span>
+          <span class="api-warning-text" id="apiWarnText" data-i18n="api_warn_nokey">该模型未绑定 API</span>
+          <span class="api-warning-link" id="apiWarnLink" data-i18n="api_warn_add">去添加</span>
         </div>
 
         <!-- 技能胶囊：与普通聊天共用同一个输入条，点胶囊即切到对应技能（P图是其中之一） -->
         <div class="skill-row" id="skillRow" role="tablist" aria-label="技能胶囊">
-          <button class="skill-chip active" type="button" data-skill="chat" role="tab">💬 对话</button>
-          <button class="skill-chip skill-chip-ps" type="button" data-skill="ps" role="tab">🎨 智能修图</button>
-          <button class="skill-chip" type="button" data-skill="debate" role="tab">⚔️ 多 Agent 辩论</button>
-          <button class="skill-chip" type="button" data-skill="eval" role="tab">🏟️ 模型评估场</button>
-          <button class="skill-chip" type="button" data-skill="settings" role="tab">⚙️ 模型与 Key</button>
+          <button class="skill-chip active" type="button" data-skill="chat" role="tab" data-i18n="skill_chat">💬 对话</button>
+          <button class="skill-chip skill-chip-ps" type="button" data-skill="ps" role="tab" data-i18n="skill_ps">🎨 智能修图</button>
+          <button class="skill-chip" type="button" data-skill="debate" role="tab" data-i18n="skill_debate">⚔️ 多 Agent 辩论</button>
+          <button class="skill-chip" type="button" data-skill="eval" role="tab" data-i18n="skill_eval">🏟️ 模型评估场</button>
+          <button class="skill-chip" type="button" data-skill="settings" role="tab" data-i18n="skill_settings">⚙️ 模型与 Key</button>
         </div>
                 <!-- 快捷指令：独立一行，与技能胶囊互不干扰 -->
         <div class="prompt-row" id="promptRow" aria-label="快捷指令">
-          <button class="prompt-chip" type="button" data-prompt="explain">🧠 解释代码</button>
-          <button class="prompt-chip" type="button" data-prompt="bug">🐞 找 Bug</button>
-          <button class="prompt-chip" type="button" data-prompt="perf">⚡ 性能优化</button>
-          <button class="prompt-chip" type="button" data-prompt="review">✅ 代码审查</button>
+          <button class="prompt-chip" type="button" data-prompt="explain" data-i18n="prompt_explain">🧠 解释代码</button>
+          <button class="prompt-chip" type="button" data-prompt="bug" data-i18n="prompt_bug">🐞 找 Bug</button>
+          <button class="prompt-chip" type="button" data-prompt="perf" data-i18n="prompt_perf">⚡ 性能优化</button>
+          <button class="prompt-chip" type="button" data-prompt="review" data-i18n="prompt_review">✅ 代码审查</button>
         </div>
         <div class="toolbar-row">
           <div class="strength-wrapper">
@@ -1303,13 +1318,13 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
                 <div class="sc-left">
                   <span class="sc-ico">⚡</span>
                   <div>
-                    <div class="sc-name">双倍检查</div>
+                    <div class="sc-name" data-i18n="double_check">双倍检查</div>
                     <div class="sc-desc">自我检查 · 两遍生成</div>
                   </div>
                 </div>
                 <button class="sc-switch" id="scSwitch" type="button" aria-pressed="false" data-on="0">
                   <span class="sc-thumb"></span>
-                  <span class="sc-seg sc-off">未开启</span>
+                  <span class="sc-seg sc-off" data-i18n="double_check_off">未开启</span>
                   <span class="sc-seg sc-on">开启</span>
                 </button>
               </div>
@@ -1321,11 +1336,11 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
                 <input type="range" id="strengthRange" min="0" max="4" step="1" value="2">
               </div>
               <div class="slider-labels">
-                <span data-i="0">极低</span>
-                <span data-i="1">低</span>
-                <span data-i="2" class="active">中</span>
-                <span data-i="3">高</span>
-                <span data-i="4">Ultra</span>
+                <span data-i="0" data-i18n="strength_vlow">极低</span>
+                <span data-i="1" data-i18n="strength_low">低</span>
+                <span data-i="2" class="active" data-i18n="strength_mid">中</span>
+                <span data-i="3" data-i18n="strength_high">高</span>
+                <span data-i="4" data-i18n="strength_ultra">Ultra</span>
               </div>
 
               <div class="panel-hints">
@@ -1338,7 +1353,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
           <!-- 能力胶囊 -->
           <div class="cap-wrapper" id="capWrapper">
             <button id="capToggle" class="cap-toggle">
-              <span>✨ 能力</span>
+              <span data-i18n="cap_toggle">✨ 能力</span>
               <span class="cap-count hidden" id="capCount">0</span>
               <span id="capArrow" style="font-size:10px; opacity:0.5; margin-left:2px;">▲</span>
             </button>
@@ -1366,7 +1381,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
 
         <div class="agent-bar">
           <button id="agentToggle" class="agent-toggle" type="button" aria-pressed="false" data-on="0">
-            <span>🤖 代理工作台</span>
+            <span data-i18n="agent_toggle">🤖 代理工作台</span>
             <span class="agent-switch"><span class="agent-thumb"></span></span>
           </button>
           <span class="agent-hint" id="agentHint">关闭 · 普通对话</span>
@@ -1378,7 +1393,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
             <button class="attach-remove" id="attachRemove" type="button" title="移除图片">×</button>
           </div>
           <div class="attach-meta">
-            <div class="attach-name" id="attachName">待发送图片</div>
+            <div class="attach-name" id="attachName" data-i18n="attach_pending">待发送图片</div>
             <div class="attach-sub" id="attachSub"></div>
           </div>
         </div>
@@ -1387,7 +1402,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
           <button id="attachBtn" class="attach-btn" type="button" title="上传图片" aria-label="上传图片">📎</button>
           <button id="pencilBtn" class="attach-btn" type="button" title="Apple Pencil 画板" aria-label="打开画板">✏️</button>
           <input type="file" id="imageFile" accept="image/*" hidden>
-          <textarea id="chatInput" rows="1" placeholder="给 AI 发送消息…（可附一张图片）"></textarea>
+          <textarea id="chatInput" rows="1" placeholder="给 AI 发送消息…（可附一张图片）" data-i18n-placeholder="input_placeholder"></textarea>
           <button id="sendBtn" class="send-btn">↑</button>
           <button id="stopBtn" class="send-btn hidden" style="background:#1f2937;">■</button>
         </div>
@@ -2188,6 +2203,316 @@ const escapeHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replac
 const modelById = id => MODELS.find(m => m.id === id) || MODELS[0];
 const timeAgo = ts => { let d = new Date(ts), now = new Date(); if(d.toDateString()===now.toDateString()) return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate(); };
 
+/* ==========================================================================================
+   === [I18N] 中英文切换核心引擎（v1 · 纯原生 · 零依赖 · 不污染既有全局） ===
+   用法：
+     静态：<button data-i18n="btn_new_chat">发送</button>
+     占位符：<input data-i18n-placeholder="input_placeholder">
+     悬浮：<button data-i18n-title="lang_switch">
+     动态：'<div>' + t('msg_copy') + '</div>'  /  `${t('char_count', { n: n })}`
+     注意：若某函数内已有局部变量 t（如 const t = $('toast')），该作用域内请用 I18N.t(...)
+   持久化：localStorage['autoPro_lang']（唯一新增键，值 zh | en）
+   ========================================================================================== */
+const I18N_LANG_KEY = 'autoPro_lang';
+
+const I18N_DICT = {
+  zh: {
+    /* 顶栏 / 通用 */
+    lang_switch: '切换语言',
+    menu_open: '打开侧边栏',
+    topbar_btn_new_chat: '新建对话',
+    topbar_new_chat: '新对话',
+    btn_new_chat: '＋ 新建对话',
+    session_list_label: '对话记录',
+    sessions_empty: '暂无对话',
+    empty_brand: 'v13.7.1 旗舰版 · 支持代理工作台与视觉代理',
+    empty_hint: '输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片',
+    /* 输入区 */
+    input_placeholder: '给 AI 发送消息…（可附一张图片）',
+    input_placeholder_agent: '描述你想改的代码…左侧脚本区会预览补丁',
+    char_count: '{n} 字',
+    attach_pending: '待发送图片',
+    /* 导航 / 技能 / 预设 */
+    nav_debate: '⚔️ 多 Agent 辩论',
+    nav_ps: '🎨 智能修图',
+    nav_eval: '🏟️ 模型评估场',
+    nav_settings: '⚙️ 设置',
+    skill_chat: '💬 对话',
+    skill_ps: '🎨 智能修图',
+    skill_debate: '⚔️ 多 Agent 辩论',
+    skill_eval: '🏟️ 模型评估场',
+    skill_settings: '⚙️ 模型与 Key',
+    prompt_explain: '🧠 解释代码',
+    prompt_bug: '🐞 找 Bug',
+    prompt_perf: '⚡ 性能优化',
+    prompt_review: '✅ 代码审查',
+    /* 强度 / 开关 */
+    strength_vlow: '极低',
+    strength_low: '低',
+    strength_mid: '中',
+    strength_high: '高',
+    strength_ultra: 'Ultra',
+    double_check: '双倍检查',
+    double_check_off: '未开启',
+    double_check_on: '开启',
+    cap_toggle: '✨ 能力',
+    agent_toggle: '🤖 代理工作台',
+    /* 下拉 / 提示 / Toast */
+    dd_none: '🚫 无（不参与）',
+    dd_none_plain: '无',
+    dd_skip: '跳过',
+    dd_free: '🆓可用',
+    dd_paid: '💰付费',
+    dd_free_short: '🆓',
+    dd_paid_short: '💰',
+    dd_need_key: '请先在设置中配置 {name} Key',
+    api_warn_nokey: '该模型未绑定 API',
+    api_warn_add: '去添加',
+    toast_add_key: '＋ 添加 {name} API',
+    toast_saved: '已保存',
+    /* 消息操作 */
+    msg_copy: '📋 复制',
+    msg_regen: '🔄 重新生成',
+    msg_retry: '🔄 重试',
+    msg_share: '📤 分享',
+    msg_edit_resend: '✏️ 编辑后重发',
+    msg_double_check: '⚡ 双倍检查'
+  },
+  en: {
+    lang_switch: 'Switch language',
+    menu_open: 'Open sidebar',
+    topbar_btn_new_chat: 'New chat',
+    topbar_new_chat: 'New chat',
+    btn_new_chat: '+ New chat',
+    session_list_label: 'History',
+    sessions_empty: 'No chats',
+    empty_brand: 'v13.7.1 Flagship · Agent workbench & vision agent',
+    empty_hint: 'Enable “🤖 Agent” above the input · 📎 on the left uploads images',
+    input_placeholder: 'Message AI… (1 image ok)',
+    input_placeholder_agent: 'Describe the code change…',
+    char_count: '{n} chars',
+    attach_pending: 'Image pending',
+    nav_debate: '⚔️ Debate',
+    nav_ps: '🎨 Retouch',
+    nav_eval: '🏟️ Eval',
+    nav_settings: '⚙️ Settings',
+    skill_chat: '💬 Chat',
+    skill_ps: '🎨 Retouch',
+    skill_debate: '⚔️ Debate',
+    skill_eval: '🏟️ Eval',
+    skill_settings: '⚙️ Models',
+    prompt_explain: '🧠 Explain',
+    prompt_bug: '🐞 Find bugs',
+    prompt_perf: '⚡ Optimize',
+    prompt_review: '✅ Review',
+    strength_vlow: 'Min',
+    strength_low: 'Low',
+    strength_mid: 'Mid',
+    strength_high: 'High',
+    strength_ultra: 'Ultra',
+    double_check: 'Double-check',
+    double_check_off: 'Off',
+    double_check_on: 'On',
+    cap_toggle: '✨ Skills',
+    agent_toggle: '🤖 Agent',
+    dd_none: '🚫 None (skip)',
+    dd_none_plain: 'None',
+    dd_skip: 'skip',
+    dd_free: '🆓 Free',
+    dd_paid: '💰 Paid',
+    dd_free_short: '🆓',
+    dd_paid_short: '💰',
+    dd_need_key: 'Set up {name} Key first',
+    api_warn_nokey: 'No API bound',
+    api_warn_add: 'Add',
+    toast_add_key: '+ Add {name} API',
+    toast_saved: 'Saved',
+    msg_copy: '📋 Copy',
+    msg_regen: '🔄 Regenerate',
+    msg_retry: '🔄 Retry',
+    msg_share: '📤 Share',
+    msg_edit_resend: '✏️ Edit & resend',
+    msg_double_check: '⚡ Double-check'
+  }
+};
+
+/* 当前语言：'zh' | 'en'（默认中文，切英文由 autoPro_lang 记忆） */
+let I18N_LANG = 'zh';
+
+/* key 是否在字典中存在（守卫：避免把 key 字符串写进未翻译节点） */
+function i18nHasKey(key) {
+  if (!key) return false;
+  try {
+    const zh = I18N_DICT.zh || {}, en = I18N_DICT.en || {};
+    return Object.prototype.hasOwnProperty.call(zh, key) || Object.prototype.hasOwnProperty.call(en, key);
+  } catch (e) { return false; }
+}
+
+/* 取文案：当前语言 → 中文兜底 → 返回 key 本身；支持 {name} 占位；永不抛错 */
+function t(key, params) {
+  try {
+    if (!key) return '';
+    const lang = (I18N_LANG === 'en') ? 'en' : 'zh';
+    const primary = I18N_DICT[lang] || {};
+    let s = Object.prototype.hasOwnProperty.call(primary, key) ? primary[key] : null;
+    if (s === null || s === undefined) {
+      const zh = I18N_DICT.zh || {};
+      s = Object.prototype.hasOwnProperty.call(zh, key) ? zh[key] : null;
+    }
+    if (s === null || s === undefined) return key;
+    if (params && typeof s === 'string' && s.indexOf('{') !== -1) {
+      s = s.replace(/\{(\w+)\}/g, function (m0, k) {
+        return (params[k] === undefined || params[k] === null) ? m0 : String(params[k]);
+      });
+    }
+    return s;
+  } catch (e) { return key; }
+}
+
+function getLang() { return (I18N_LANG === 'en') ? 'en' : 'zh'; }
+
+/* 全局重渲染：切换语言后把 innerHTML 拼接出来的动态区域全部重画一遍 */
+function rerenderAllForLang() {
+  const tasks = [
+    function () { renderSelfSwitch(); },
+    function () { refreshHints(); },
+    function () {
+      const active = document.querySelector('.slider-labels span.active');
+      const idx = active ? Number(active.getAttribute('data-i')) : 0;
+      if (typeof updateSliderUI === 'function') updateSliderUI(isNaN(idx) ? 0 : idx);
+    },
+    function () { updateCharCount(); },
+    function () { renderSessions(); },
+    /* renderChat 有增量短路：先清 sid，强制整段重建，避免旧语言文本残留 */
+    function () { const inner = document.getElementById('chatInner'); if (inner) inner.dataset.sid = ''; },
+    function () { renderChat(); },
+    function () { renderAgentToggle(); },
+    function () { renderUsageList(); },
+    function () { renderRagList(); },
+    function () { renderProviderKeys(); },
+    function () { renderGroupMode(); },
+    function () { renderModelCatStats(); },
+    function () { renderBrandWatermark(); },
+    function () { renderEvalModels(); },
+    function () { syncEvalRoundsUI(); },
+    function () { updateEstimate(); },
+    function () { psSyncSliders(); },
+    function () { psMarkBeauty(); },
+    function () { psSyncSkillChips(); }
+  ];
+  for (let i = 0; i < tasks.length; i++) {
+    try { tasks[i](); } catch (e) { /* 单项失败不影响其它区域 */ }
+  }
+}
+
+/* 应用语言：写 localStorage / html[lang] / 静态节点 / 占位符 / 悬浮提示 / 重渲染 */
+function applyLanguage(lang, opts) {
+  const o = opts || {};
+  const prev = getLang();
+  const next = (lang === 'en') ? 'en' : 'zh';
+  I18N_LANG = next;
+
+  try { localStorage.setItem(I18N_LANG_KEY, next); } catch (e) {}
+  try { document.documentElement.lang = (next === 'en') ? 'en' : 'zh-CN'; } catch (e) {}
+
+  /* 1) 静态文本 */
+  try {
+    const nodes = document.querySelectorAll('[data-i18n]');
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i], key = el.getAttribute('data-i18n');
+      if (!i18nHasKey(key)) continue;
+      const val = t(key);
+      const tag = el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') el.value = val;
+      else el.textContent = val;
+    }
+  } catch (e) {}
+
+  /* 2) 输入框占位符 */
+  try {
+    const ph = document.querySelectorAll('[data-i18n-placeholder]');
+    for (let i = 0; i < ph.length; i++) {
+      const el = ph[i], key = el.getAttribute('data-i18n-placeholder');
+      if (!i18nHasKey(key)) continue;
+      el.placeholder = t(key);
+    }
+  } catch (e) {}
+
+  /* 3) title 悬浮提示 */
+  try {
+    const ti = document.querySelectorAll('[data-i18n-title]');
+    for (let i = 0; i < ti.length; i++) {
+      const el = ti[i], key = el.getAttribute('data-i18n-title');
+      if (!i18nHasKey(key)) continue;
+      el.title = t(key);
+    }
+  } catch (e) {}
+
+  /* 4) aria-label */
+  try {
+    const al = document.querySelectorAll('[data-i18n-aria-label]');
+    for (let i = 0; i < al.length; i++) {
+      const el = al[i], key = el.getAttribute('data-i18n-aria-label');
+      if (!i18nHasKey(key)) continue;
+      el.setAttribute('aria-label', t(key));
+    }
+  } catch (e) {}
+
+  /* 5) 按钮自身文案：中文态显示 EN，英文态显示「中」 */
+  try {
+    const langText = document.getElementById('langToggleText');
+    if (langText) langText.textContent = (next === 'en') ? '中' : 'EN';
+    const langBtn = document.getElementById('langToggleBtn');
+    if (langBtn) {
+      const label = t('lang_switch');
+      langBtn.title = label;
+      langBtn.setAttribute('aria-label', label);
+    }
+  } catch (e) {}
+
+  /* 6) 全局重渲染（防 innerHTML 覆盖） */
+  if (o.rerender !== false && (prev !== next || o.force === true)) {
+    rerenderAllForLang();
+  }
+  return next;
+}
+
+function setLanguage(lang) { return applyLanguage(lang, { force: true }); }
+
+function toggleLanguage() { return applyLanguage(getLang() === 'en' ? 'zh' : 'en', { force: true }); }
+
+/* 启动：读 localStorage → 应用语言 → 绑定切换按钮（在 IIFE 最末尾调用一次） */
+function initI18n() {
+  let saved = 'zh';
+  try { saved = localStorage.getItem(I18N_LANG_KEY) || 'zh'; } catch (e) {}
+  if (saved !== 'en' && saved !== 'zh') saved = 'zh';
+
+  const btn = document.getElementById('langToggleBtn');
+  if (btn) {
+    btn.onclick = function (ev) {
+      try { if (ev && ev.preventDefault) ev.preventDefault(); } catch (e) {}
+      toggleLanguage();
+    };
+  }
+  applyLanguage(saved, { rerender: saved === 'en', force: saved === 'en' });
+  return saved;
+}
+
+/* 对外只暴露一个命名空间（模块内仍可直接用 t / I18N.t） */
+const I18N = {
+  t: t,
+  has: i18nHasKey,
+  getLang: getLang,
+  setLanguage: setLanguage,
+  toggleLanguage: toggleLanguage,
+  applyLanguage: applyLanguage,
+  rerenderAll: rerenderAllForLang,
+  init: initI18n,
+  dict: I18N_DICT
+};
+try { window.OMNI_I18N = I18N; window.t = t; } catch (e) {}
+
+
 /* modelId → provider：先查 MODELS 表（斜杠式 id 如 'deepseek/xxx:free' 只能这样命中），
    再退回「第一个冒号」的前缀解析（kimi: / yi: / volc: …），无前缀默认 deepseek（老模型都是裸 id） */
 function providerOf(modelId) {
@@ -2252,7 +2577,7 @@ function showToast(msg, action) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'toast-action';
-    b.textContent = '＋ 添加 ' + (API_CONFIG[action.provider] ? API_CONFIG[action.provider].name : '') + ' API';
+    b.textContent = I18N.t('toast_add_key', { name: (API_CONFIG[action.provider] ? API_CONFIG[action.provider].name : '') });
     b.onclick = (e) => {
       e.stopPropagation();
       hideToast();
@@ -2391,7 +2716,7 @@ function renderUsageList() {
   let html = '';
   MODELS.forEach(m => {
     let s = usageStats[m.id] || { in: 0, out: 0, total: 0 };
-    let tag = m.isFree ? '<span class="free-tag" style="font-size:9px;padding:1px 4px;margin-left:0;">🆓可用</span>' : '<span class="paid-tag" style="font-size:9px;padding:1px 4px;margin-left:0;">💰付费</span>';
+    let tag = m.isFree ? '<span class="free-tag" style="font-size:9px;padding:1px 4px;margin-left:0;">' + t('dd_free') + '</span>' : '<span class="paid-tag" style="font-size:9px;padding:1px 4px;margin-left:0;">' + t('dd_paid') + '</span>';
     html += `<div class="usage-item">
       <div class="usage-top">
         <span class="usage-name">${m.name} ${tag}</span>
@@ -2480,7 +2805,7 @@ function updateSliderUI(val) {
   particleSpeed = cfg.speed;
   particles.forEach(p => { p.vy = -(Math.random() * 2 + 1) * particleSpeed; });
 
-  toggleText.textContent = `⚡ ${cfg.label}`;
+  toggleText.textContent = '⚡ ' + (STRENGTH_MAP[currentStrength] ? t('strength_' + currentStrength) : cfg.label);
   sliderFill.style.background = cfg.color;
   sliderThumb.style.borderColor = cfg.color;
   labels.forEach((l, i) => l.classList.toggle('active', i === val));
@@ -2728,7 +3053,7 @@ document.addEventListener('visibilitychange', function () {
 
 function renderSessions() {
   const list = $('sessionList'); list.innerHTML = '';
-  if (!sessions.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">暂无对话</div>'; return; }
+  if (!sessions.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;">' + t('sessions_empty') + '</div>'; return; }
   sessions.forEach(s => {
     let el = document.createElement('div');
     el.className = 'sess-item' + (s.id === currentId ? ' active' : '');
@@ -2792,7 +3117,7 @@ function buildMsgEl(m) {
     wrap.innerHTML = `<div class="bubble">${thumb}${escapeHtml(m.content || '').replace(/\n/g,'<br>')}${note}</div>`;
     const ua = document.createElement('div');
     ua.className = 'msg-actions';
-    ua.innerHTML = '<button type="button" class="msg-act msg-edit">✏️ 编辑后重发</button><button type="button" class="msg-act msg-copy">📋 复制</button>';
+    ua.innerHTML = '<button type="button" class="msg-act msg-edit">' + t('msg_edit_resend') + '</button><button type="button" class="msg-act msg-copy">' + t('msg_copy') + '</button>';
     wrap.appendChild(ua);   /* 放在气泡外：避免被原生分享/复制截取到按钮文字 */
   } else {
     const flag = m.checked ? '<span class="sc-flag">⚡ 双倍检查</span>' : '';
@@ -2808,14 +3133,14 @@ function buildMsgEl(m) {
     shareBtn.type = 'button';
     shareBtn.className = 'msg-share';
     shareBtn.setAttribute('data-msg-share', '1');
-    shareBtn.textContent = '📤 分享';
+    shareBtn.textContent = t('msg_share');
     wrap.querySelector('.bubble').appendChild(shareBtn);
 
     /* 其余操作按钮放在气泡外，避免被 handleShareClick / copyTextFallback 截取到按钮文字 */
     const aa = document.createElement('div');
     aa.className = 'msg-actions';
-    aa.innerHTML = '<button type="button" class="msg-act msg-copy">📋 复制</button>'
-      + '<button type="button" class="msg-act msg-regen">🔄 重新生成</button>'
+    aa.innerHTML = '<button type="button" class="msg-act msg-copy">' + t('msg_copy') + '</button>'
+      + '<button type="button" class="msg-act msg-regen">' + t('msg_regen') + '</button>'
       + (m.failed ? '<button type="button" class="msg-act msg-retry">🔄 重试</button>' : '');
     wrap.appendChild(aa);
   }
@@ -2828,8 +3153,8 @@ function renderChat() {
   if (!s || !s.messages.length) {
     inner.dataset.sid = s ? s.id : '';
     inner.innerHTML = '';
-    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size: 36px; font-weight: 900; color: var(--text-color); margin-bottom: 6px; letter-spacing: 2px;">O.M.N.I</h2><p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px;">Omni-Model Neural Interface</p><p style="font-size: 13px; color: var(--text-muted);">v13.7.1 旗舰版 · 支持代理工作台与视觉代理</p><p style="font-size:12px;margin-top:10px;">输入框上方可开启「🤖 代理工作台」；左侧 📎 可上传图片</p></div>`;
-    $('topbarTitle').textContent = '新对话';
+    inner.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><h2 style="font-size: 36px; font-weight: 900; color: var(--text-color); margin-bottom: 6px; letter-spacing: 2px;">O.M.N.I</h2><p style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px;">Omni-Model Neural Interface</p><p style="font-size: 13px; color: var(--text-muted);">${t('empty_brand')}</p><p style="font-size:12px;margin-top:10px;">${t('empty_hint')}</p></div>`;
+    $('topbarTitle').textContent = t('topbar_new_chat');
     if (agentMode) renderScriptPane();
     return;
   }
@@ -3242,7 +3567,7 @@ function createDropdown(container, initial, onChange, opts) {
     if (opts.allowNone) {
       let it = document.createElement('button');
       it.className = 'dd-item' + (val === 'none' ? ' active' : '');
-      it.innerHTML = '<span>🚫 无（不参与）</span>';
+      it.innerHTML = '<span>' + t('dd_none') + '</span>';
       it.onclick = (e) => {
         e.stopPropagation();
         if (val !== 'none') { val = 'none'; onChange({ id: 'none' }); }
@@ -3282,14 +3607,14 @@ function createDropdown(container, initial, onChange, opts) {
           let it = document.createElement('button');
           it.type = 'button';
           it.className = 'dd-item' + (val === m.id ? ' active' : '') + (ownKey ? '' : ' disabled');
-          const tagHtml = m.isFree ? '<span class="free-tag">🆓可用</span>' : '<span class="paid-tag">💰付费</span>';
+          const tagHtml = m.isFree ? '<span class="free-tag">' + t('dd_free') + '</span>' : '<span class="paid-tag">' + t('dd_paid') + '</span>';
           /* 跨厂商的分组（用途 / 免费付费）必须标出这个模型要走哪家的 Key */
           const vendorTag = (groupMode === 'vendor') ? '' : '<span class="dd-vendor">' + escapeHtml(pInfo.name) + '</span>';
           it.innerHTML = '<span>' + escapeHtml(m.name) + tagIcons(m) + '</span>' + vendorTag + tagHtml;
           it.onclick = (e) => {
             e.stopPropagation();
             if (!ownKey) {
-              return showToast('请先在设置中配置 ' + pInfo.name + ' Key', { type: 'key', provider: m.p });
+              return showToast(t('dd_need_key', { name: pInfo.name }), { type: 'key', provider: m.p });
             }
             if (val !== m.id) { val = m.id; onChange(m); }
             sync(); closeAllDropdowns();
@@ -3302,11 +3627,11 @@ function createDropdown(container, initial, onChange, opts) {
 
   function sync() {
     if (val === 'none') {
-      btn.innerHTML = '<span>无</span><span class="free-tag" style="margin-left:6px;font-size:9px;background:#94a3b8">跳过</span>';
+      btn.innerHTML = '<span>' + t('dd_none_plain') + '</span><span class="free-tag" style="margin-left:6px;font-size:9px;background:#94a3b8">' + t('dd_skip') + '</span>';
       return;
     }
     let cur = modelById(val);
-    btn.innerHTML = `<span>${cur.name}${cur.hasVision ? ' 📷' : ''}</span><span class="free-tag" style="margin-left:6px;font-size:9px;background:${cur.isFree?'#10b981':'#f59e0b'}">${cur.isFree?'🆓':'💰'}</span>`;
+    btn.innerHTML = `<span>${cur.name}${cur.hasVision ? ' 📷' : ''}</span><span class="free-tag" style="margin-left:6px;font-size:9px;background:${cur.isFree?'#10b981':'#f59e0b'}">${cur.isFree ? t('dd_free_short') : t('dd_paid_short')}</span>`;
   }
 
   btn.onclick = (e) => {
@@ -5185,7 +5510,7 @@ function updateCharCount() {
   const el = $('charCount'), inp = $('chatInput');
   if (!el || !inp) return;
   const n = String(inp.value || '').length;
-  el.textContent = n + ' 字';
+  el.textContent = t('char_count', { n: n });
   el.classList.toggle('warn', n > CHAT_INPUT_MAX);
 }
 
@@ -5538,8 +5863,8 @@ function renderAgentToggle() {
   const input = $('chatInput');
   if (input) {
     input.placeholder = agentMode
-      ? '描述你想改的代码…左侧脚本区会预览补丁'
-      : '给 AI 发送消息…（可附一张图片）';
+      ? t('input_placeholder_agent')
+      : t('input_placeholder');
   }
   renderAgentWorkspace();
 }
@@ -8518,6 +8843,7 @@ try { enhanceSessionList(); } catch (e) { }
      [#21] 本补丁未对任何输入类元素（#chatInput / .set-input / .rag-input / textarea / select …）新增
            font-size 声明，既有 16px 规则与 -webkit-tap-highlight-color 保持不变
      ========================================================================================== */
+initI18n();
 })();
 </script>
 </body>
