@@ -8846,5 +8846,688 @@ try { enhanceSessionList(); } catch (e) { }
 initI18n();
 })();
 </script>
+<!-- =====================================================================
+     O.M.N.I 扩展工具台：① 雷达图  ② URL→文本  ③ 代码沙箱  ④ PDF 提取
+     · 全部内联在本文件内，未新建任何文件、未引用任何项目内资源
+     · 样式一律 .omni-xk- 前缀，逻辑包在 IIFE 里，不污染既有全局作用域
+     · 第三方库仅通过 CDN <script> 引入（ECharts / pdf.js）
+     ===================================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+/* ---------- 启动按钮（左下角，避开 #floatAssistant 与 #toast） ---------- */
+.omni-xk-launcher { position: fixed; left: 14px; bottom: 96px; z-index: 300; display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 15px; border: 0; border-radius: 21px; background: linear-gradient(135deg, #5b7cfa, #8b5cf6); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; box-shadow: 0 10px 24px rgba(79, 109, 245, .38); cursor: pointer; }
+.omni-xk-launcher:active { transform: scale(.96); }
+
+/* ---------- 面板外壳（z-index 300 > 现有最高 #pencilOverlay 200） ---------- */
+.omni-xk-panel { position: fixed; inset: 0; z-index: 300; display: none; background: rgba(15, 23, 42, .42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.omni-xk-panel.is-open { display: flex; align-items: center; justify-content: center; padding: 14px; }
+.omni-xk-sheet { display: flex; flex-direction: column; width: 100%; max-width: 860px; max-height: 88vh; background: var(--card-bg, #fff); color: var(--text-color, #1e293b); border: 1px solid var(--border, #e2e8f0); border-radius: 18px; box-shadow: 0 24px 64px rgba(15, 23, 42, .3); overflow: hidden; }
+.omni-xk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border, #e2e8f0); }
+.omni-xk-title { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+.omni-xk-icon-btn { width: 34px; height: 34px; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted, #64748b); font-family: inherit; font-size: 16px; cursor: pointer; }
+.omni-xk-icon-btn:hover { background: rgba(79, 109, 245, .1); color: #4f6df5; }
+
+/* ---------- 页签 ---------- */
+.omni-xk-tabs { display: flex; gap: 6px; padding: 10px 14px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.omni-xk-tabs::-webkit-scrollbar { display: none; }
+.omni-xk-tab { flex: 0 0 auto; padding: 8px 14px; border: 1px solid var(--border, #e2e8f0); border-radius: 999px; background: transparent; color: var(--text-muted, #64748b); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: .18s; }
+.omni-xk-tab.is-active { background: linear-gradient(135deg, #5b7cfa, #8b5cf6); border-color: transparent; color: #fff; box-shadow: 0 6px 16px rgba(79, 109, 245, .32); }
+
+/* ---------- 内容区 ---------- */
+.omni-xk-body { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; padding: 14px; }
+.omni-xk-pane { display: none; }
+.omni-xk-pane.is-active { display: block; }
+.omni-xk-hint { margin: 0 0 10px; font-size: 12.5px; line-height: 1.6; color: var(--text-muted, #64748b); }
+.omni-xk-hint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: rgba(79, 109, 245, .1); padding: 1px 5px; border-radius: 5px; }
+.omni-xk-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+
+/* 输入类控件 font-size 统一 ≥16px，避免 iOS 聚焦自动放大 */
+.omni-xk-input, .omni-xk-textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; background: var(--bg-color, #f8fafc); color: var(--text-color, #1e293b); font-family: inherit; font-size: 16px; line-height: 1.6; outline: none; resize: vertical; }
+.omni-xk-textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; background: #0f172a; color: #e2e8f0; border-color: #1e293b; min-height: 110px; }
+.omni-xk-input:focus, .omni-xk-textarea:focus { border-color: #4f6df5; box-shadow: 0 0 0 3px rgba(79, 109, 245, .16); }
+.omni-xk-label { display: block; margin: 8px 0 4px; font-size: 12px; font-weight: 700; color: var(--text-muted, #64748b); letter-spacing: .4px; text-transform: uppercase; }
+
+/* 按钮 */
+.omni-xk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; background: var(--card-bg, #fff); color: var(--text-color, #1e293b); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: .18s; }
+.omni-xk-btn:hover { border-color: #4f6df5; color: #4f6df5; }
+.omni-xk-btn:disabled { opacity: .5; cursor: not-allowed; }
+.omni-xk-btn-primary { border-color: transparent; background: linear-gradient(135deg, #5b7cfa, #8b5cf6); color: #fff; box-shadow: 0 6px 16px rgba(79, 109, 245, .28); }
+.omni-xk-btn-primary:hover { color: #fff; filter: brightness(1.06); }
+
+/* 各模块专属容器 */
+.omni-xk-radar { width: 100%; height: 320px; margin-top: 6px; }
+.omni-xk-empty { padding: 18px; text-align: center; font-size: 13px; color: var(--text-muted, #64748b); }
+.omni-xk-frame-wrap { width: 100%; height: 300px; border: 1px solid var(--border, #e2e8f0); border-radius: 12px; overflow: hidden; background: #fff; }
+.omni-xk-frame { display: block; width: 100%; height: 100%; border: 0; }
+.omni-xk-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 22px 14px; border: 1.5px dashed var(--border, #cbd5e1); border-radius: 14px; background: rgba(79, 109, 245, .04); color: var(--text-muted, #64748b); font-size: 13px; text-align: center; cursor: pointer; transition: .18s; }
+.omni-xk-drop.is-over { border-color: #4f6df5; background: rgba(79, 109, 245, .12); color: #4f6df5; }
+.omni-xk-stat { font-size: 12.5px; color: var(--text-muted, #64748b); margin-top: 8px; min-height: 18px; }
+
+/* 深色模式微调（跟随 app 的 body.dark） */
+body.dark .omni-xk-sheet { background: #0b1220; }
+body.dark .omni-xk-input { background: #0f172a; border-color: #1e293b; }
+body.dark .omni-xk-btn { background: #111f38; }
+body.dark .omni-xk-btn-primary { background: linear-gradient(135deg, #5b7cfa, #8b5cf6); }
+
+/* 手机端：面板接近全屏 */
+@media (max-width: 767px) {
+  .omni-xk-panel.is-open { padding: 0; }
+  .omni-xk-sheet { max-height: 100vh; height: 100vh; border-radius: 0; border: 0; }
+  .omni-xk-radar { height: 280px; }
+  .omni-xk-frame-wrap { height: 260px; }
+}
+</style>
+
+<button id="omniXkLauncher" class="omni-xk-launcher" type="button" title="打开扩展工具台">🧰 工具台</button>
+
+<div id="omniXkPanel" class="omni-xk-panel" role="dialog" aria-modal="true" aria-label="扩展工具台">
+  <div class="omni-xk-sheet">
+    <div class="omni-xk-head">
+      <span class="omni-xk-title">🧰 扩展工具台</span>
+      <button id="omniXkClose" class="omni-xk-icon-btn" type="button" aria-label="关闭">✕</button>
+    </div>
+
+    <div class="omni-xk-tabs" role="tablist">
+      <button class="omni-xk-tab is-active" type="button" role="tab" data-xk-tab="radar">雷达图</button>
+      <button class="omni-xk-tab" type="button" role="tab" data-xk-tab="url">URL→文本</button>
+      <button class="omni-xk-tab" type="button" role="tab" data-xk-tab="sandbox">代码沙箱</button>
+      <button class="omni-xk-tab" type="button" role="tab" data-xk-tab="pdf">PDF 提取</button>
+    </div>
+
+    <div class="omni-xk-body">
+
+      <!-- ============ ① 雷达图（ECharts） ============ -->
+      <section class="omni-xk-pane is-active" data-xk-pane="radar" role="tabpanel">
+        <p class="omni-xk-hint">每行一个维度，写成 <code>名称:数值</code>（0–100）；只写数字也行，会自动命名。</p>
+        <textarea id="xkRadarInput" class="omni-xk-textarea" rows="5" spellcheck="false">准确性:88
+逻辑性:76
+完整性:82
+创新性:64</textarea>
+        <div class="omni-xk-row">
+          <button id="xkRadarRender" class="omni-xk-btn omni-xk-btn-primary" type="button">渲染雷达图</button>
+          <button id="xkRadarDemo" class="omni-xk-btn" type="button">随机评分</button>
+        </div>
+        <div id="xkRadarBox" class="omni-xk-radar"></div>
+      </section>
+
+      <!-- ============ ② URL → 纯文本 ============ -->
+      <section class="omni-xk-pane" data-xk-pane="url" role="tabpanel">
+        <p class="omni-xk-hint">优先走 Jina Reader（<code>r.jina.ai</code>，自带 CORS）拿正文；失败自动回退 allorigins 代理 + DOMParser 去标签。</p>
+        <input id="xkUrlInput" class="omni-xk-input" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/article">
+        <div class="omni-xk-row">
+          <button id="xkUrlFetch" class="omni-xk-btn omni-xk-btn-primary" type="button">抓取正文</button>
+          <button id="xkUrlCopy" class="omni-xk-btn" type="button">复制</button>
+          <button id="xkUrlToRag" class="omni-xk-btn" type="button">存入本地 RAG</button>
+        </div>
+        <div id="xkUrlStat" class="omni-xk-stat"></div>
+        <textarea id="xkUrlResult" class="omni-xk-textarea" rows="10" readonly placeholder="抓取结果会显示在这里…"></textarea>
+      </section>
+
+      <!-- ============ ③ 代码沙箱（iframe srcdoc） ============ -->
+      <section class="omni-xk-pane" data-xk-pane="sandbox" role="tabpanel">
+        <p class="omni-xk-hint">三段式输入，点「运行预览」合成完整文档注入 <code>iframe srcdoc</code>（<code>sandbox="allow-scripts"</code>），脚本可正常执行。</p>
+        <span class="omni-xk-label">HTML</span>
+        <textarea id="xkSbHtml" class="omni-xk-textarea" rows="4" spellcheck="false"><h1 id="t">Hello O.M.N.I</h1>
+<button id="b">点我</button></textarea>
+        <span class="omni-xk-label">CSS</span>
+        <textarea id="xkSbCss" class="omni-xk-textarea" rows="3" spellcheck="false">#t { color: #4f6df5; }
+#b { padding: 8px 14px; border: 0; border-radius: 10px; background: #4f6df5; color: #fff; font-size: 16px; }</textarea>
+        <span class="omni-xk-label">JS</span>
+        <textarea id="xkSbJs" class="omni-xk-textarea" rows="4" spellcheck="false">var n = 0;
+document.getElementById('b').onclick = function () {
+  document.getElementById('t').textContent = '点击次数：' + (++n);
+};</textarea>
+        <div class="omni-xk-row">
+          <button id="xkSbRun" class="omni-xk-btn omni-xk-btn-primary" type="button">运行预览</button>
+          <button id="xkSbClear" class="omni-xk-btn" type="button">清空预览</button>
+        </div>
+        <div id="xkSbBox" class="omni-xk-frame-wrap">
+          <div class="omni-xk-empty">尚未运行</div>
+        </div>
+      </section>
+
+      <!-- ============ ④ PDF 文本提取（pdf.js） ============ -->
+      <section class="omni-xk-pane" data-xk-pane="pdf" role="tabpanel">
+        <p class="omni-xk-hint">pdf.js 逐页解析并拼接；扫描件（图片型 PDF）提不出文字，需要 OCR。</p>
+        <div id="xkPdfDrop" class="omni-xk-drop">
+          <strong>点击选择 或 拖入 PDF 文件</strong>
+          <span>支持多页，自动拼接为完整纯文本</span>
+        </div>
+        <input id="xkPdfInput" type="file" accept="application/pdf,.pdf" style="display:none">
+        <div id="xkPdfStat" class="omni-xk-stat"></div>
+        <div class="omni-xk-row">
+          <button id="xkPdfCopy" class="omni-xk-btn" type="button">复制文本</button>
+          <button id="xkPdfToRag" class="omni-xk-btn" type="button">存入本地 RAG</button>
+        </div>
+        <textarea id="xkPdfResult" class="omni-xk-textarea" rows="10" readonly placeholder="提取结果会显示在这里…"></textarea>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   扩展工具台逻辑：4 个模块各自独立、只对外挂 4 个 window 函数
+   window.renderRadarChart / window.fetchAndExtractText
+   window.runCodeInSandbox / window.extractPdfText
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var PDFJS_VER = '3.11.174';
+
+  /* 统一提示：复用 app 的 showToast，没有则降级为 console */
+  function toast(msg) {
+    if (typeof window.showToast === 'function') { window.showToast(msg); }
+    else { console.log('[xk]', msg); }
+  }
+
+  /* 统一复制：优先异步剪贴板，降级 textarea + execCommand */
+  function copyText(text) {
+    text = String(text == null ? '' : text);
+    if (!text) { toast('没有可复制的内容'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('已复制'); },
+        function () { legacyCopy(text); });
+      return;
+    }
+    legacyCopy(text);
+  }
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('已复制'); }
+    catch (e) { toast('复制失败'); }
+    finally { document.body.removeChild(ta); }
+  }
+
+  /* 存入 app 的本地 RAG 库（有 ragSave 就用，没有就退回复制） */
+  function saveToRag(text) {
+    text = String(text == null ? '' : text).trim();
+    if (!text) { toast('没有可保存的内容'); return; }
+    if (typeof window.ragSave === 'function') {
+      try {
+        var n = window.ragSave(text);
+        toast('已存入本地 RAG' + (typeof n === 'number' ? '（' + n + ' 块）' : ''));
+      } catch (e) { toast('存入失败：' + (e && e.message ? e.message : e)); }
+    } else {
+      copyText(text);
+      toast('当前版本无 ragSave，已复制到剪贴板');
+    }
+  }
+
+  /* ==================================================================
+     模块 1｜ECharts 雷达图
+     dataArray: [88,76,82]  或  [{label:'准确性', value:88}, ...]
+     ================================================================== */
+  var RADAR_DEFAULT_NAMES = ['准确性', '逻辑性', '完整性', '创新性', '稳定性', '效率'];
+
+  /* 归一化：兼容数字/对象两种入参，value 夹紧到 0–100 */
+  function normalizeRadarData(dataArray) {
+    if (!Array.isArray(dataArray)) { return []; }
+    var out = [];
+    for (var i = 0; i < dataArray.length; i++) {
+      var it = dataArray[i];
+      var isObj = it && typeof it === 'object' && !Array.isArray(it);
+      var v = Number(isObj ? it.value : it);
+      out.push({
+        name: (isObj && (it.label || it.name)) ? String(it.label || it.name)
+              : (RADAR_DEFAULT_NAMES[i] || ('维度' + (i + 1))),
+        value: isFinite(v) ? Math.min(100, Math.max(0, v)) : 0
+      });
+    }
+    return out;
+  }
+
+  window.renderRadarChart = function renderRadarChart(containerId, dataArray) {
+    var el = $(containerId);
+    if (!el) { console.warn('[xk] 找不到容器 #' + containerId); return null; }
+    if (!window.echarts) {
+      el.innerHTML = '<div class="omni-xk-empty">ECharts 未加载（检查网络后刷新页面）</div>';
+      return null;
+    }
+    var items = normalizeRadarData(dataArray);
+    if (items.length < 3) {
+      el.innerHTML = '<div class="omni-xk-empty">雷达图至少需要 3 个维度</div>';
+      return null;
+    }
+    el.innerHTML = '';                                   // 清掉占位文字
+    if (!el.clientHeight) { el.style.height = '320px'; }  // 防止 init 时高度为 0
+
+    var dark = document.body.classList.contains('dark');
+    var tick = dark ? 'rgba(148,163,184,.35)' : 'rgba(100,116,139,.25)';
+    var nameColor = dark ? '#94a3b8' : '#64748b';
+
+    // 复用已有实例，避免重复 init 造成内存泄漏
+    var chart = window.echarts.getInstanceByDom(el) ||
+                window.echarts.init(el, null, { renderer: 'canvas' });
+
+    chart.setOption({
+      backgroundColor: 'transparent',
+      animationDuration: 480,
+      tooltip: { trigger: 'item' },
+      radar: {
+        indicator: items.map(function (d) { return { name: d.name, max: 100 }; }),
+        center: ['50%', '54%'],
+        radius: '64%',
+        axisName: { color: nameColor, fontSize: 12, fontWeight: 600 },
+        axisLine: { lineStyle: { color: tick } },
+        splitLine: { lineStyle: { color: tick } },
+        splitArea: {
+          areaStyle: {
+            color: dark
+              ? ['rgba(79,109,245,.08)', 'rgba(79,109,245,.02)']
+              : ['rgba(79,109,245,.06)', 'rgba(255,255,255,0)']
+          }
+        }
+      },
+      series: [{
+        type: 'radar',
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2, color: '#4f6df5' },
+        itemStyle: { color: '#4f6df5', borderColor: dark ? '#0b1220' : '#fff', borderWidth: 1.5 },
+        areaStyle: { color: 'rgba(79,109,245,.28)' },   // 半透明填充
+        data: [{ value: items.map(function (d) { return d.value; }), name: '评分' }]
+      }]
+    }, true);
+
+    chart.resize();
+    return chart;
+  };
+
+  /* 解析「名称:数值」文本域 -> dataArray */
+  function parseScoreText(text) {
+    return String(text || '')
+      .split(/[\n,;，；]+/)
+      .map(function (seg) {
+        seg = seg.trim();
+        if (!seg) { return null; }
+        var m = seg.match(/^(.*?)[\s:：=]+(-?\d+(?:\.\d+)?)$/);
+        if (m) { return { label: m[1].trim(), value: Number(m[2]) }; }
+        var n = Number(seg);
+        return isFinite(n) ? { value: n } : null;
+      })
+      .filter(Boolean);
+  }
+
+  var radarRendered = false;
+  function renderRadarFromInput() {
+    var arr = parseScoreText($('xkRadarInput').value);
+    if (arr.length < 3) { toast('请至少填写 3 个维度'); return; }
+    window.renderRadarChart('xkRadarBox', arr);
+    radarRendered = true;
+  }
+
+  // 窗口尺寸/机型旋转时同步重排（ECharts 不自适应，必须手动 resize）
+  window.addEventListener('resize', function () {
+    var el = $('xkRadarBox');
+    if (!el || !window.echarts) { return; }
+    var inst = window.echarts.getInstanceByDom(el);
+    if (inst) { inst.resize(); }
+  });
+
+  /* ==================================================================
+     模块 2｜URL → 纯文本
+     ================================================================== */
+  var JINA_PREFIX = 'https://r.jina.ai/';
+  var PROXY_PREFIX = 'https://api.allorigins.win/raw?url=';
+
+  // 需整棵移除的噪音节点
+  var NOISE_SELECTOR = [
+    'script', 'style', 'noscript', 'iframe', 'svg', 'canvas', 'video', 'audio',
+    'nav', 'footer', 'header', 'aside', 'form', 'button', 'input', 'select', 'textarea',
+    'link', 'meta',
+    '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
+    '[aria-hidden="true"]', '[hidden]',
+    '.ad', '.ads', '.advert', '.advertisement', '.sidebar', '.share', '.social',
+    '.comment', '.comments', '.breadcrumb', '.cookie', '.newsletter', '.related'
+  ].join(',');
+
+  function normalizeUrl(raw) {
+    var s = String(raw == null ? '' : raw).trim();
+    if (!s) { throw new Error('请先输入网址'); }
+    if (!/^https?:\/\//i.test(s)) { s = 'https://' + s; }
+    try { new URL(s); } catch (e) { throw new Error('网址格式不正确：' + raw); }
+    return s;
+  }
+
+  // 带超时的 fetch：超时用 AbortController 掐断，finally 里清理定时器
+  async function fetchWithTimeout(url, ms, accept) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms);
+    try {
+      return await fetch(url, {
+        signal: ctrl.signal,
+        headers: accept ? { Accept: accept } : undefined
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  window.fetchAndExtractText = async function fetchAndExtractText(url, options) {
+    var opt = options || {};
+    var timeout = opt.timeout || 25000;
+    var target = normalizeUrl(url);
+
+    // ① 首选 Jina Reader：直接返回 Markdown/纯文本，且自带 CORS，无需解析
+    try {
+      var r1 = await fetchWithTimeout(JINA_PREFIX + target, timeout, 'text/plain');
+      if (r1.ok) {
+        var t1 = (await r1.text()).trim();
+        if (t1.length > 20) { return t1; }
+      }
+    } catch (e1) { /* 静默失败，走下面的兜底 */ }
+
+    // ② 兜底：allorigins 代理取原始 HTML，再用 DOMParser 去标签
+    var r2 = await fetchWithTimeout(PROXY_PREFIX + encodeURIComponent(target), timeout, 'text/html');
+    if (!r2.ok) { throw new Error('抓取失败：HTTP ' + r2.status); }
+    var html = await r2.text();
+    if (!html || html.length < 30) { throw new Error('抓取失败：返回内容为空（目标站点可能反爬）'); }
+
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll(NOISE_SELECTOR).forEach(function (n) { n.remove(); });
+
+    // 选主体：语义化标签 > 常见正文 class > body
+    var main = doc.querySelector(
+      'article, main, [role="main"], .post-content, .article-content, ' +
+      '.entry-content, .markdown-body, #content, .content'
+    ) || doc.body;
+    if (!main) { throw new Error('未能解析网页结构'); }
+
+    // 块级元素补换行、列表项加 "- "，保住段落与列表结构
+    main.querySelectorAll('p,div,section,article,li,h1,h2,h3,h4,h5,h6,tr,blockquote,pre,br')
+      .forEach(function (n) {
+        if (n.tagName === 'LI') { n.insertAdjacentText('afterbegin', '- '); }
+        n.appendChild(doc.createTextNode('\n'));
+      });
+
+    var text = (main.textContent || '').replace(/\u00a0/g, ' ').replace(/\r/g, '');
+    text = text.split('\n')
+      .map(function (l) { return l.replace(/[ \t]+/g, ' ').trim(); })
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    if (text.length < 20) { throw new Error('未提取到有效正文（页面可能由 JS 动态渲染）'); }
+    return text;
+  };
+
+  /* ==================================================================
+     模块 3｜代码沙箱（iframe srcdoc，允许执行脚本）
+     ================================================================== */
+
+  // 沙盒内脚本报错 -> postMessage 回宿主 -> toast
+  var ERR_HOOK = '<script>window.onerror=function(m,s,l,c){' +
+    'try{parent.postMessage({__xkSandbox:1,msg:String(m)+" @"+(l||0)+":"+(c||0)},"*")}catch(e){}' +
+    '};<\/script>';
+
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (d && d.__xkSandbox === 1) { toast('预览报错：' + d.msg); }
+  });
+
+  /* 把 HTML / CSS / JS 三段拼成一份完整文档 */
+  function buildSandboxDoc(html, css, js) {
+    return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<base target="_blank">' + ERR_HOOK +
+      '<style>html,body{margin:0;padding:12px;background:#fff;color:#1e293b;' +
+      'font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
+      'img{max-width:100%;height:auto}' +
+      'pre,code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}\n' +
+      String(css || '') + '</style></head><body>' +
+      String(html || '') +
+      '<script>\n' + String(js || '') + '\n<\/script>' +
+      '</body></html>';
+  }
+
+  window.runCodeInSandbox = function runCodeInSandbox(containerId, codeString) {
+    var host = $(containerId);
+    if (!host) { console.warn('[xk] 找不到容器 #' + containerId); return null; }
+
+    var src = String(codeString == null ? '' : codeString);
+    if (!src.trim()) {
+      host.innerHTML = '<div class="omni-xk-empty">暂无代码可运行</div>';
+      return null;
+    }
+    if (!host.style.height && host.clientHeight < 160) { host.style.height = '300px'; }
+
+    var frame = document.createElement('iframe');
+    // 只给 allow-scripts：绝不加 allow-same-origin，否则沙盒可与宿主同源、逃逸限制
+    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.setAttribute('title', '代码预览沙盒');
+    frame.className = 'omni-xk-frame';
+    frame.srcdoc = src;
+
+    host.innerHTML = '';          // 先清空，避免连续预览时 iframe 叠加
+    host.appendChild(frame);
+    return frame;
+  };
+
+  /* ==================================================================
+     模块 4｜PDF 文本提取（pdf.js，多页拼接）
+     ================================================================== */
+  window.extractPdfText = async function extractPdfText(file, onProgress) {
+    var lib = window.pdfjsLib;
+    if (!lib) { throw new Error('pdf.js 未加载，请检查 CDN 是否可访问'); }
+
+    // worker 只在首次调用时指定；不指定会退化到主线程，大文件会卡死 UI
+    if (lib.GlobalWorkerOptions && !lib.GlobalWorkerOptions.workerSrc) {
+      lib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/pdf.worker.min.js';
+    }
+    if (!file) { throw new Error('没有收到文件'); }
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name || '')) {
+      throw new Error('仅支持 PDF 文件');
+    }
+
+    var buf = await file.arrayBuffer();
+    var pdf = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    var pages = [];
+
+    try {
+      // 逐页串行解析：比并发省内存，几百页也不会爆
+      for (var p = 1; p <= pdf.numPages; p++) {
+        var page = await pdf.getPage(p);
+        var content = await page.getTextContent();
+
+        // items 是按排版顺序的文本碎片；hasEOL 表示其后应换行，用它还原断行
+        var s = '';
+        content.items.forEach(function (it) {
+          if (typeof it.str !== 'string') { return; }
+          s += it.str + (it.hasEOL ? '\n' : ' ');
+        });
+
+        var clean = s.replace(/[ \t]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+        if (clean) { pages.push('【第 ' + p + ' 页】\n' + clean); }
+
+        page.cleanup();                                    // 及时释放本页资源
+        if (typeof onProgress === 'function') { onProgress(p, pdf.numPages); }
+      }
+    } finally {
+      try { pdf.destroy(); } catch (e) { /* 销毁异常忽略 */ }
+    }
+
+    if (!pages.length) { throw new Error('该 PDF 没有可提取的文本（可能是扫描件，需 OCR）'); }
+    return pages.join('\n\n');                             // 页间空行分隔，便于后续分块
+  };
+
+  /* ==================================================================
+     UI 绑定
+     ================================================================== */
+  var panel = $('omniXkPanel');
+  var launcher = $('omniXkLauncher');
+
+  function openPanel() {
+    if (!panel) { return; }
+    panel.classList.add('is-open');
+    var active = panel.querySelector('.omni-xk-tab.is-active');
+    activateTab(active ? active.dataset.xkTab : 'radar');
+  }
+  function closePanel() {
+    if (panel) { panel.classList.remove('is-open'); }
+  }
+
+  /* 页签切换：切到雷达图时确保实例已在可见状态下渲染/重排 */
+  function activateTab(name) {
+    if (!panel) { return; }
+    panel.querySelectorAll('.omni-xk-tab').forEach(function (b) {
+      b.classList.toggle('is-active', b.dataset.xkTab === name);
+    });
+    panel.querySelectorAll('.omni-xk-pane').forEach(function (p) {
+      p.classList.toggle('is-active', p.dataset.xkPane === name);
+    });
+    if (name === 'radar') {
+      requestAnimationFrame(function () {
+        if (!radarRendered) { renderRadarFromInput(); return; }
+        var el = $('xkRadarBox');
+        var inst = el && window.echarts && window.echarts.getInstanceByDom(el);
+        if (inst) { inst.resize(); }
+      });
+    }
+  }
+
+  if (launcher) { launcher.addEventListener('click', openPanel); }
+  var closeBtn = $('omniXkClose');
+  if (closeBtn) { closeBtn.addEventListener('click', closePanel); }
+  if (panel) {
+    // 点遮罩空白处关闭（点 sheet 内部不关）
+    panel.addEventListener('click', function (e) { if (e.target === panel) { closePanel(); } });
+  }
+  // Esc 关闭（顺手补上原项目 TODO 里缺的 Esc 体验，仅作用于本面板）
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panel && panel.classList.contains('is-open')) { closePanel(); }
+  });
+
+  if (panel) {
+    panel.querySelectorAll('.omni-xk-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () { activateTab(btn.dataset.xkTab); });
+    });
+  }
+
+  /* ---------- ① 雷达图按钮 ---------- */
+  var radarRenderBtn = $('xkRadarRender');
+  if (radarRenderBtn) { radarRenderBtn.addEventListener('click', renderRadarFromInput); }
+
+  var radarDemoBtn = $('xkRadarDemo');
+  if (radarDemoBtn) {
+    radarDemoBtn.addEventListener('click', function () {
+      var names = ['准确性', '逻辑性', '完整性', '创新性', '稳定性'];
+      var lines = names.map(function (n) {
+        return n + ':' + (Math.round(Math.random() * 40) + 60);   // 60–100
+      });
+      $('xkRadarInput').value = lines.join('\n');
+      renderRadarFromInput();
+    });
+  }
+
+  /* ---------- ② URL 抓取 ---------- */
+  var urlFetchBtn = $('xkUrlFetch');
+  if (urlFetchBtn) {
+    urlFetchBtn.addEventListener('click', async function () {
+      var stat = $('xkUrlStat');
+      var out = $('xkUrlResult');
+      var raw = $('xkUrlInput').value.trim();
+      if (!raw) { toast('请先输入网址'); return; }
+
+      urlFetchBtn.disabled = true;
+      stat.textContent = '正在抓取…';
+      try {
+        var text = await window.fetchAndExtractText(raw);
+        out.value = text;
+        stat.textContent = '完成：' + text.length + ' 字符';
+        toast('抓取成功：' + text.length + ' 字符');
+      } catch (err) {
+        stat.textContent = '失败：' + (err && err.message ? err.message : err);
+        toast('抓取失败：' + (err && err.message ? err.message : err));
+      } finally {
+        urlFetchBtn.disabled = false;
+      }
+    });
+  }
+
+  var urlCopyBtn = $('xkUrlCopy');
+  if (urlCopyBtn) { urlCopyBtn.addEventListener('click', function () { copyText($('xkUrlResult').value); }); }
+
+  var urlRagBtn = $('xkUrlToRag');
+  if (urlRagBtn) { urlRagBtn.addEventListener('click', function () { saveToRag($('xkUrlResult').value); }); }
+
+  /* ---------- ③ 沙箱 ---------- */
+  var sbRunBtn = $('xkSbRun');
+  if (sbRunBtn) {
+    sbRunBtn.addEventListener('click', function () {
+      var doc = buildSandboxDoc($('xkSbHtml').value, $('xkSbCss').value, $('xkSbJs').value);
+      window.runCodeInSandbox('xkSbBox', doc);
+    });
+  }
+  var sbClearBtn = $('xkSbClear');
+  if (sbClearBtn) {
+    sbClearBtn.addEventListener('click', function () {
+      $('xkSbBox').innerHTML = '<div class="omni-xk-empty">尚未运行</div>';
+    });
+  }
+
+  /* ---------- ④ PDF ---------- */
+  var pdfInput = $('xkPdfInput');
+  var pdfDrop = $('xkPdfDrop');
+  var pdfStat = $('xkPdfStat');
+  var pdfOut = $('xkPdfResult');
+
+  async function handlePdfFile(file) {
+    if (!file) { return; }
+    pdfStat.textContent = '正在解析…';
+    try {
+      var text = await window.extractPdfText(file, function (p, total) {
+        pdfStat.textContent = '解析中… 第 ' + p + ' / ' + total + ' 页';
+      });
+      pdfOut.value = text;
+      pdfStat.textContent = '完成：' + text.length + ' 字符 / ' + file.name;
+      toast('PDF 解析完成：' + text.length + ' 字符');
+    } catch (err) {
+      pdfStat.textContent = '失败：' + (err && err.message ? err.message : err);
+      toast('PDF 解析失败：' + (err && err.message ? err.message : err));
+    }
+  }
+
+  if (pdfDrop && pdfInput) {
+    pdfDrop.addEventListener('click', function () { pdfInput.click(); });
+    pdfInput.addEventListener('change', function () {
+      handlePdfFile(pdfInput.files && pdfInput.files[0]);
+      pdfInput.value = '';                     // 允许重复选同一个文件
+    });
+    // 拖拽上传
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      pdfDrop.addEventListener(ev, function (e) { e.preventDefault(); pdfDrop.classList.add('is-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      pdfDrop.addEventListener(ev, function (e) { e.preventDefault(); pdfDrop.classList.remove('is-over'); });
+    });
+    pdfDrop.addEventListener('drop', function (e) {
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      handlePdfFile(f);
+    });
+  }
+
+  var pdfCopyBtn = $('xkPdfCopy');
+  if (pdfCopyBtn) { pdfCopyBtn.addEventListener('click', function () { copyText(pdfOut.value); }); }
+
+  var pdfRagBtn = $('xkPdfToRag');
+  if (pdfRagBtn) { pdfRagBtn.addEventListener('click', function () { saveToRag(pdfOut.value); }); }
+
+  /* 首次进入页面即渲染一次默认雷达图（面板打开时容器才有高度，故延后到 open） */
+  console.log('[xk] 扩展工具台已就绪');
+})();
+</script>
+
 </body>
 </html>
