@@ -1399,6 +1399,26 @@ body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
   .ex-rag-hits-head { font-size: 11px; }
   .cb-btn { padding: 0 10px; }
 }
+/* ===== 聊天区域自定义背景（v13.7.2）：作用域仅限 #chatView 内 ===== */
+#chatBgLayer{position:absolute;inset:0;z-index:0;pointer-events:none;display:none;overflow:hidden;}
+#chatBgLayer.on{display:block;}
+#chatBgLayer::before{content:'';position:absolute;inset:-24px;background-image:var(--chat-bg-image,none);background-size:cover;background-position:center;background-repeat:no-repeat;opacity:var(--chat-bg-opacity,.35);filter:blur(var(--chat-bg-blur,0px));transform:scale(1.06);transition:opacity .2s ease,filter .2s ease;}
+#chatBgLayer .chat-bg-mask{position:absolute;inset:0;background:rgba(245,247,251,.55);}
+body.dark #chatBgLayer .chat-bg-mask{background:rgba(18,18,18,.62);}
+@supports ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  #chatBgLayer .chat-bg-mask{-webkit-backdrop-filter:blur(6px) saturate(120%);backdrop-filter:blur(6px) saturate(120%);}
+}
+#chatView.ps-open #chatBgLayer,
+#chatView.wf-open #chatBgLayer{display:none !important;}
+/* .chat-scroll 原本只写了 z-index:2 而没有 position，z-index 不生效；
+   这里补 position 让聊天内容稳定压在背景层之上（不改布局，仅层叠） */
+#chatView .chat-scroll{position:relative;z-index:2;}
+#chatBgCard .chatbg-preview{width:100%;height:104px;border-radius:12px;border:1px solid var(--border);background-color:var(--bg-color);background-position:center;background-size:cover;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);overflow:hidden;transition:background-image .2s ease;}
+#chatBgCard .chatbg-row{display:flex;align-items:center;gap:10px;margin-top:12px;}
+#chatBgCard .chatbg-row label{font-size:12px;font-weight:700;color:var(--text-muted);min-width:64px;white-space:nowrap;}
+#chatBgCard input[type=range]{flex:1;min-width:0;accent-color:var(--accent);}
+#chatBgCard .chatbg-val{font-size:12px;font-weight:800;color:var(--accent);min-width:44px;text-align:right;font-variant-numeric:tabular-nums;}
+#chatBgCard .set-btn[disabled]{opacity:.45;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -1437,6 +1457,7 @@ body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
     </header>
 
     <div id="chatView" class="view">
+      <div id="chatBgLayer" aria-hidden="true"><div class="chat-bg-mask"></div></div>
       <div id="brandWatermark" aria-hidden="true">
         <div class="bw-mark" id="bwMark"></div>
         <div class="bw-name" id="bwName"></div>
@@ -1761,6 +1782,26 @@ body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
           </div>
         </section>
 
+        <section class="card set-card" id="chatBgCard">
+          <h3 data-i18n="chatbg_title">🖼️ 聊天背景</h3>
+          <p data-i18n="chatbg_desc">图片会先等比压缩到最长边 1920、JPEG 0.8 再存入本地，不会撑爆存储；背景之上自带随深浅色自适应的遮罩，保证文字清晰。</p>
+          <div class="chatbg-preview" id="chatBgPreview" data-i18n="chatbg_empty">未设置背景</div>
+          <div class="chatbg-row">
+            <button class="set-btn" type="button" id="chatBgPick" data-i18n="chatbg_upload">📷 上传图片</button>
+            <button class="set-btn" type="button" id="chatBgClear" data-i18n="chatbg_clear">🗑 恢复默认</button>
+          </div>
+          <input type="file" id="chatBgFile" accept="image/*" hidden>
+          <div class="chatbg-row">
+            <label for="chatBgOpacity" data-i18n="chatbg_opacity">透明度</label>
+            <input type="range" id="chatBgOpacity" min="0" max="100" step="1" value="35">
+            <span class="chatbg-val" id="chatBgOpacityVal">35%</span>
+          </div>
+          <div class="chatbg-row">
+            <label for="chatBgBlur" data-i18n="chatbg_blur">模糊度</label>
+            <input type="range" id="chatBgBlur" min="0" max="20" step="1" value="6">
+            <span class="chatbg-val" id="chatBgBlurVal">6px</span>
+          </div>
+        </section>
         <section class="card set-card">
           <h3>✨ 悬浮助手名字</h3>
           <div style="display:flex; gap:10px;">
@@ -1820,7 +1861,9 @@ body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
         <section class="card set-card" style="background:var(--bg-color);">
           <h3 style="color:var(--accent);">📜 版本更新日志</h3>
           <div style="font-size:12px; line-height:1.8; color:var(--text-muted); margin-top:10px;">
-            <b>v13.7.1 (当前版本)</b><br>
+            <b>v13.7.2 (当前版本)</b><br>
+            · 新增「聊天背景」：上传图片自动压缩（最长边 1920 / JPEG 0.8）、透明度 + 模糊度实时预览、深浅色自适应遮罩防瞎眼、localStorage 持久化与配额保护<br>
+            <b>v13.7.1</b><br>
             • 修复：智能修图美颜滑杆崩溃（dataURLa → data）<br>
             • 修复：多图场景图片丢失，改为按 OpenAI 多模态规范携带最近 2 张<br>
             • 优化：流式渲染 60ms 节流加固，长回答不再一卡一卡<br>
@@ -13126,6 +13169,317 @@ window.OMNI_MAX3 = window.OMNI_MAX3 || { version: '3.0.0-x3d', modules: {} };
   }
 })();
 
+  /* ================= 聊天区域自定义背景（v13.7.2） =================
+     · 作用域：仅 #chatBgLayer（#chatView 内、#brandWatermark 之前、聊天内容之下）
+     · 压缩防爆：Canvas 等比 ≤1920 → JPEG 0.8；超限降质 → 缩到 1280；setItem 捕获配额异常
+     · 防瞎眼：图片层 / 半透明遮罩层 / 内容层三层，遮罩由 body.dark 自动换色 */
+  const CHATBG_KEY = 'autoPro_chatBg';
+  const CHATBG_MAX_EDGE = 1920;
+  const CHATBG_RETRY_EDGE = 1280;
+  const CHATBG_QUALITY = 0.8;
+  const CHATBG_MAX_BYTES = 1600000;
+  const CHATBG_DEF_OPACITY = 35;
+  const CHATBG_DEF_BLUR = 6;
+
+  let chatBgState = null;
+  let chatBgSaveTimer = 0;
+
+  function chatBgClamp(v, dft, lo, hi) {
+    const n = Number(v);
+    if (!isFinite(n)) return dft;
+    return Math.max(lo, Math.min(hi, n));
+  }
+
+  function chatBgSetVar(name, value) {
+    try {
+      const root = document.documentElement;
+      if (value === null || value === undefined || value === '') root.style.removeProperty(name);
+      else root.style.setProperty(name, value);
+    } catch (e) { /* 忽略无效变量名 */ }
+  }
+
+  function chatBgApply(cfg) {
+    const layer = $('chatBgLayer');
+    const has = !!(cfg && typeof cfg.image === 'string' && cfg.image);
+    if (layer) layer.classList.toggle('on', has);
+    if (!has) {
+      /* 必须 removeProperty，不能留 url(none) */
+      chatBgSetVar('--chat-bg-image', '');
+      chatBgSetVar('--chat-bg-opacity', '');
+      chatBgSetVar('--chat-bg-blur', '');
+      return;
+    }
+    const op = chatBgClamp(cfg.opacity, CHATBG_DEF_OPACITY, 0, 100);
+    const bl = chatBgClamp(cfg.blur, CHATBG_DEF_BLUR, 0, 20);
+    chatBgSetVar('--chat-bg-image', 'url("' + cfg.image + '")');
+    chatBgSetVar('--chat-bg-opacity', String(op / 100));
+    chatBgSetVar('--chat-bg-blur', bl + 'px');
+  }
+
+  function chatBgLoad() {
+    try {
+      const raw = localStorage.getItem(CHATBG_KEY);
+      if (!raw) return null;
+      const cfg = JSON.parse(raw);
+      if (!cfg || typeof cfg !== 'object' || typeof cfg.image !== 'string' || cfg.image.indexOf('data:image/') !== 0) {
+        try { localStorage.removeItem(CHATBG_KEY); } catch (e0) {}
+        return null;
+      }
+      return {
+        image: cfg.image,
+        opacity: chatBgClamp(cfg.opacity, CHATBG_DEF_OPACITY, 0, 100),
+        blur: chatBgClamp(cfg.blur, CHATBG_DEF_BLUR, 0, 20)
+      };
+    } catch (e) {
+      try { localStorage.removeItem(CHATBG_KEY); } catch (e2) {}
+      return null;
+    }
+  }
+
+  function chatBgSave(cfg) {
+    try {
+      localStorage.setItem(CHATBG_KEY, JSON.stringify(cfg));
+      return true;
+    } catch (e) {
+      const quota = !!(e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014));
+      try { localStorage.removeItem(CHATBG_KEY); } catch (e2) {}
+      /* 不回滚当前视觉：本次预览仍然生效 */
+      showToast(quota ? t('chatbg_toobig') : t('chatbg_fail'));
+      return false;
+    }
+  }
+
+  function chatBgReadFile(file) {
+    return new Promise(function (resolve, reject) {
+      const fr = new FileReader();
+      fr.onload = function () { resolve(String(fr.result || '')); };
+      fr.onerror = function () { reject(new Error('read-failed')); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function chatBgDecodeImage(src) {
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('decode-failed')); };
+      img.src = src;
+    });
+  }
+
+  function chatBgDrawToJpeg(img, maxEdge, quality) {
+    const w0 = img.naturalWidth || img.width || maxEdge;
+    const h0 = img.naturalHeight || img.height || maxEdge;
+    const scale = Math.min(1, maxEdge / Math.max(w0, h0));
+    const w = Math.max(1, Math.round(w0 * scale));
+    const h = Math.max(1, Math.round(h0 * scale));
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    const cx = cv.getContext('2d');
+    /* JPEG 无透明通道：先铺白底，避免 PNG 透明区变黑 */
+    cx.fillStyle = '#ffffff';
+    cx.fillRect(0, 0, w, h);
+    cx.imageSmoothingEnabled = true;
+    if ('imageSmoothingQuality' in cx) cx.imageSmoothingQuality = 'high';
+    cx.drawImage(img, 0, 0, w, h);
+    return cv.toDataURL('image/jpeg', quality);
+  }
+
+  function compressChatBgImage(file) {
+    return chatBgReadFile(file).then(function (raw) {
+      return chatBgDecodeImage(raw);
+    }).then(function (img) {
+      let dataUrl = chatBgDrawToJpeg(img, CHATBG_MAX_EDGE, CHATBG_QUALITY);
+      const qualities = [0.75, 0.65, 0.55];
+      for (let i = 0; i < qualities.length && dataUrl.length > CHATBG_MAX_BYTES; i++) {
+        dataUrl = chatBgDrawToJpeg(img, CHATBG_MAX_EDGE, qualities[i]);
+      }
+      if (dataUrl.length > CHATBG_MAX_BYTES) dataUrl = chatBgDrawToJpeg(img, CHATBG_RETRY_EDGE, 0.6);
+      if (dataUrl.length > CHATBG_MAX_BYTES) dataUrl = chatBgDrawToJpeg(img, CHATBG_RETRY_EDGE, 0.5);
+      return dataUrl;
+    });
+  }
+
+  function chatBgSyncUI(cfg) {
+    const has = !!(cfg && typeof cfg.image === 'string' && cfg.image);
+    const op = has ? chatBgClamp(cfg.opacity, CHATBG_DEF_OPACITY, 0, 100) : CHATBG_DEF_OPACITY;
+    const bl = has ? chatBgClamp(cfg.blur, CHATBG_DEF_BLUR, 0, 20) : CHATBG_DEF_BLUR;
+
+    const ro = $('chatBgOpacity'), rb = $('chatBgBlur');
+    if (ro) ro.value = String(Math.round(op));
+    if (rb) rb.value = String(Math.round(bl));
+    const vo = $('chatBgOpacityVal'), vb = $('chatBgBlurVal');
+    if (vo) vo.textContent = Math.round(op) + '%';
+    if (vb) vb.textContent = Math.round(bl) + 'px';
+
+    const pv = $('chatBgPreview');
+    if (pv) {
+      if (has) {
+        /* 关键：有图时摘掉 data-i18n，否则切换语言会把体积文案覆盖成「未设置背景」 */
+        pv.removeAttribute('data-i18n');
+        pv.style.backgroundImage = 'url("' + cfg.image + '")';
+        pv.style.color = '#fff';
+        pv.style.textShadow = '0 1px 6px rgba(0,0,0,.65)';
+        let kb = 0;
+        try { kb = (typeof base64KB === 'function') ? base64KB(cfg.image) : 0; } catch (e) { kb = 0; }
+        pv.textContent = t('chatbg_set') + (kb ? ' · ' + kb + 'KB' : '');
+      } else {
+        pv.style.backgroundImage = '';
+        pv.style.color = '';
+        pv.style.textShadow = '';
+        pv.setAttribute('data-i18n', 'chatbg_empty');
+        pv.textContent = t('chatbg_empty');
+      }
+    }
+    const clr = $('chatBgClear');
+    if (clr) clr.disabled = !has;
+  }
+
+  function chatBgPersist() {
+    if (!chatBgState || !chatBgState.image) return false;
+    return chatBgSave({
+      image: chatBgState.image,
+      opacity: Math.round(chatBgClamp(chatBgState.opacity, CHATBG_DEF_OPACITY, 0, 100)),
+      blur: Math.round(chatBgClamp(chatBgState.blur, CHATBG_DEF_BLUR, 0, 20))
+    });
+  }
+
+  function chatBgScheduleSave() {
+    if (chatBgSaveTimer) clearTimeout(chatBgSaveTimer);
+    chatBgSaveTimer = setTimeout(function () {
+      chatBgSaveTimer = 0;
+      chatBgPersist();
+    }, 300);
+  }
+
+  function chatBgClear() {
+    if (chatBgSaveTimer) { clearTimeout(chatBgSaveTimer); chatBgSaveTimer = 0; }
+    chatBgState = null;
+    chatBgApply(null);
+    try { localStorage.removeItem(CHATBG_KEY); } catch (e) {}
+    chatBgSyncUI(null);
+    showToast(t('chatbg_cleared'));
+  }
+
+  function chatBgHandleFile(file) {
+    if (!file) return;
+    if (file.type && file.type.indexOf('image/') !== 0) { showToast(t('chatbg_type')); return; }
+    showToast(t('chatbg_compress'));
+    compressChatBgImage(file).then(function (dataUrl) {
+      chatBgState = {
+        image: dataUrl,
+        opacity: chatBgState ? chatBgState.opacity : CHATBG_DEF_OPACITY,
+        blur: chatBgState ? chatBgState.blur : CHATBG_DEF_BLUR
+      };
+      chatBgApply(chatBgState);
+      chatBgSyncUI(chatBgState);
+      if (chatBgPersist()) showToast(t('chatbg_saved'));
+    }).catch(function () {
+      showToast(t('chatbg_fail'));
+    });
+  }
+
+  function chatBgBindUI() {
+    const pick = $('chatBgPick'), fileInput = $('chatBgFile');
+    if (pick && fileInput && !pick.dataset.chatbgBound) {
+      pick.dataset.chatbgBound = '1';
+      pick.addEventListener('click', function () { fileInput.click(); });
+      fileInput.addEventListener('change', function () {
+        const f = fileInput.files && fileInput.files[0];
+        /* 先清空才能重复选择同一个文件 */
+        try { fileInput.value = ''; } catch (e) {}
+        chatBgHandleFile(f);
+      });
+    }
+
+    const ro = $('chatBgOpacity');
+    if (ro && !ro.dataset.chatbgBound) {
+      ro.dataset.chatbgBound = '1';
+      ro.addEventListener('input', function () {
+        const v = chatBgClamp(ro.value, CHATBG_DEF_OPACITY, 0, 100);
+        chatBgState = Object.assign({ opacity: CHATBG_DEF_OPACITY, blur: CHATBG_DEF_BLUR }, chatBgState || {}, { opacity: v });
+        /* 只写 CSS 变量：不重绘 DOM / Canvas */
+        chatBgSetVar('--chat-bg-opacity', String(v / 100));
+        const el = $('chatBgOpacityVal');
+        if (el) el.textContent = Math.round(v) + '%';
+        if (chatBgState.image) chatBgScheduleSave();
+      });
+    }
+
+    const rb = $('chatBgBlur');
+    if (rb && !rb.dataset.chatbgBound) {
+      rb.dataset.chatbgBound = '1';
+      rb.addEventListener('input', function () {
+        const v = chatBgClamp(rb.value, CHATBG_DEF_BLUR, 0, 20);
+        chatBgState = Object.assign({ opacity: CHATBG_DEF_OPACITY, blur: CHATBG_DEF_BLUR }, chatBgState || {}, { blur: v });
+        chatBgSetVar('--chat-bg-blur', Math.round(v) + 'px');
+        const el = $('chatBgBlurVal');
+        if (el) el.textContent = Math.round(v) + 'px';
+        if (chatBgState.image) chatBgScheduleSave();
+      });
+    }
+
+    const clr = $('chatBgClear');
+    if (clr && !clr.dataset.chatbgBound) {
+      clr.dataset.chatbgBound = '1';
+      clr.addEventListener('click', chatBgClear);
+    }
+  }
+
+  function chatBgInit() {
+    chatBgState = chatBgLoad();
+    chatBgApply(chatBgState);
+    chatBgSyncUI(chatBgState);
+    chatBgBindUI();
+  }
+
+  /* 语言切换后同步卡片文案（预览体积文案依赖 JS，不在 data-i18n 里） */
+  (function () {
+    const prev = (typeof rerenderAllForLang === 'function') ? rerenderAllForLang : null;
+    if (!prev) return;
+    rerenderAllForLang = function () {
+      try { prev.apply(this, arguments); } catch (e) {}
+      try { chatBgSyncUI(chatBgState || chatBgLoad()); } catch (e2) {}
+    };
+  })();
+
+  if (typeof I18N_DICT !== 'undefined' && I18N_DICT.zh && I18N_DICT.en) {
+    Object.assign(I18N_DICT.zh, {
+      chatbg_title: '🖼️ 聊天背景',
+      chatbg_desc: '图片会先等比压缩到最长边 1920、JPEG 0.8 再存入本地，不会撑爆存储；背景之上自带随深浅色自适应的遮罩，保证文字清晰。',
+      chatbg_upload: '📷 上传图片',
+      chatbg_clear: '🗑 恢复默认',
+      chatbg_opacity: '透明度',
+      chatbg_blur: '模糊度',
+      chatbg_empty: '未设置背景',
+      chatbg_set: '已设置背景',
+      chatbg_compress: '正在压缩图片…',
+      chatbg_saved: '背景已保存',
+      chatbg_cleared: '已恢复默认背景',
+      chatbg_toobig: '背景图过大，未能保存；本次预览仍生效',
+      chatbg_fail: '图片处理失败，请换一张试试',
+      chatbg_type: '请选择图片文件'
+    });
+    Object.assign(I18N_DICT.en, {
+      chatbg_title: '🖼️ Chat Background',
+      chatbg_desc: 'Images are scaled to max edge 1920 at JPEG 0.8 before saving, so storage never overflows. A theme-aware mask keeps text readable.',
+      chatbg_upload: '📷 Upload image',
+      chatbg_clear: '🗑 Reset',
+      chatbg_opacity: 'Opacity',
+      chatbg_blur: 'Blur',
+      chatbg_empty: 'No background set',
+      chatbg_set: 'Background set',
+      chatbg_compress: 'Compressing image…',
+      chatbg_saved: 'Background saved',
+      chatbg_cleared: 'Background reset',
+      chatbg_toobig: 'Image too large to save; preview still works',
+      chatbg_fail: 'Image processing failed, try another one',
+      chatbg_type: 'Please choose an image file'
+    });
+  }
+
+  chatBgInit();
 initI18n();
 })();
 </script>
