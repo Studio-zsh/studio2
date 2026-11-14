@@ -1375,6 +1375,15 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
                 <span class="cap-check">✓</span>
                 <div><div class="cap-name">📐 格式规范</div><div class="cap-desc">标题/分点/层级统一排版</div></div>
               </div>
+              <!-- [v13.7.1] 内联动态组件：勾选后 AI 输出 radar / sandbox 代码块，气泡内直接渲染 -->
+              <div class="cap-item" data-cap="ui_radar">
+                <span class="cap-check">✓</span>
+                <div><div class="cap-name">📊 动态雷达图</div><div class="cap-desc">AI 将输出 ```radar 代码块并自动渲染</div></div>
+              </div>
+              <div class="cap-item" data-cap="ui_sandbox">
+                <span class="cap-check">✓</span>
+                <div><div class="cap-name">💻 内联沙箱</div><div class="cap-desc">AI 将输出 ```sandbox 代码块并生成预览</div></div>
+              </div>
             </div>
           </div>
         </div>
@@ -2128,7 +2137,10 @@ const CAPS = {
   table:    { label: '表格化输出', prompt: '涉及对比、数据、多方案取舍时，必须使用 Markdown 表格呈现，不要把对比写成大段文字。' },
   rigorous: { label: '严谨分析',   prompt: '先给出明确结论，再分点列出论据、数据与前提假设；主动指出不确定性、风险与反例。' },
   annotate: { label: '文中标注',   prompt: '关键结论后用「（依据：…）」的形式就地标注证据、来源或推导依据，让读者能追溯每条判断。' },
-  format:   { label: '格式规范',   prompt: '统一使用标题、有序/无序列表与加粗小标题组织内容，层级清晰，段落简短。' }
+  format:   { label: '格式规范',   prompt: '统一使用标题、有序/无序列表与加粗小标题组织内容，层级清晰，段落简短。' },
+  /* [v13.7.1] 内联动态组件能力：约束 AI 输出可被前端识别并渲染的代码块 */
+  ui_radar: { label: '动态雷达图', prompt: '当涉及多维数据对比时，必须输出 ```radar 代码块，代码块内严格按每行“维度名:数值(0-100)”输出，例如“准确性:88\\n逻辑性:92”。' },
+  ui_sandbox: { label: '内联沙箱', prompt: '当需要提供网页代码时，请输出 ```sandbox 代码块。代码块内部按此格式分隔：先写 HTML，然后单独一行写 ---CSS---，然后写 CSS，然后单独一行写 ---JS---，最后写 JS。' }
 };
 
 const CHECK_SYS = [
@@ -2621,6 +2633,24 @@ function renderMarkdown(src) {
   let text = String(src || '');
   text = text.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m, l, c) => {
     const codeLang = String(l || '').trim();
+    /* ===== [v13.7.1] 能力面板动态组件：radar / sandbox 代码块不再走普通代码框 ===== */
+    if (codeLang === 'radar') {
+      const rid = 'radar_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      blocks.push(
+        '<div class="dynamic-radar-container" id="' + rid + '"' +
+        ' data-code="' + escapeHtml(c).replace(/\n/g, '&#10;') + '"' +
+        ' style="width:100%;height:300px;margin:10px 0;"></div>'
+      );
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    }
+    if (codeLang === 'sandbox') {
+      blocks.push(
+        '<iframe class="dynamic-sandbox-frame" sandbox="allow-scripts"' +
+        ' data-code="' + escapeHtml(c).replace(/\n/g, '&#10;') + '"' +
+        ' style="width:100%;height:300px;border:1px solid #ccc;border-radius:8px;"></iframe>'
+      );
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    }
     blocks.push(
       '<div class="code-wrap">' +
         '<button class="copy-code-btn" type="button" aria-label="复制代码">复制</button>' +
