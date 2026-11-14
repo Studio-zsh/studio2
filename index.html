@@ -1208,6 +1208,19 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
 @media (max-width:480px){
   .topbar .lang-btn{ min-width:40px; max-width:52px; height:34px; padding:0 6px; font-size:10.5px; }
 }
+/* ==================== 沙箱 iframe 性能优化（v13.7.2） ====================
+   容器固定为独立的合成层，iframe 绝对定位铺满：
+   这样 3D / WebGL 内容拖拽时只触发 iframe 内部重绘，
+   不会把布局计算传染给外层聊天流。 */
+.dynamic-sandbox-container {
+  background: #0f172a;
+  contain: strict; /* 告诉浏览器独立渲染，防止影响外面 */
+}
+.dynamic-sandbox-container iframe {
+  display: block;
+  pointer-events: auto; /* 确保内部可以接受拖拽事件 */
+  -webkit-overflow-scrolling: touch;
+}
 </style>
 </head>
 <body>
@@ -2645,9 +2658,8 @@ function renderMarkdown(src) {
     }
     if (codeLang === 'sandbox') {
       blocks.push(
-        '<iframe class="dynamic-sandbox-frame" sandbox="allow-scripts"' +
-        ' data-code="' + encodeURIComponent(c) + '"' +
-        ' style="width:100%;height:300px;border:1px solid #ccc;border-radius:8px;"></iframe>'
+        '<div class="dynamic-sandbox-container" data-code="' + encodeURIComponent(c) + '"' +
+        ' style="width:100%;min-height:300px;border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;"></div>'
       );
       return '\u0000B' + (blocks.length - 1) + '\u0000';
     }
@@ -3288,15 +3300,23 @@ function initDynamicWidgets() {
   });
 
   /* ② 沙箱 iframe */
-  document.querySelectorAll('.dynamic-sandbox-frame').forEach(function (el) {
-    if (el.dataset.inited || el.getAttribute('srcdoc')) return;
+  document.querySelectorAll('.dynamic-sandbox-container').forEach(function (el) {
+    /* 已有 iframe ⇒ 说明渲染过了，直接跳过，防止 3D / CSS 动画重置 */
+    if (el.querySelector('iframe')) return;
     var raw = decodeURIComponent(el.getAttribute('data-code') || '');
     if (!raw.trim()) return;
 
     try {
       var p = initSplitSandboxCode(raw);
-      el.srcdoc = initDynamicSandboxDoc(p.html, p.css, p.js);
-      el.dataset.inited = '1';
+      var iframe = document.createElement('iframe');
+
+      /* 性能优化：硬件加速 + 合成层提升，避免拖拽时触发外层重排 */
+      iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+      iframe.style.cssText = 'width:100%; height:100%; border:none; position:absolute; top:0; left:0; will-change: transform; transform: translateZ(0);';
+
+      iframe.srcdoc = initDynamicSandboxDoc(p.html, p.css, p.js);
+
+      el.appendChild(iframe);
     } catch (e) {
       console.error('[Sandbox] 渲染报错:', e);
     }
@@ -9700,4 +9720,3 @@ document.getElementById('b').onclick = function () {
 
 </body>
 </html>
-l
