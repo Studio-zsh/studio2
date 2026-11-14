@@ -2638,7 +2638,7 @@ function renderMarkdown(src) {
       const rid = 'radar_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       blocks.push(
         '<div class="dynamic-radar-container" id="' + rid + '"' +
-        ' data-code="' + escapeHtml(c).replace(/\n/g, '&#10;') + '"' +
+        ' data-code="' + encodeURIComponent(c) + '"' +
         ' style="width:100%;height:300px;margin:10px 0;"></div>'
       );
       return '\u0000B' + (blocks.length - 1) + '\u0000';
@@ -2646,7 +2646,7 @@ function renderMarkdown(src) {
     if (codeLang === 'sandbox') {
       blocks.push(
         '<iframe class="dynamic-sandbox-frame" sandbox="allow-scripts"' +
-        ' data-code="' + escapeHtml(c).replace(/\n/g, '&#10;') + '"' +
+        ' data-code="' + encodeURIComponent(c) + '"' +
         ' style="width:100%;height:300px;border:1px solid #ccc;border-radius:8px;"></iframe>'
       );
       return '\u0000B' + (blocks.length - 1) + '\u0000';
@@ -3177,6 +3177,141 @@ function buildMsgEl(m) {
   return wrap;
 }
 
+/* =====================================================
+   === [v13.7.1] 能力面板动态组件：radar 容器 / sandbox iframe 落地 ===
+   -----------------------------------------------------
+   · radar  : 解析 data-code（每行「维度:数值」或纯数字）→ window.renderRadarChart(el.id, items)
+   · sandbox: data-code 按 ---CSS--- / ---JS--- 三段切分 → 拼完整文档写入 iframe.srcdoc
+   · 幂等   : dataset.inited + echarts.getInstanceByDom + srcdoc 非空 三重判定
+   · 不阻塞 : 流式期间（streaming）直接返回，避免 innerHTML 整段重建导致反复 init
+   · 容错   : 渲染器未就绪时只写「加载中」并有限次重试，绝不误报解析失败
+   ===================================================== */
+var dynWidgetRetryTimer = 0;
+var dynWidgetRetryTries = 0;
+
+/* sandbox 三段 → 完整 HTML 文档（主 IIFE 私有副本：工具台的 buildSandboxDoc 未挂 window 且执行更晚） */
+function initDynamicSandboxDoc(html, css, js) {
+  var safeJs = String(js || '').replace(/<\/script/gi, '<\\/script');
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<style>html,body{margin:0;padding:12px;background:#fff;color:#1e293b;' +
+    'font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
+    'img{max-width:100%;height:auto}' +
+    'pre,code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}\n' +
+    String(css || '') + '</style></head><body>' + String(html || '') +
+    '<script>\n' + safeJs + '\n<\/script></body></html>';
+}
+
+/* data-code → [{label, value}]：兼容全角冒号 / 等号 / 纯数字行 */
+function initParseRadarCode(raw) {
+  return String(raw || '').split(/[\n,;，；]+/).map(function (seg) {
+    seg = String(seg).trim().replace(/\*/g, '');
+    if (!seg) return null;
+    var norm = seg.replace(/：/g, ':').replace(/＝/g, '=');
+    var m = norm.match(/^(.*?)[\s:=]+(-?\d+(?:\.\d+)?)\s*[)）]?\s*$/);
+    if (m) return { label: (m[1] || '').trim(), value: Number(m[2]) };
+    var n = Number(norm);
+    return isFinite(n) ? { label: '', value: n } : null;
+  }).filter(Boolean);
+}
+
+/* data-code → {html, css, js}：容错 --- CSS --- / ---JS--- 等带空格写法 */
+function initSplitSandboxCode(raw) {
+  var s = String(raw || '').replace(/\r\n/g, '\n')
+    .replace(/^[ \t]*---\s*CSS\s*---[ \t]*$/gim, '---CSS---')
+    .replace(/^[ \t]*---\s*JS\s*---[ \t]*$/gim, '---JS---');
+  var iCss = s.indexOf('---CSS---');
+  if (iCss < 0) return { html: s.trim(), css: '', js: '' };
+  var iJs = s.indexOf('---JS---', iCss + 9);
+  if (iJs < 0) return { html: s.slice(0, iCss).trim(), css: s.slice(iCss + 9).trim(), js: '' };
+  return {
+    html: s.slice(0, iCss).trim(),
+    css: s.slice(iCss + 9, iJs).trim(),
+    js: s.slice(iJs + 8).trim()
+  };
+}
+
+/* 把消息区里所有未初始化的动态组件落地（可安全重复调用） */
+function initDynamicWidgets() {
+  /* 流式期间 mdEl.innerHTML 会被反复整段覆写：此时 init 只会不断重建 canvas / 重载 iframe，
+     故直接跳过；sendMessage 的 finally 会先置 streaming=false 再 renderChat() 收尾渲染。 */
+  if (typeof streaming !== 'undefined' && streaming) return;
+
+  /* ① 雷达图 */
+  document.querySelectorAll('.dynamic-radar-container').forEach(function (el) {
+    if (el.dataset.inited) return;                 /* 已经渲染过就跳过 */
+    var raw = decodeURIComponent(el.getAttribute('data-code') || '');
+    if (!raw.trim()) return;
+
+    var items = initParseRadarCode(raw);
+
+    /* 渲染器未就绪（首屏恢复历史会话时 echarts / renderRadarChart 还没加载）：
+       只写提示、不打 inited 标记、不做解析失败判定，稍后重试 */
+    if (typeof window.renderRadarChart !== 'function' || typeof window.echarts === 'undefined') {
+      if (el.dataset.pending !== '1') {
+        el.textContent = '图表渲染器加载中…';
+        el.dataset.pending = '1';
+      }
+      if (!dynWidgetRetryTimer && dynWidgetRetryTries < 8) {
+        dynWidgetRetryTries++;
+        dynWidgetRetryTimer = setTimeout(function () {
+          dynWidgetRetryTimer = 0;
+          initDynamicWidgets();
+        }, 400);
+      }
+      return;
+    }
+    delete el.dataset.pending;
+    dynWidgetRetryTries = 0;   /* 渲染器已就绪 ⇒ 重置重试预算 */
+
+    if (items.length < 3) {
+      /* 解析失败时显示红框，绝不吞代码（raw 必须转义，否则会被当 HTML 执行） */
+      el.innerHTML = '<div style="color:#ef4444;font-size:12px;padding:10px;border:1px dashed #ef4444;border-radius:8px;">⚠️ 雷达图数据解析失败（需至少 3 个维度）。AI 原始输出：' +
+        '<pre style="white-space:pre-wrap;font-size:10px;margin-top:5px;">' + escapeHtml(raw) + '</pre></div>';
+      el.dataset.inited = '1';
+      return;
+    }
+
+    try {
+      /* 复用实例：命中则只 resize，避免重复 echarts.init */
+      if (window.echarts.getInstanceByDom && window.echarts.getInstanceByDom(el)) {
+        el.dataset.inited = '1';
+        window.echarts.getInstanceByDom(el).resize();
+        return;
+      }
+      window.renderRadarChart(el.id, items);
+      el.dataset.inited = '1';
+    } catch (e) {
+      console.error('[Radar] 渲染报错:', e);
+      el.textContent = '雷达图渲染失败：' + ((e && e.message) || '未知错误');
+    }
+  });
+
+  /* ② 沙箱 iframe */
+  document.querySelectorAll('.dynamic-sandbox-frame').forEach(function (el) {
+    if (el.dataset.inited || el.getAttribute('srcdoc')) return;
+    var raw = decodeURIComponent(el.getAttribute('data-code') || '');
+    if (!raw.trim()) return;
+
+    try {
+      var p = initSplitSandboxCode(raw);
+      el.srcdoc = initDynamicSandboxDoc(p.html, p.css, p.js);
+      el.dataset.inited = '1';
+    } catch (e) {
+      console.error('[Sandbox] 渲染报错:', e);
+    }
+  });
+
+  /* 容器刚插入时尺寸可能为 0，一帧后补一次 resize */
+  requestAnimationFrame(function () {
+    if (!window.echarts || !window.echarts.getInstanceByDom) return;
+    document.querySelectorAll('.dynamic-radar-container').forEach(function (el) {
+      var inst = window.echarts.getInstanceByDom(el);
+      if (inst) { try { inst.resize(); } catch (e) {} }
+    });
+  });
+}
+
 function renderChat() {
   const inner = $('chatInner');
   const s = sessions.find(x => x.id === currentId);
@@ -3210,6 +3345,8 @@ function renderChat() {
   decorateShareButtons();
   $('chatScroll').scrollTop = $('chatScroll').scrollHeight;
   if (agentMode) renderScriptPane();
+  /* [v13.7.1] 消息区 DOM 落地后实例化气泡内的雷达图 / 沙箱（幂等，重复调用安全） */
+  initDynamicWidgets();
 }
 
 function switchView(v) {
@@ -6312,11 +6449,13 @@ async function sendMessage() {
             /* [v13.7.1] 首帧立即渲染：首字不延迟 */
             lastChatPaint = Date.now();
             mdEl.innerHTML = renderMarkdown(full);
+            initDynamicWidgets();
           } else if (!paintTimer) {
             paintTimer = setTimeout(function () {
               paintTimer = 0;
               if (!mdEl) return;
               mdEl.innerHTML = renderMarkdown(full);
+              initDynamicWidgets();
               const sc2 = $('chatScroll');
               if (sc2.scrollHeight - sc2.scrollTop - sc2.clientHeight < 160) sc2.scrollTop = sc2.scrollHeight;
             }, CHAT_PAINT_MS);
@@ -9561,3 +9700,4 @@ document.getElementById('b').onclick = function () {
 
 </body>
 </html>
+l
