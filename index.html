@@ -1585,6 +1585,14 @@ body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
                 <span class="cap-check">✓</span>
                 <div><div class="cap-name">📊 动态雷达图</div><div class="cap-desc">AI 将输出 ```radar 代码块并自动渲染</div></div>
               </div>
+              <div class="cap-item" data-cap="ui_mermaid">
+                <span class="cap-check">✓</span>
+                <div><div class="cap-name">🧜 Mermaid 图表</div><div class="cap-desc">AI 将输出 &#96;&#96;&#96;mermaid 代码块并渲染流程图/时序图</div></div>
+              </div>
+              <div class="cap-item" data-cap="ui_three">
+                <span class="cap-check">✓</span>
+                <div><div class="cap-name">🧊 原生 3D 画布</div><div class="cap-desc">AI 将输出 &#96;&#96;&#96;three 代码块并在原生 WebGL 画布渲染</div></div>
+              </div>
               <div class="cap-item" data-cap="ui_sandbox">
                 <span class="cap-check">✓</span>
                 <div><div class="cap-name">💻 内联沙箱</div><div class="cap-desc">AI 将输出 ```sandbox 代码块并生成预览</div></div>
@@ -2398,6 +2406,8 @@ const CAPS = {
   annotate: { label: '文中标注',   prompt: '关键结论后用「（依据：…）」的形式就地标注证据、来源或推导依据，让读者能追溯每条判断。' },
   format:   { label: '格式规范',   prompt: '统一使用标题、有序/无序列表与加粗小标题组织内容，层级清晰，段落简短。' },
   /* [v13.7.1] 内联动态组件能力：约束 AI 输出可被前端识别并渲染的代码块 */
+  ui_mermaid: { label: 'Mermaid 图表', prompt: '当需要描述流程、时序、状态机、类图或架构关系时，必须输出 ```mermaid 代码块（Mermaid v11 语法），代码块内只写图定义，不要附加解释文字。示例：\n```mermaid\ngraph TD\n  A[开始] --> B{判断}\n  B -->|是| C[执行]\n```' },
+  ui_three: { label: '原生 3D 画布', prompt: '当需要展示 3D 场景时，优先输出 ```three 代码块：代码块内直接写 JavaScript，可直接使用已注入的 THREE / scene / camera / renderer / root 变量，把物体挂到 root 上（root.add(...)）。如需自定义背景，可在代码块第一行写 JSON 参数（如 {"bg":"#0b0d12"}），再用单独一行 --- 分隔。禁止写 import 语句、禁止写 requestAnimationFrame 渲染循环（引擎已内置）。如需 OrbitControls 手感，引擎已内置拖拽旋转与滚轮缩放。' },
   ui_radar: { label: '动态雷达图', prompt: '当涉及多维数据对比时，必须输出 ```radar 代码块，代码块内严格按每行“维度名:数值(0-100)”输出，例如“准确性:88\\n逻辑性:92”。' },
   ui_sandbox: { label: '内联沙箱', prompt: '当需要提供网页代码时，请输出 ```sandbox 代码块。内部按 HTML、---CSS---、---JS--- 顺序分隔。\n【极其重要】：如果生成的代码包含 Three.js 3D 场景，你必须使用 importmap 引入模块（包含 three 和 three/addons/）。并且必须写一段 JS，在右下角创建一个“⬇ 导出GLB”按钮，用 GLTFExporter 导出 scene 并触发下载。不要偷懒，必须写。' }
 };
@@ -2899,6 +2909,30 @@ function renderMarkdown(src) {
         '<div class="dynamic-radar-container" id="' + rid + '"' +
         ' data-code="' + encodeURIComponent(c) + '"' +
         ' style="width:100%;height:300px;margin:10px 0;"></div>'
+      );
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    }
+    if (codeLang === 'mermaid' || codeLang === 'mmd') {
+      blocks.push(
+        '<div class="m3-mermaid" data-code="' + encodeURIComponent(c) + '">' +
+          '<div class="m3-pending">⏳ 图表待渲染</div>' +
+        '</div>'
+      );
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    }
+    if (codeLang === 'three' || codeLang === 'x3d') {
+      blocks.push(
+        '<div class="m3-3d-wrap">' +
+          '<div class="m3-3d-bar">' +
+            '<span class="m3-3d-tag">🧊 Three.js 原生画布</span>' +
+            '<button class="m3-btn m3-3d-export" type="button">⬇ GLB</button>' +
+            '<button class="m3-btn m3-3d-reset" type="button">↺ 重置</button>' +
+          '</div>' +
+          '<div class="m3-3d" data-code="' + encodeURIComponent(c) + '">' +
+            '<canvas class="m3-3d-cv"></canvas>' +
+            '<div class="m3-pending">⏳ 3D 场景待渲染</div>' +
+          '</div>' +
+        '</div>'
       );
       return '\u0000B' + (blocks.length - 1) + '\u0000';
     }
@@ -10360,7 +10394,15 @@ function wfNormStep(s) {
   return {
     model: String(s.model || ''),
     promptTemplate: String(s.promptTemplate === undefined || s.promptTemplate === null ? '' : s.promptTemplate),
-    outputVar: String(s.outputVar || '').slice(0, 24)
+    outputVar: String(s.outputVar || '').slice(0, 24),
+    type: (s.type === 'branch' ? 'branch' : 'task'),
+    branch: (s.branch && typeof s.branch === 'object') ? {
+      condVar: String(s.branch.condVar || '').slice(0, 24),
+      op: String(s.branch.op || 'eq'),
+      value: String(s.branch.value === undefined || s.branch.value === null ? '' : s.branch.value),
+      thenTo: String(s.branch.thenTo === undefined || s.branch.thenTo === null ? '' : s.branch.thenTo),
+      elseTo: String(s.branch.elseTo === undefined || s.branch.elseTo === null ? '' : s.branch.elseTo)
+    } : null
   };
 }
 
@@ -10477,8 +10519,8 @@ async function wfRun() {
   if (!steps.length) { showToast(t('wf_empty')); return; }
   var seen = {};
   for (var v = 0; v < steps.length; v++) {
-    if (!String(steps[v].promptTemplate || '').trim()) { showToast(extP('wf_need_prompt', { n: v + 1 })); return; }
-    var vn = String(steps[v].outputVar || '').trim();
+    if (steps[v] && steps[v].type !== 'branch' && !String(steps[v].promptTemplate || '').trim()) { showToast(extP('wf_need_prompt', { n: v + 1 })); return; }
+    var vn = (steps[v] && steps[v].type === 'branch') ? ('m3_branch_' + v) : String(steps[v].outputVar || '').trim();
     if (!vn) { showToast(extP('wf_need_var', { n: v + 1 })); return; }
     if (seen[vn]) { showToast(extP('wf_dup_var', { name: vn })); return; }
     seen[vn] = 1;
@@ -10491,9 +10533,19 @@ async function wfRun() {
   wfSetRunning(true);
   var vars = {};
   try {
-    for (var s = 0; s < steps.length; s++) {
+    for (var s = 0, m3Hop = 0; s < steps.length && m3Hop++ < 100; s++) {
       if (aborter.signal.aborted) throw new Error('aborted');
       var st = steps[s];
+      /* Max3 · ⑤ 条件分支节点：不走模型调用，求值后直接跳转 */
+      if (st && st.type === 'branch') {
+        var m3j = (typeof window.m3WfBranch === 'function')
+          ? window.m3WfBranch(st, vars, steps)
+          : { to: -1, label: 'BRANCH (engine not ready)' };
+        extWF.output += (extWF.output ? '\n\n' : '') + '### 🔀 ' + (s + 1) + '. ' + String(m3j.label || '');
+        if (!(m3j.to >= 0 && m3j.to < steps.length)) break;
+        s = m3j.to - 1;
+        continue;
+      }
       showToast(extP('wf_running', { n: s + 1 }));
       var prompt = ptApplyVars(String(st.promptTemplate || ''), vars);
       extWF.live = '';
@@ -11313,6 +11365,1767 @@ window.OMNI_EXT = {
   backup: { exportAll: extBackupExport, importFile: extBackupImport },
   lastRagHits: function () { return window.__lastRagHits || []; }
 };
+/* ============================================================================
+ * Max 3 x3D · ① IndexedDB 存储层  m3IDB
+ * ----------------------------------------------------------------------------
+ * 目标：突破 localStorage 5MB 瓶颈，承载 RAG 语料 / Base64 图片 / 模型元信息
+ * 策略：IDB 为真相源，localStorage 继续写「同版本可回退」的影子副本
+ * 隔离：全部逻辑包在独立 IIFE 内，唯一出口 window.m3IDB / window.OMNI_MAX3
+ * ========================================================================== */
+window.OMNI_MAX3 = window.OMNI_MAX3 || { version: '3.0.0-x3d', modules: {} };
+
+(function () {
+  var DB_NAME = 'omni_max3';
+  var DB_VER = 1;
+  var STORES = ['kv', 'rag_chunks', 'images', 'assets'];
+  var openP = null;
+
+  var m3IDB = {
+    name: DB_NAME,
+    version: DB_VER,
+    db: null,
+    ok: (function () {
+      try { return typeof indexedDB !== 'undefined' && !!indexedDB; } catch (e) { return false; }
+    })(),
+    open: function () {
+      if (!m3IDB.ok) return Promise.reject(new Error('M3_NO_IDB'));
+      if (openP) return openP;
+      openP = new Promise(function (resolve, reject) {
+        var req;
+        try { req = indexedDB.open(DB_NAME, DB_VER); }
+        catch (e) { reject(e); return; }
+        req.onupgradeneeded = function () {
+          var db = req.result;
+          for (var i = 0; i < STORES.length; i++) {
+            var nm = STORES[i];
+            if (!db.objectStoreNames.contains(nm)) {
+              db.createObjectStore(nm, { keyPath: nm === 'kv' ? 'k' : 'id' });
+            }
+          }
+        };
+        req.onsuccess = function () { m3IDB.db = req.result; resolve(req.result); };
+        req.onerror = function () { reject(req.error || new Error('M3_IDB_OPEN')); };
+        req.onblocked = function () { reject(new Error('M3_IDB_BLOCKED')); };
+      });
+      openP.catch(function () { openP = null; });
+      return openP;
+    },
+    get: function (k, store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx, rq;
+          try {
+            tx = db.transaction(store, 'readonly');
+            rq = tx.objectStore(store).get(k);
+          } catch (e) { rej(e); return; }
+          rq.onsuccess = function () {
+            var rec = rq.result;
+            if (rec === undefined) { res(undefined); return; }
+            res(store === 'kv' ? rec.v : rec);
+          };
+          rq.onerror = function () { rej(rq.error); };
+        });
+      });
+    },
+    put: function (k, v, store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx, os;
+          try {
+            tx = db.transaction(store, 'readwrite');
+            os = tx.objectStore(store);
+            if (store === 'kv') os.put({ k: k, v: v, t: Date.now() });
+            else os.put(v);
+          } catch (e) { rej(e); return; }
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = function () { rej(tx.error || new Error('M3_PUT')); };
+          tx.onabort = function () { rej(tx.error || new Error('M3_PUT_ABORT')); };
+        });
+      });
+    },
+    del: function (k, store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx;
+          try {
+            tx = db.transaction(store, 'readwrite');
+            tx.objectStore(store).delete(k);
+          } catch (e) { rej(e); return; }
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = function () { rej(tx.error); };
+        });
+      });
+    },
+    keys: function (store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx, rq;
+          try {
+            tx = db.transaction(store, 'readonly');
+            rq = tx.objectStore(store).getAllKeys();
+          } catch (e) { rej(e); return; }
+          rq.onsuccess = function () { res(Array.prototype.slice.call(rq.result || [])); };
+          rq.onerror = function () { rej(rq.error); };
+        });
+      });
+    },
+    all: function (store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx, rq;
+          try {
+            tx = db.transaction(store, 'readonly');
+            rq = tx.objectStore(store).getAll();
+          } catch (e) { rej(e); return; }
+          rq.onsuccess = function () {
+            var rows = rq.result || [];
+            res(Array.prototype.slice.call(rows).map(function (r) {
+              return store === 'kv' ? { k: r.k, v: r.v, t: r.t } : r;
+            }));
+          };
+          rq.onerror = function () { rej(rq.error); };
+        });
+      });
+    },
+    bulkPut: function (store, rows) {
+      store = store || 'kv';
+      if (!rows || !rows.length) return Promise.resolve(true);
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx, os;
+          try {
+            tx = db.transaction(store, 'readwrite');
+            os = tx.objectStore(store);
+            for (var i = 0; i < rows.length; i++) {
+              var r = rows[i];
+              if (store === 'kv' && r && r.k !== undefined) os.put({ k: r.k, v: r.v, t: r.t || Date.now() });
+              else os.put(r);
+            }
+          } catch (e) { rej(e); return; }
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = function () { rej(tx.error || new Error('M3_BULK')); };
+          tx.onabort = function () { rej(tx.error || new Error('M3_BULK_ABORT')); };
+        });
+      });
+    },
+    clear: function (store) {
+      store = store || 'kv';
+      return m3IDB.open().then(function (db) {
+        return new Promise(function (res, rej) {
+          var tx;
+          try {
+            tx = db.transaction(store, 'readwrite');
+            tx.objectStore(store).clear();
+          } catch (e) { rej(e); return; }
+          tx.oncomplete = function () { res(true); };
+          tx.onerror = function () { rej(tx.error); };
+        });
+      });
+    },
+    /* localStorage → IndexedDB 一次性迁移（幂等，带完成标记） */
+    migrate: function () {
+      if (!m3IDB.ok) return Promise.resolve(0);
+      return m3IDB.open().then(function () {
+        return m3IDB.get('__m3_migrated_v1');
+      }).then(function (done) {
+        if (done) return 0;
+        var rows = [];
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (!k || k.indexOf('autoPro_') !== 0) continue;
+            rows.push({ k: k, v: localStorage.getItem(k) });
+          }
+        } catch (e) {}
+        var chain = rows.length ? m3IDB.bulkPut('kv', rows) : Promise.resolve(true);
+        return chain.then(function () {
+          return m3IDB.put('__m3_migrated_v1', Date.now());
+        }).then(function () { return rows.length; });
+      }).catch(function () { return 0; });
+    }
+  };
+
+  window.m3IDB = m3IDB;
+  window.OMNI_MAX3.modules.idb = m3IDB;
+})();
+
+/* --- ①-B 持久化接管：IDB 主写 + LS 影子写 + 图片非破坏性外置 --------------- */
+(function () {
+  var m3Offloaded = {};
+  var m3BasePersistSessions = null;
+
+  function m3Hash(str) {
+    var h = 5381, n = String(str || '').length;
+    var lim = Math.min(n, 4096);
+    for (var i = 0; i < lim; i++) { h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; }
+    return 'i' + h.toString(36) + '_' + n.toString(36);
+  }
+
+  function m3SnapImages() {
+    var list = [];
+    if (typeof sessions === 'undefined' || !sessions || !sessions.length) return list;
+    for (var i = 0; i < sessions.length; i++) {
+      var ms = sessions[i] && sessions[i].messages;
+      if (!ms || !ms.length) continue;
+      for (var j = 0; j < ms.length; j++) {
+        var m = ms[j];
+        if (!m) continue;
+        if (m.image) list.push({ m: m, k: 'image', v: m.image });
+        if (m.images && m.images.length) list.push({ m: m, k: 'images', v: m.images.slice() });
+      }
+    }
+    return list;
+  }
+
+  function m3RestoreImages(bk) {
+    if (!bk || !bk.length) return;
+    for (var i = 0; i < bk.length; i++) {
+      var it = bk[i];
+      if (!it || !it.m) continue;
+      if (it.k === 'image' && !it.m.image) it.m.image = it.v;
+      if (it.k === 'images' && (!it.m.images || !it.m.images.length)) it.m.images = it.v;
+    }
+  }
+
+  /* 把 Base64 图片额外备份到 IDB images store（不改动消息体，零渲染风险） */
+  function m3OffloadImages() {
+    var db = window.m3IDB;
+    if (!db || !db.ok) return;
+    if (typeof sessions === 'undefined' || !sessions || !sessions.length) return;
+    var rows = [];
+    for (var i = 0; i < sessions.length; i++) {
+      var sid = (sessions[i] && sessions[i].id) || ('s' + i);
+      var ms = sessions[i] && sessions[i].messages;
+      if (!ms || !ms.length) continue;
+      for (var j = 0; j < ms.length; j++) {
+        var m = ms[j];
+        if (!m) continue;
+        var srcs = [];
+        if (typeof m.image === 'string') srcs.push(m.image);
+        if (m.images && m.images.length) {
+          for (var q = 0; q < m.images.length; q++) {
+            var im = m.images[q];
+            srcs.push(typeof im === 'string' ? im : (im && im.url) || '');
+          }
+        }
+        for (var t = 0; t < srcs.length; t++) {
+          var s = srcs[t];
+          if (!s || s.length < 2048) continue;
+          var id = m3Hash(s);
+          if (m3Offloaded[id]) continue;
+          m3Offloaded[id] = 1;
+          rows.push({ id: id, sessionId: String(sid), msgIndex: j, data: s, t: Date.now() });
+        }
+      }
+    }
+    if (!rows.length) return;
+    db.bulkPut('images', rows).catch(function () {});
+  }
+
+  function m3MirrorSessions() {
+    var db = window.m3IDB;
+    if (!db || !db.ok) return;
+    var raw;
+    try { raw = JSON.stringify(sessions); } catch (e) { return; }
+    db.put('autoPro_sessions', raw).catch(function () {});
+    try {
+      var cur = (typeof currentId !== 'undefined' && currentId) ? currentId : '';
+      db.put('autoPro_current', String(cur)).catch(function () {});
+    } catch (e) {}
+    m3OffloadImages();
+  }
+
+  function m3MirrorRag() {
+    var db = window.m3IDB;
+    if (!db || !db.ok) return;
+    var raw = null;
+    try { raw = localStorage.getItem('autoPro_ragChunks'); } catch (e) {}
+    if (raw === null) return;
+    db.put('autoPro_ragChunks', raw).catch(function () {});
+  }
+
+  /* 包裹 doPersistSessions：先备份图片引用 → 跑原逻辑（可能因 quota 删图）→ 复原内存图片 → 写 IDB */
+  try {
+    if (typeof doPersistSessions === 'function') {
+      m3BasePersistSessions = doPersistSessions;
+      doPersistSessions = function doPersistSessionsMax3() {
+        var bk = m3SnapImages();
+        var out;
+        try { out = m3BasePersistSessions.apply(this, arguments); }
+        catch (e) { m3RestoreImages(bk); throw e; }
+        m3RestoreImages(bk);
+        try { m3MirrorSessions(); } catch (e) {}
+        return out;
+      };
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof ragPersist === 'function') {
+      var m3RagPersistBase = ragPersist;
+      ragPersist = function ragPersistMax3() {
+        var out = m3RagPersistBase.apply(this, arguments);
+        try { m3MirrorRag(); } catch (e) {}
+        return out;
+      };
+    }
+  } catch (e) {}
+
+  window.m3Persist = {
+    mirrorSessions: m3MirrorSessions,
+    mirrorRag: m3MirrorRag,
+    offloadImages: m3OffloadImages,
+    restoreFromIDB: function () {
+      var db = window.m3IDB;
+      if (!db || !db.ok) return Promise.resolve(false);
+      return db.get('autoPro_sessions').then(function (v) {
+        if (typeof v !== 'string' || !v) return false;
+        try { localStorage.setItem('autoPro_sessions', v); } catch (e) { return false; }
+        return true;
+      }).catch(function () { return false; });
+    }
+  };
+  window.OMNI_MAX3.modules.persist = window.m3Persist;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ② Mermaid 对话流渲染
+ * 懒加载 CDN，容器类名 .m3-mermaid（刻意避开 .code-wrap 以免被导出层正则污染）
+ * ========================================================================== */
+(function () {
+  var CDN = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+  var libP = null;
+  var themeSet = '';
+
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = function () { res(true); };
+      s.onerror = function () { rej(new Error('M3_CDN_FAIL')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function ensure() {
+    if (window.mermaid) return Promise.resolve(window.mermaid);
+    if (libP) return libP;
+    libP = loadScript(CDN).then(function () {
+      if (!window.mermaid) throw new Error('M3_MERMAID_MISSING');
+      return window.mermaid;
+    }).catch(function (e) { libP = null; throw e; });
+    return libP;
+  }
+
+  function isDark() {
+    try {
+      if (document.documentElement.classList.contains('dark')) return true;
+      if (document.body && document.body.classList.contains('dark')) return true;
+      if (localStorage.getItem('autoPro_dark') === '1') return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function rawOf(el) {
+    var v = '';
+    try { v = decodeURIComponent(el.getAttribute('data-code') || ''); }
+    catch (e) { v = el.getAttribute('data-code') || ''; }
+    return String(v);
+  }
+
+  function scan(el) {
+    if (!el || el.dataset.m3Done) return;
+    var raw = rawOf(el);
+    if (!raw.trim()) return;
+    ensure().then(function (m) {
+      var th = isDark() ? 'dark' : 'default';
+      if (themeSet !== th) {
+        m.initialize({ startOnLoad: false, securityLevel: 'strict', theme: th, fontFamily: 'inherit' });
+        themeSet = th;
+      }
+      var id = 'm3mmd' + Math.random().toString(36).slice(2, 9);
+      return m.render(id, raw);
+    }).then(function (r) {
+      var svg = (r && r.svg) ? r.svg : '';
+      if (!svg) throw new Error('M3_EMPTY_SVG');
+      el.innerHTML = svg;
+      el.dataset.m3Done = '1';
+      el.classList.remove('m3-fail');
+      el.classList.add('m3-ok');
+    }).catch(function () {
+      el.dataset.m3Done = '1';
+      el.classList.add('m3-fail');
+      el.innerHTML = '<div class="m3-raw-code-label">Mermaid 渲染失败 · 原始代码</div>' +
+        '<pre class="m3-raw-code">' + escapeHtml(raw) + '</pre>';
+    });
+  }
+
+  window.m3Mermaid = { ensure: ensure, scan: scan, raw: rawOf };
+  window.OMNI_MAX3.modules.mermaid = window.m3Mermaid;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ③ Three.js 原生画布  x3dView
+ * CDN 走动态 ESM import（首屏不付 ~600KB）；含像素比钳制 / ResizeObserver /
+ * 离屏与后台暂停 rAF / WebGL 不可用降级 / GLTFExporter 导出 GLB
+ * ========================================================================== */
+(function () {
+  var THREE_URL = 'https://esm.sh/three@0.161.0';
+  var EXPORTER_URL = 'https://esm.sh/three@0.161.0/examples/jsm/exporters/GLTFExporter.js';
+  var threeP = null;
+
+  function loadThree() {
+    if (threeP) return threeP;
+    threeP = import(THREE_URL).catch(function (e) { threeP = null; throw e; });
+    return threeP;
+  }
+
+  function parseRaw(el) {
+    var txt = '';
+    try { txt = decodeURIComponent(el.getAttribute('data-code') || ''); }
+    catch (e) { txt = el.getAttribute('data-code') || ''; }
+    txt = String(txt);
+    var cfg = {}, body = txt;
+    var sep = txt.indexOf('\n---');
+    if (sep > -1) {
+      var head = txt.slice(0, sep).trim();
+      if (head.charAt(0) === '{') {
+        try { cfg = JSON.parse(head) || {}; body = txt.slice(sep + 4); } catch (e) {}
+      }
+    }
+    return { cfg: cfg || {}, body: String(body || '') };
+  }
+
+  function degrade(box, raw) {
+    var wrap = box.closest('.m3-3d-wrap');
+    box.innerHTML = '<div class="m3-pending" style="min-height:100%;flex-direction:column;gap:10px;padding:14px;text-align:center">' +
+      '当前环境不支持 WebGL，无法原生渲染。<br>' +
+      '<button class="m3-btn m3-3d-to-sandbox" type="button">在沙箱中运行</button></div>';
+    var b = box.querySelector('.m3-3d-to-sandbox');
+    if (b) b.onclick = function () {
+      if (typeof extInsertAtCursor === 'function') {
+        extInsertAtCursor('\n```sandbox\n' + raw + '\n```\n');
+        if (typeof showToast === 'function') showToast('已插入沙箱代码块，可直接发送');
+      }
+    };
+  }
+
+  function exportGLB(inst, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '导出中…'; }
+    Promise.resolve()
+      .then(function () { return import(EXPORTER_URL); })
+      .then(function (mod) {
+        var Ex = mod.GLTFExporter || (mod.default && mod.default.GLTFExporter);
+        if (!Ex) throw new Error('M3_NO_EXPORTER');
+        var ex = new Ex();
+        return new Promise(function (res, rej) {
+          try {
+            ex.parse(inst.root, function (buf) { res(buf); }, { binary: true },
+              function (err) { rej(err || new Error('M3_GLTF_FAIL')); });
+          } catch (e) { rej(e); }
+        });
+      })
+      .then(function (buf) {
+        var blob = new Blob([buf], { type: 'model/gltf-binary' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'x3d-' + Date.now().toString(36) + '.glb';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 1500);
+      })
+      .catch(function () {
+        if (typeof showToast === 'function') showToast('GLB 导出失败：可在沙箱中使用 GLTFExporter 导出');
+      })
+      .then(function () {
+        if (btn) { btn.disabled = false; btn.textContent = '⬇ GLB'; }
+      });
+  }
+
+  function mount(box) {
+    if (!box || box.dataset.m3Mounted) return;
+    var canvas = box.querySelector('.m3-3d-cv');
+    if (!canvas) return;
+    box.dataset.m3Mounted = '1';
+    var parsed = parseRaw(box);
+
+    loadThree().then(function (THREE) {
+      var w = box.clientWidth || 320;
+      var h = box.clientHeight || 320;
+      var renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: canvas, antialias: true,
+          alpha: !parsed.cfg.bg, preserveDrawingBuffer: true
+        });
+      } catch (e) { throw new Error('M3_NO_WEBGL'); }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+      if (parsed.cfg.bg) {
+        try { renderer.setClearColor(new THREE.Color(String(parsed.cfg.bg)), 1); } catch (e) {}
+      }
+
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(Number(parsed.cfg.fov) || 55, w / h, 0.1, 8000);
+      var root = new THREE.Group();
+      scene.add(root);
+      scene.add(new THREE.AmbientLight(0xffffff, parsed.cfg.ambient === undefined ? 1.05 : Number(parsed.cfg.ambient) || 1));
+      var dl1 = new THREE.DirectionalLight(0xffffff, 1.5);
+      dl1.position.set(4, 8, 6);
+      scene.add(dl1);
+      var dl2 = new THREE.DirectionalLight(0x88aaff, 0.55);
+      dl2.position.set(-6, -3, -5);
+      scene.add(dl2);
+
+      var cam0 = parsed.cfg.camera;
+      if (cam0 && cam0.length) camera.position.set(Number(cam0[0]) || 6, Number(cam0[1]) || 5, Number(cam0[2]) || 8);
+      else camera.position.set(6, 5, 8);
+      camera.lookAt(0, 0, 0);
+
+      /* 执行用户代码：注入受控上下文，禁止 import / 渲染循环（引擎自带） */
+      var fn;
+      try {
+        fn = new Function('THREE', 'scene', 'camera', 'renderer', 'root', 'cfg', 'el',
+          String(parsed.body) + '\n//# sourceURL=m3-x3d-user.js');
+      } catch (e) {
+        throw new Error('M3_SYNTAX: ' + (e && e.message ? e.message : e));
+      }
+      fn(THREE, scene, camera, renderer, root, parsed.cfg, box);
+
+      /* 未指定相机时按包围盒自动取景 */
+      if (!cam0) {
+        var bb = new THREE.Box3().setFromObject(root);
+        if (!bb.isEmpty()) {
+          var ctr = bb.getCenter(new THREE.Vector3());
+          var size = bb.getSize(new THREE.Vector3()).length() || 6;
+          var d = size * 1.15 + 3;
+          camera.position.set(ctr.x + d * 0.6, ctr.y + d * 0.5, ctr.z + d * 0.62);
+          camera.lookAt(ctr);
+        }
+      }
+
+      /* 轻量轨道控制（不依赖 OrbitControls 附加包） */
+      var st = { target: new THREE.Vector3(0, 0, 0), r: 8, theta: 0, phi: 1.1, drag: false, lx: 0, ly: 0 };
+      (function syncFromCamera() {
+        var ctr = new THREE.Box3().setFromObject(root);
+        if (!ctr.isEmpty()) st.target = ctr.getCenter(new THREE.Vector3());
+        var off = camera.position.clone().sub(st.target);
+        st.r = off.length() || 8;
+        st.theta = Math.atan2(off.x, off.z);
+        st.phi = Math.acos(Math.max(-1, Math.min(1, off.y / (st.r || 1))));
+      })();
+
+      function applyOrbit() {
+        var sp = Math.sin(st.phi);
+        camera.position.set(
+          st.target.x + st.r * sp * Math.sin(st.theta),
+          st.target.y + st.r * Math.cos(st.phi),
+          st.target.z + st.r * sp * Math.cos(st.theta)
+        );
+        camera.lookAt(st.target);
+      }
+
+      canvas.addEventListener('pointerdown', function (e) {
+        st.drag = true; st.lx = e.clientX; st.ly = e.clientY;
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+      canvas.addEventListener('pointermove', function (e) {
+        if (!st.drag) return;
+        var dx = e.clientX - st.lx, dy = e.clientY - st.ly;
+        st.lx = e.clientX; st.ly = e.clientY;
+        st.theta -= dx * 0.008;
+        st.phi = Math.max(0.12, Math.min(Math.PI - 0.12, st.phi - dy * 0.008));
+        applyOrbit();
+      });
+      function endDrag() { st.drag = false; }
+      canvas.addEventListener('pointerup', endDrag);
+      canvas.addEventListener('pointercancel', endDrag);
+      canvas.addEventListener('pointerleave', endDrag);
+      canvas.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var k = e.deltaY > 0 ? 1.12 : 0.89;
+        st.r = Math.max(1.2, Math.min(st.r * k, 900));
+        applyOrbit();
+      }, { passive: false });
+
+      /* 渲染循环：后台 / 离屏自动暂停 */
+      var alive = true, rafId = 0, pageOn = !document.hidden, viewOn = true;
+      function frame() {
+        if (!alive) return;
+        rafId = requestAnimationFrame(frame);
+        if (!pageOn || !viewOn) return;
+        renderer.render(scene, camera);
+      }
+      frame();
+
+      document.addEventListener('visibilitychange', function () { pageOn = !document.hidden; });
+
+      var ro = null;
+      if (window.ResizeObserver) {
+        ro = new ResizeObserver(function () {
+          var w2 = box.clientWidth, h2 = box.clientHeight;
+          if (!w2 || !h2) return;
+          renderer.setSize(w2, h2, false);
+          camera.aspect = w2 / h2;
+          camera.updateProjectionMatrix();
+        });
+        ro.observe(box);
+      }
+
+      var io = null;
+      if (window.IntersectionObserver) {
+        io = new IntersectionObserver(function (ens) {
+          viewOn = ens && ens[0] ? ens[0].isIntersecting : true;
+        }, { threshold: 0.01 });
+        io.observe(box);
+      }
+
+      var inst = {
+        THREE: THREE, scene: scene, root: root, renderer: renderer, camera: camera,
+        st: st, applyOrbit: applyOrbit,
+        dispose: function () {
+          alive = false;
+          cancelAnimationFrame(rafId);
+          if (ro) { try { ro.disconnect(); } catch (e) {} }
+          if (io) { try { io.disconnect(); } catch (e) {} }
+          try { renderer.dispose(); } catch (e) {}
+        }
+      };
+      box.__m3inst = inst;
+
+      var pend = box.querySelector('.m3-pending');
+      if (pend && pend.parentNode) pend.parentNode.removeChild(pend);
+
+      var wrap = box.closest('.m3-3d-wrap');
+      if (wrap) {
+        var bExp = wrap.querySelector('.m3-3d-export');
+        var bRst = wrap.querySelector('.m3-3d-reset');
+        if (bExp) bExp.onclick = function () { exportGLB(inst, bExp); };
+        if (bRst) bRst.onclick = function () {
+          inst.dispose();
+          box.dataset.m3Mounted = '';
+          box.__m3inst = null;
+          box.innerHTML = '<canvas class="m3-3d-cv"></canvas><div class="m3-pending">⏳ 3D 场景待渲染</div>';
+          setTimeout(function () { mount(box); }, 80);
+        };
+      }
+    }).catch(function (err) {
+      box.dataset.m3Mounted = '';
+      degrade(box, parsed.body);
+      try { console.warn('[m3-3d]', err && err.message ? err.message : err); } catch (e) {}
+    });
+  }
+
+  window.x3dView = { scan: mount, ensure: loadThree };
+  window.OMNI_MAX3.modules.three = window.x3dView;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ④ ECharts 雷达图双向绑定  m3Radar
+ * 设计边界：拖拽仅改容器 data-code + 提供「↩ 回写 Prompt」按钮
+ *           —— 绝不自动改写历史消息（否则破坏 Agent patch / 导出 / 分享 / 备份链路）
+ * ========================================================================== */
+(function () {
+  function numOf(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+
+  function lenOf(v, total) {
+    if (typeof v === 'number') return v;
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return 0;
+    if (s.charAt(s.length - 1) === '%') return total * (parseFloat(s) || 0) / 100;
+    return parseFloat(s) || 0;
+  }
+
+  function geometry(chart, el) {
+    var opt = {};
+    try { opt = chart.getOption() || {}; } catch (e) {}
+    var radar = (opt.radar && opt.radar[0]) || {};
+    var w = el.clientWidth || el.offsetWidth || 320;
+    var h = el.clientHeight || el.offsetHeight || 300;
+    var c = radar.center || ['50%', '50%'];
+    var cx = lenOf(c[0], w);
+    var cy = lenOf(c[1], h);
+    if (String(c[0] || '').indexOf('%') < 0 && typeof c[0] === 'number') cx = c[0];
+    if (String(c[1] || '').indexOf('%') < 0 && typeof c[1] === 'number') cy = c[1];
+    var rad = radar.radius;
+    var rr;
+    if (rad == null) rr = Math.min(w, h) / 2 * 0.75;
+    else if (typeof rad === 'object' && rad.length) rr = lenOf(rad[1] || rad[0], Math.min(w, h) / 2);
+    else rr = lenOf(rad, Math.min(w, h) / 2);
+    if (!rr || rr < 10) rr = Math.min(w, h) / 2 * 0.75;
+    return { cx: cx, cy: cy, r: rr };
+  }
+
+  function buildCode(names, vals) {
+    var out = [];
+    for (var i = 0; i < names.length; i++) {
+      out.push((names[i] || ('维度' + (i + 1))) + ':' + vals[i]);
+    }
+    return out.join('\n');
+  }
+
+  function isStreaming() {
+    try { return typeof streaming !== 'undefined' && !!streaming; } catch (e) { return false; }
+  }
+
+  function decorate(el) {
+    if (!el || el.dataset.m3Radar) return;
+    if (typeof window.echarts === 'undefined') return;
+    el.__m3try = (el.__m3try || 0) + 1;
+    if (el.__m3try > 24) { el.dataset.m3Radar = 'skip'; return; }
+    var chart = null;
+    try { chart = window.echarts.getInstanceByDom(el); } catch (e) {}
+    if (!chart) return;
+
+    var opt = {};
+    try { opt = chart.getOption() || {}; } catch (e) {}
+    var series = (opt.series && opt.series[0]) || {};
+    var data0 = (series.data && series.data[0]) || {};
+    var rawVals = data0.value;
+    var indsRaw = (opt.radar && opt.radar[0] && opt.radar[0].indicator) || [];
+    if (!rawVals || !rawVals.length || !indsRaw.length || rawVals.length !== indsRaw.length) return;
+
+    var values = Array.prototype.map.call(rawVals, numOf);
+    var names = Array.prototype.map.call(indsRaw, function (x) { return String((x && x.name) || ''); });
+
+    el.dataset.m3Radar = '1';
+    el.classList.add('m3-radar-host');
+
+    var ov = document.createElement('div');
+    ov.className = 'm3-radar-handles';
+    el.appendChild(ov);
+
+    var tip = document.createElement('div');
+    tip.className = 'm3-rh-tip';
+    el.appendChild(tip);
+
+    var wb = document.createElement('button');
+    wb.type = 'button';
+    wb.className = 'm3-btn m3-radar-wb';
+    wb.textContent = '↩ 回写 Prompt';
+    el.appendChild(wb);
+
+    var badge = document.createElement('div');
+    badge.className = 'm3-radar-badge';
+    badge.textContent = '可拖拽';
+    el.appendChild(badge);
+
+    var geo = geometry(chart, el);
+    var handles = [];
+
+    function place() {
+      geo = geometry(chart, el);
+      for (var i = 0; i < handles.length; i++) {
+        var ang = -Math.PI / 2 + (i * 2 * Math.PI / handles.length);
+        var rad = geo.r * (Math.max(0, Math.min(100, values[i])) / 100);
+        handles[i].style.left = (geo.cx + rad * Math.cos(ang)) + 'px';
+        handles[i].style.top = (geo.cy + rad * Math.sin(ang)) + 'px';
+      }
+    }
+
+    function applied() {
+      var nd = {};
+      for (var k in data0) { if (Object.prototype.hasOwnProperty.call(data0, k)) nd[k] = data0[k]; }
+      nd.value = values.slice();
+      try { chart.setOption({ series: [{ data: [nd] }] }); } catch (e) {}
+      place();
+      el.dataset.code = encodeURIComponent(buildCode(names, values));
+      el.classList.add('m3-dirty');
+    }
+
+    for (var i = 0; i < names.length; i++) {
+      (function (idx) {
+        var h = document.createElement('div');
+        h.className = 'm3-rh';
+        h.setAttribute('role', 'slider');
+        h.setAttribute('aria-label', names[idx] || ('维度' + (idx + 1)));
+        h.setAttribute('aria-valuemin', '0');
+        h.setAttribute('aria-valuemax', '100');
+        h.setAttribute('aria-valuenow', String(values[idx]));
+        ov.appendChild(h);
+        handles.push(h);
+
+        var dragging = false;
+
+        function onMove(e) {
+          if (!dragging) return;
+          e.preventDefault();
+          if (isStreaming()) return;
+          var rect = el.getBoundingClientRect();
+          var x = e.clientX - rect.left - geo.cx;
+          var y = e.clientY - rect.top - geo.cy;
+          var ang = -Math.PI / 2 + (idx * 2 * Math.PI / names.length);
+          var proj = x * Math.cos(ang) + y * Math.sin(ang);
+          var val = Math.round(Math.max(0, Math.min(100, (proj / (geo.r || 1)) * 100)));
+          if (val === values[idx]) return;
+          values[idx] = val;
+          h.setAttribute('aria-valuenow', String(val));
+          tip.textContent = (names[idx] || '') + ' ' + val;
+          tip.classList.add('on');
+          tip.style.left = Math.max(2, h.offsetLeft - 18) + 'px';
+          tip.style.top = Math.max(2, h.offsetTop - 26) + 'px';
+          applied();
+        }
+
+        function onUp() {
+          if (!dragging) return;
+          dragging = false;
+          h.classList.remove('dragging');
+          tip.classList.remove('on');
+          try { if (typeof persistSessions === 'function') persistSessions(); } catch (e) {}
+        }
+
+        h.addEventListener('pointerdown', function (e) {
+          if (isStreaming()) {
+            if (typeof showToast === 'function') showToast('生成中，暂不可编辑图表');
+            return;
+          }
+          dragging = true;
+          h.classList.add('dragging');
+          try { h.setPointerCapture(e.pointerId); } catch (err) {}
+          e.preventDefault();
+        });
+        h.addEventListener('pointermove', onMove);
+        h.addEventListener('pointerup', onUp);
+        h.addEventListener('pointercancel', onUp);
+
+        /* 键盘无障碍：左右调节 1 分，Shift 加速 */
+        h.setAttribute('tabindex', '0');
+        h.addEventListener('keydown', function (e) {
+          var step = e.shiftKey ? 10 : 1;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') values[idx] = Math.min(100, values[idx] + step);
+          else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') values[idx] = Math.max(0, values[idx] - step);
+          else return;
+          e.preventDefault();
+          h.setAttribute('aria-valuenow', String(values[idx]));
+          applied();
+        });
+      })(i);
+    }
+
+    place();
+    setTimeout(place, 60);
+    setTimeout(place, 320);
+
+    wb.onclick = function () {
+      var code = '';
+      try { code = decodeURIComponent(el.dataset.code || ''); } catch (e) { code = ''; }
+      if (!code) return;
+      var block = '\n```radar\n' + code + '\n```\n';
+      if (typeof extInsertAtCursor === 'function') extInsertAtCursor(block);
+      else {
+        var ta = document.getElementById('chatInput');
+        if (ta) { ta.value = (ta.value || '') + block; ta.focus(); }
+      }
+      if (typeof showToast === 'function') showToast('已回写为新 radar 代码块');
+    };
+  }
+
+  window.m3Radar = { decorate: decorate };
+  window.OMNI_MAX3.modules.radar = window.m3Radar;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ⑤ 工作流条件分支引擎  m3WfBranch
+ * 安全：白名单运算符求值，绝不使用 eval / new Function
+ * 兼容：缺 type 的旧步骤一律视为 task
+ * ========================================================================== */
+(function () {
+  var OPS = {
+    eq: function (a, b) { return a === b; },
+    ne: function (a, b) { return a !== b; },
+    gt: function (a, b) { var x = parseFloat(a), y = parseFloat(b); return isFinite(x) && isFinite(y) && x > y; },
+    lt: function (a, b) { var x = parseFloat(a), y = parseFloat(b); return isFinite(x) && isFinite(y) && x < y; },
+    includes: function (a, b) { return String(a).indexOf(String(b)) > -1; },
+    truthy: function (a) {
+      var s = String(a == null ? '' : a).trim().toLowerCase();
+      return !!s && s !== '0' && s !== 'false' && s !== 'null' && s !== 'undefined' && s !== 'no' && s !== '[]' && s !== '{}';
+    }
+  };
+
+  function targetIndex(v, steps) {
+    if (v === undefined || v === null) return -1;
+    var s = String(v).trim();
+    if (!s || s.toLowerCase() === 'end' || s === '-1') return -1;
+    var digits = s.replace(/[^0-9]/g, '');
+    if (!digits) return -1;
+    var n = parseInt(digits, 10);
+    if (!isFinite(n) || n < 1 || n > steps.length) return -1;
+    return n - 1;
+  }
+
+  function evalBranch(st, vars, steps) {
+    var br = (st && st.branch) || {};
+    var raw = vars ? vars[String(br.condVar || '')] : undefined;
+    var a = String(raw === undefined || raw === null ? '' : raw);
+    var b = String(br.value === undefined || br.value === null ? '' : br.value);
+    var op = String(br.op || 'eq');
+    var fn = OPS[op] || OPS.eq;
+    var pass = false;
+    try { pass = !!fn(a, b); } catch (e) { pass = false; }
+    var to = targetIndex(pass ? br.thenTo : br.elseTo, steps || []);
+    return {
+      pass: pass,
+      to: to,
+      label: String(br.condVar || '?') + ' ' + op + ' "' + b + '" → ' + (pass ? 'THEN' : 'ELSE') +
+        ' @' + (to >= 0 ? (to + 1) : 'END')
+    };
+  }
+
+  function stepsRef() {
+    try {
+      if (typeof extWF !== 'undefined' && extWF && extWF.steps && extWF.steps.length !== undefined) return extWF.steps;
+    } catch (e) {}
+    return null;
+  }
+
+  function rerender() {
+    try {
+      if (typeof wfRender === 'function') { wfRender(); return; }
+    } catch (e) {}
+    try {
+      if (typeof wfRenderLive === 'function') wfRenderLive();
+    } catch (e) {}
+  }
+
+  function addBranchStep() {
+    var steps = stepsRef();
+    if (!steps) {
+      if (typeof showToast === 'function') showToast('请先打开工作流面板');
+      return;
+    }
+    steps.push({
+      type: 'branch',
+      model: '',
+      promptTemplate: '',
+      outputVar: 'm3br' + (steps.length + 1),
+      branch: { condVar: '', op: 'eq', value: '', thenTo: '', elseTo: '' }
+    });
+    rerender();
+    if (typeof showToast === 'function') showToast('已添加分支节点，点卡片上的 🔀 配置跳转');
+  }
+
+  function editBranch(idx) {
+    var steps = stepsRef();
+    if (!steps || !steps[idx]) {
+      if (typeof showToast === 'function') showToast('请先打开工作流面板');
+      return;
+    }
+    var st = steps[idx];
+    var isBr = st.type === 'branch';
+    var br = st.branch || {};
+
+    var t = window.prompt('节点类型：task（任务）/ branch（条件分支）', isBr ? 'branch' : 'task');
+    if (t === null) return;
+    t = String(t || '').trim().toLowerCase();
+    if (t !== 'branch') {
+      st.type = 'task';
+      rerender();
+      return;
+    }
+
+    var cv = window.prompt('条件变量名（读取前面步骤的 outputVar）', br.condVar || '');
+    if (cv === null) return;
+    var op = window.prompt('比较运算：eq / ne / gt / lt / includes / truthy', br.op || 'eq');
+    if (op === null) return;
+    var val = window.prompt('比较值（truthy 时可留空）', br.value === undefined || br.value === null ? '' : br.value);
+    if (val === null) return;
+    var th = window.prompt('成立时跳到第几步（1 起；end = 直接结束）', br.thenTo === undefined || br.thenTo === null ? '' : br.thenTo);
+    if (th === null) return;
+    var el2 = window.prompt('不成立时跳到第几步（1 起；end = 直接结束）', br.elseTo === undefined || br.elseTo === null ? '' : br.elseTo);
+    if (el2 === null) return;
+
+    st.type = 'branch';
+    st.branch = {
+      condVar: String(cv).slice(0, 24),
+      op: String(op || 'eq').trim() || 'eq',
+      value: String(val),
+      thenTo: String(th),
+      elseTo: String(el2)
+    };
+    if (!st.outputVar) st.outputVar = 'm3br' + (idx + 1);
+    if (!st.promptTemplate) st.promptTemplate = '';
+    rerender();
+    try { if (typeof persistSessions === 'function') persistSessions(); } catch (e) {}
+    if (typeof showToast === 'function') showToast('已设为条件分支节点');
+  }
+
+  /* 步骤卡片追加 🔀 入口（后处理 HTML 字符串，不改动既有 UI 逻辑） */
+  try {
+    if (typeof wfStepHtml === 'function') {
+      var m3WfStepBase = wfStepHtml;
+      wfStepHtml = function wfStepHtmlMax3(st, i) {
+        var html = m3WfStepBase.apply(this, arguments);
+        if (typeof html !== 'string') return html;
+        var isBranch = st && st.type === 'branch';
+        var btn = '<button class="m3-btn m3-wf-branch-btn" type="button" ' +
+          'onclick="m3WfEditBranch(' + Number(i) + ')" ' +
+          'title="配置条件分支">' + (isBranch ? '🔀 条件分支' : '➕ 转分支') + '</button>';
+        var cls = isBranch ? ' m3-is-branch' : '';
+        if (cls && html.indexOf('class="') > -1) html = html.replace('class="', 'class="' + cls.trim() + ' ');
+        return html + btn;
+      };
+    }
+  } catch (e) {}
+
+  function injectDock() {
+    var dock = document.getElementById('wfDock');
+    if (!dock || dock.querySelector('.m3-wf-bar')) return;
+    var bar = document.createElement('div');
+    bar.className = 'm3-wf-bar';
+    bar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'm3-btn';
+    b.textContent = '🔀 添加分支节点';
+    b.onclick = addBranchStep;
+    bar.appendChild(b);
+    var tip = document.createElement('span');
+    tip.style.cssText = 'font-size:11.5px;color:var(--text-muted);align-self:center';
+    tip.textContent = '条件分支读取 outputVar，按表达式跳转（最多 100 次跃迁）';
+    bar.appendChild(tip);
+    dock.appendChild(bar);
+  }
+
+  window.m3WfBranch = evalBranch;
+  window.m3WfEditBranch = editBranch;
+  window.m3WfAddBranch = addBranchStep;
+  window.m3WfInjectDock = injectDock;
+  window.OMNI_MAX3.modules.wfBranch = { eval: evalBranch, ops: OPS, edit: editBranch, add: addBranchStep };
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ⑥ Web Worker 切块 + RAG 向量化  m3Rag
+ * 单文件做法：Blob + URL.createObjectURL 内联 Worker（不新增 .js 文件）
+ * 降级：Worker / 向量不可用 → 完全保留既有 ragScore 行为（本层只在最外层重排）
+ * 注意：window.RAG.retrieve 签名保持不变
+ * ========================================================================== */
+(function () {
+  var DIMS = 512;
+
+  var SRC = [
+    'var DIMS = 512;',
+    'function norm(t) {',
+    '  var s = "", x = String(t == null ? "" : t).toLowerCase();',
+    '  for (var i = 0; i < x.length; i++) {',
+    '    var c = x.charCodeAt(i);',
+    '    s += (c === 32 || c === 9 || c === 10 || c === 13 || c === 12288) ? " " : x.charAt(i);',
+    '  }',
+    '  return s;',
+    '}',
+    'function hs(w) {',
+    '  var h = 5381;',
+    '  for (var i = 0; i < w.length; i++) h = ((h * 33) ^ w.charCodeAt(i)) >>> 0;',
+    '  return h >>> 0;',
+    '}',
+    'function h2(a, b) {',
+    '  var h = 2166136261;',
+    '  h = (h ^ a) >>> 0; h = (h * 16777619) >>> 0;',
+    '  h = (h ^ b) >>> 0; h = (h * 16777619) >>> 0;',
+    '  return h >>> 0;',
+    '}',
+    'function vec(text) {',
+    '  var v = new Float32Array(DIMS);',
+    '  var t = norm(text);',
+    '  var i, k;',
+    '  for (i = 0; i + 1 < t.length; i++) {',
+    '    var a = t.charCodeAt(i), b = t.charCodeAt(i + 1);',
+    '    if (a === 32 && b === 32) continue;',
+    '    v[h2(a, b) % DIMS] += 1;',
+    '  }',
+    '  var words = t.split(" ");',
+    '  for (k = 0; k < words.length; k++) {',
+    '    var w = words[k];',
+    '    if (w.length < 3) continue;',
+    '    v[hs(w) % DIMS] += 1.5;',
+    '  }',
+    '  var sum = 0;',
+    '  for (i = 0; i < DIMS; i++) sum += v[i] * v[i];',
+    '  sum = Math.sqrt(sum) || 1;',
+    '  for (i = 0; i < DIMS; i++) v[i] = v[i] / sum;',
+    '  return v;',
+    '}',
+    'function chunk(text, size) {',
+    '  var t = norm(text);',
+    '  var n = size > 40 ? size : 400;',
+    '  var out = [], cur = "";',
+    '  var parts = t.split(" ");',
+    '  for (var i = 0; i < parts.length; i++) {',
+    '    var p = parts[i];',
+    '    if (!p) continue;',
+    '    if (cur.length + p.length + 1 > n && cur.length) { out.push(cur); cur = ""; }',
+    '    cur += (cur ? " " : "") + p;',
+    '  }',
+    '  if (cur) out.push(cur);',
+    '  if (!out.length && t) out.push(t);',
+    '  return out;',
+    '}',
+    'self.onmessage = function (e) {',
+    '  var d = e.data || {};',
+    '  try {',
+    '    if (d.type === "chunk") {',
+    '      self.postMessage({ id: d.id, type: "chunk", chunks: chunk(d.text, d.size) });',
+    '    } else if (d.type === "vector") {',
+    '      var docs = d.docs || [], out = [];',
+    '      for (var i = 0; i < docs.length; i++) out.push(vec(docs[i]));',
+    '      self.postMessage({ id: d.id, type: "vector", dims: DIMS, vectors: out });',
+    '    } else {',
+    '      self.postMessage({ id: d.id, type: "error", message: "M3_UNKNOWN_JOB" });',
+    '    }',
+    '  } catch (err) {',
+    '    self.postMessage({ id: d.id, type: "error", message: String((err && err.message) || err) });',
+    '  }',
+    '};'
+  ].join('\n');
+
+  /* ---------- 主线程版向量（与 Worker 同算法，保证可同步检索） ---------- */
+  function normSync(t) {
+    var s = '', x = String(t == null ? '' : t).toLowerCase();
+    for (var i = 0; i < x.length; i++) {
+      var c = x.charCodeAt(i);
+      s += (c === 32 || c === 9 || c === 10 || c === 13 || c === 12288) ? ' ' : x.charAt(i);
+    }
+    return s;
+  }
+  function hsSync(w) {
+    var h = 5381;
+    for (var i = 0; i < w.length; i++) h = ((h * 33) ^ w.charCodeAt(i)) >>> 0;
+    return h >>> 0;
+  }
+  function h2Sync(a, b) {
+    var h = 2166136261;
+    h = (h ^ a) >>> 0; h = (h * 16777619) >>> 0;
+    h = (h ^ b) >>> 0; h = (h * 16777619) >>> 0;
+    return h >>> 0;
+  }
+  function vecSync(text) {
+    var v = new Float32Array(DIMS);
+    var t = normSync(text);
+    var i, k;
+    for (i = 0; i + 1 < t.length; i++) {
+      var a = t.charCodeAt(i), b = t.charCodeAt(i + 1);
+      if (a === 32 && b === 32) continue;
+      v[h2Sync(a, b) % DIMS] += 1;
+    }
+    var words = t.split(' ');
+    for (k = 0; k < words.length; k++) {
+      var w = words[k];
+      if (w.length < 3) continue;
+      v[hsSync(w) % DIMS] += 1.5;
+    }
+    var sum = 0;
+    for (i = 0; i < DIMS; i++) sum += v[i] * v[i];
+    sum = Math.sqrt(sum) || 1;
+    for (i = 0; i < DIMS; i++) v[i] = v[i] / sum;
+    return v;
+  }
+  function cosine(a, b) {
+    if (!a || !b) return 0;
+    var n = Math.min(a.length, b.length), s = 0;
+    for (var i = 0; i < n; i++) s += a[i] * b[i];
+    return s;
+  }
+  function textOf(c) {
+    if (c == null) return '';
+    if (typeof c === 'string') return c;
+    var keys = ['text', 't', 'content', 'body', 'v', 'chunk', 'src'];
+    for (var i = 0; i < keys.length; i++) {
+      var v = c[keys[i]];
+      if (typeof v === 'string' && v) return v;
+    }
+    return '';
+  }
+
+  /* ---------- Worker 调度 ---------- */
+  var worker = null, seq = 0, pending = {};
+  function ensureWorker() {
+    if (worker) return worker;
+    try {
+      var blob = new Blob([SRC], { type: 'text/javascript' });
+      var url = URL.createObjectURL(blob);
+      worker = new Worker(url);
+      worker.onmessage = function (e) {
+        var d = e.data || {};
+        var p = pending[d.id];
+        if (!p) return;
+        delete pending[d.id];
+        if (d.type === 'error') p.rej(new Error(d.message || 'M3_WORKER_ERR'));
+        else p.res(d);
+      };
+      worker.onerror = function () {
+        for (var k in pending) {
+          if (Object.prototype.hasOwnProperty.call(pending, k)) {
+            try { pending[k].rej(new Error('M3_WORKER_CRASH')); } catch (e) {}
+          }
+        }
+        pending = {};
+        worker = null;
+      };
+    } catch (e) { worker = null; return null; }
+    return worker;
+  }
+  function call(msg) {
+    var w = ensureWorker();
+    if (!w) return Promise.reject(new Error('M3_NO_WORKER'));
+    var id = ++seq;
+    msg.id = id;
+    return new Promise(function (res, rej) {
+      pending[id] = { res: res, rej: rej };
+      try { w.postMessage(msg); } catch (e) { delete pending[id]; rej(e); }
+    });
+  }
+
+  function chunkText(text, size) {
+    return call({ type: 'chunk', text: String(text || ''), size: size || 400 }).then(function (r) {
+      return r.chunks || [];
+    });
+  }
+
+  /* ---------- 语料索引 ---------- */
+  var index = { ready: false, texts: [], vecs: [], builtAt: 0 };
+
+  function corpus() {
+    var raw = null;
+    try { raw = localStorage.getItem('autoPro_ragChunks'); } catch (e) { return []; }
+    if (!raw) return [];
+    var arr = null;
+    try { arr = JSON.parse(raw); } catch (e) { return []; }
+    return Array.isArray(arr) ? arr : [];
+  }
+
+  function buildIndex() {
+    var items = corpus();
+    if (!items.length) { index.ready = false; return Promise.resolve(false); }
+    var docs = items.map(textOf);
+    return call({ type: 'vector', docs: docs }).then(function (r) {
+      var vecs = (r.vectors || []).map(function (x) {
+        return (x && x.length !== undefined) ? new Float32Array(x) : new Float32Array(0);
+      });
+      index.texts = docs;
+      index.vecs = vecs;
+      index.ready = vecs.length === docs.length && docs.length > 0;
+      index.builtAt = Date.now();
+      var db = window.m3IDB;
+      if (db && db.ok) {
+        var rows = [];
+        for (var i = 0; i < docs.length; i++) {
+          rows.push({ id: 'c' + i, text: docs[i], vec: Array.prototype.slice.call(vecs[i] || []), t: index.builtAt });
+        }
+        db.bulkPut('rag_chunks', rows).catch(function () {});
+      }
+      return index.ready;
+    }).catch(function () { index.ready = false; return false; });
+  }
+
+  function searchSync(query, topK) {
+    if (!index.ready) return [];
+    var q = vecSync(String(query || ''));
+    var out = [];
+    for (var i = 0; i < index.vecs.length; i++) {
+      var v = index.vecs[i];
+      if (!v || !v.length) continue;
+      out.push({ i: i, text: index.texts[i], score: cosine(q, v) });
+    }
+    out.sort(function (a, b) { return b.score - a.score; });
+    return out.slice(0, topK || 8);
+  }
+
+  /* ---------- 接管 ragRetrieve：只做「重排」，不改变 chunk 形状 ---------- */
+  try {
+    if (typeof ragRetrieve === 'function') {
+      var m3RagRetBase = ragRetrieve;
+      ragRetrieve = function ragRetrieveMax3(query, topK) {
+        var base = m3RagRetBase.apply(this, arguments);
+        try {
+          if (!base || !base.length || base.length < 2) return base;
+          if (!index.ready) return base;
+          var q = vecSync(String(query || ''));
+          var scored = [];
+          for (var i = 0; i < base.length; i++) {
+            var txt = textOf(base[i]);
+            scored.push({ c: base[i], s: txt ? cosine(q, vecSync(txt)) : 0, i: i });
+          }
+          scored.sort(function (a, b) { return (b.s - a.s) || (a.i - b.i); });
+          window.__m3LastVecHits = scored.map(function (x) {
+            return { text: String(textOf(x.c)).slice(0, 80), score: Math.round(x.s * 1000) / 1000 };
+          });
+          return scored.map(function (x) { return x.c; });
+        } catch (e) { return base; }
+      };
+    }
+  } catch (e) {}
+
+  window.m3Rag = {
+    dims: DIMS,
+    chunk: chunkText,
+    buildIndex: buildIndex,
+    search: searchSync,
+    ready: function () { return index.ready; },
+    status: function () {
+      return { ready: index.ready, docs: index.texts.length, builtAt: index.builtAt, worker: !!worker };
+    },
+    chunkSync: function (text, size) {
+      /* 主线程兜底切块（Worker 不可用时） */
+      var t = normSync(text);
+      var n = size > 40 ? size : 400;
+      var out = [], cur = '';
+      var parts = t.split(' ');
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (!p) continue;
+        if (cur.length + p.length + 1 > n && cur.length) { out.push(cur); cur = ''; }
+        cur += (cur ? ' ' : '') + p;
+      }
+      if (cur) out.push(cur);
+      return out;
+    }
+  };
+  window.OMNI_MAX3.modules.rag = window.m3Rag;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ⑦ Web Speech 语音输入  m3Voice
+ * 特性检测失败 → 不渲染按钮（不显示「禁用态」，避免误导）
+ * ========================================================================== */
+(function () {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  var rec = null, on = false;
+
+  function lang() {
+    try {
+      var l = String(localStorage.getItem('autoPro_lang') || '');
+      if (l.indexOf('en') === 0) return 'en-US';
+    } catch (e) {}
+    return 'zh-CN';
+  }
+
+  function inputEl() { return document.getElementById('chatInput'); }
+
+  function paint() {
+    var b = document.getElementById('m3VoiceBtn');
+    if (!b) return;
+    b.classList[on ? 'add' : 'remove']('on');
+    b.textContent = on ? '⏺️' : '🎙️';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+
+  function start() {
+    if (on) return;
+    var ta = inputEl();
+    var base = ta ? String(ta.value || '') : '';
+    try { rec = new SR(); } catch (e) { return; }
+    rec.lang = lang();
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    rec.onresult = function (e) {
+      var fin = '', itm = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var r = e.results[i];
+        var piece = (r && r[0] && r[0].transcript) || '';
+        if (r && r.isFinal) fin += piece;
+        else itm += piece;
+      }
+      base = base + fin;
+      var t = inputEl();
+      if (t) {
+        t.value = (base + itm).replace(/^\s+/, '');
+        try { t.setSelectionRange(t.value.length, t.value.length); } catch (err) {}
+      }
+    };
+    rec.onerror = function (ev) {
+      on = false;
+      paint();
+      var code = (ev && ev.error) || 'unknown';
+      if (typeof showToast === 'function') showToast('语音识别失败：' + code);
+    };
+    rec.onend = function () {
+      on = false;
+      paint();
+    };
+    try {
+      rec.start();
+      on = true;
+      paint();
+    } catch (e) {
+      on = false;
+      paint();
+    }
+  }
+
+  function stop() {
+    if (rec) { try { rec.stop(); } catch (e) {} }
+    on = false;
+    paint();
+  }
+
+  function toggle() { if (on) stop(); else start(); }
+
+  function mount() {
+    if (document.getElementById('m3VoiceBtn')) return;
+    var cap = document.getElementById('capWrapper');
+    if (!cap || !cap.parentNode) return;
+    var b = document.createElement('button');
+    b.id = 'm3VoiceBtn';
+    b.type = 'button';
+    b.className = 'm3-voice-btn';
+    b.title = '语音输入';
+    b.setAttribute('aria-label', '语音输入');
+    b.setAttribute('aria-pressed', 'false');
+    b.textContent = '🎙️';
+    b.onclick = toggle;
+    cap.parentNode.insertBefore(b, cap);
+  }
+
+  window.m3Voice = { supported: true, start: start, stop: stop, toggle: toggle, mount: mount };
+  window.OMNI_MAX3.modules.voice = window.m3Voice;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ⑧ WebGPU 本地小模型（实验性）  m3Local
+ * navigator.gpu 存在才出入口；默认关闭；首次显式同意；失败自动回落 WASM
+ * ========================================================================== */
+(function () {
+  if (!navigator || !navigator.gpu) return;
+  var LIB = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+  var libP = null, pipeP = null, curModel = '';
+
+  function consent() {
+    try {
+      return window.confirm(
+        '启用本地 WebGPU 小模型？（实验性）\n\n' +
+        '· 首次需下载数百 MB 权重，之后走浏览器缓存，可离线\n' +
+        '· 推理全程在本机 GPU 完成，输入不会离开设备\n' +
+        '· 可通过「清除缓存」随时删除权重\n\n继续？'
+      );
+    } catch (e) { return false; }
+  }
+
+  function loadLib() {
+    if (libP) return libP;
+    libP = import(LIB).catch(function (e) { libP = null; throw e; });
+    return libP;
+  }
+
+  function load(model) {
+    if (pipeP) return pipeP;
+    var id = String(model || 'Xenova/distilgpt2');
+    pipeP = loadLib().then(function (mod) {
+      if (mod.env) mod.env.allowLocalModels = false;
+      return mod.pipeline('text-generation', id, { device: 'webgpu', dtype: 'q4' });
+    }).catch(function () {
+      return loadLib().then(function (mod) {
+        if (mod.env) mod.env.allowLocalModels = false;
+        return mod.pipeline('text-generation', id);
+      });
+    }).then(function (p) {
+      curModel = id;
+      try {
+        if (window.m3IDB && window.m3IDB.ok) {
+          window.m3IDB.put('model_' + id, { id: id, at: Date.now() }).catch(function () {});
+        }
+      } catch (e) {}
+      return p;
+    });
+    pipeP.catch(function () { pipeP = null; });
+    return pipeP;
+  }
+
+  function clearCache() {
+    var jobs = [];
+    if (window.caches && caches.keys) {
+      jobs.push(caches.keys().then(function (ks) {
+        return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+      }));
+    }
+    try {
+      if (window.m3IDB && window.m3IDB.ok) jobs.push(window.m3IDB.clear('assets'));
+    } catch (e) {}
+    Promise.all(jobs).then(function () {
+      pipeP = null;
+      curModel = '';
+      if (typeof showToast === 'function') showToast('本地模型缓存已清除');
+    }).catch(function () {});
+  }
+
+  function out(msg) {
+    var o = document.getElementById('m3LocalOut');
+    if (o) { o.style.display = 'block'; o.textContent = String(msg == null ? '' : msg); }
+  }
+  function stat(msg) {
+    var s = document.getElementById('m3LocalStat');
+    if (s) s.textContent = String(msg == null ? '' : msg);
+  }
+
+  function run() {
+    var q = document.getElementById('m3LocalQ');
+    var text = String(q && q.value || '').trim();
+    if (!text) return;
+    out('加载模型中…（首次需下载权重，请勿关闭页面）');
+    stat('加载中…');
+    load().then(function (p) {
+      stat('推理中 · ' + curModel);
+      return p(text, { max_new_tokens: 160, temperature: 0.7, do_sample: true, repetition_penalty: 1.1 });
+    }).then(function (r) {
+      var t = '';
+      if (Array.isArray(r)) {
+        var f = r[0] || {};
+        t = f.generated_text || f.summary_text || f.translation_text || JSON.stringify(f);
+      } else {
+        t = String(r || '');
+      }
+      out(t);
+      stat('完成 · ' + curModel);
+    }).catch(function (e) {
+      out('运行失败：' + ((e && e.message) ? e.message : e) +
+        '\n已尝试 WASM 回退；仍失败请检查网络，或改用云端模型。');
+      stat('失败');
+    });
+  }
+
+  function openPanel() {
+    if (!consent()) return;
+    var p = document.getElementById('m3LocalPanel');
+    if (p) { p.style.display = 'block'; return; }
+    p = document.createElement('div');
+    p.id = 'm3LocalPanel';
+    p.className = 'm3-local-panel';
+    p.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:84px;' +
+      'width:min(560px,92vw);z-index:9999;background:var(--glass);' +
+      '-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);' +
+      'box-shadow:0 12px 40px rgba(0,0,0,.28)';
+    p.innerHTML =
+      '<b>🧠 本地小模型 · WebGPU</b>' +
+      '<div id="m3LocalStat" style="font-size:12px;color:var(--text-muted);margin:4px 0 8px">未加载</div>' +
+      '<input id="m3LocalQ" type="text" style="width:100%;font-size:16px;padding:8px 10px;' +
+        'border-radius:8px;border:1px solid var(--border);background:var(--bubble-ai);color:var(--text-color)" ' +
+        'placeholder="输入问题，回车运行">' +
+      '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">' +
+        '<button class="m3-btn" type="button" id="m3LocalRun">运行</button>' +
+        '<button class="m3-btn" type="button" id="m3LocalClear">清除缓存</button>' +
+        '<button class="m3-btn" type="button" id="m3LocalClose">关闭</button>' +
+      '</div>' +
+      '<div class="m3-local-out" id="m3LocalOut" style="display:none"></div>';
+    document.body.appendChild(p);
+    p.querySelector('#m3LocalClose').onclick = function () { p.style.display = 'none'; };
+    p.querySelector('#m3LocalClear').onclick = clearCache;
+    p.querySelector('#m3LocalRun').onclick = run;
+    var qi = p.querySelector('#m3LocalQ');
+    qi.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); run(); }
+    });
+  }
+
+  function mount() {
+    if (document.getElementById('m3LocalBtn')) return;
+    var cap = document.getElementById('capWrapper');
+    if (!cap || !cap.parentNode) return;
+    var b = document.createElement('button');
+    b.id = 'm3LocalBtn';
+    b.type = 'button';
+    b.className = 'm3-voice-btn';
+    b.title = '本地小模型（WebGPU，实验性）';
+    b.setAttribute('aria-label', '本地小模型');
+    b.textContent = '🧠';
+    b.onclick = openPanel;
+    cap.parentNode.insertBefore(b, cap);
+  }
+
+  window.m3Local = { supported: true, open: openPanel, load: load, run: run, clear: clearCache };
+  window.OMNI_MAX3.modules.local = window.m3Local;
+})();
+
+/* ============================================================================
+ * Max 3 x3D · ⑨ 统一引导层  (扫描器 / 最末 monkey-patch / i18n / 迁移启动)
+ * 所有包装都追加在此处 = 位于既有全部 patch 之后，不会被上层覆盖
+ * ========================================================================== */
+(function () {
+  var retry = { n: 0, timer: 0 };
+
+  function streamingNow() {
+    try { return typeof streaming !== 'undefined' && !!streaming; } catch (e) { return false; }
+  }
+
+  function scanOnce() {
+    var pending = 0;
+    var busy = streamingNow();
+    var i, el;
+
+    var mms = document.querySelectorAll('.m3-mermaid');
+    for (i = 0; i < mms.length; i++) {
+      el = mms[i];
+      if (el.dataset.m3Done) continue;
+      if (busy || !window.m3Mermaid) { pending++; continue; }
+      window.m3Mermaid.scan(el);
+    }
+
+    var x3 = document.querySelectorAll('.m3-3d');
+    for (i = 0; i < x3.length; i++) {
+      el = x3[i];
+      if (el.dataset.m3Mounted) continue;
+      if (busy || !window.x3dView) { pending++; continue; }
+      window.x3dView.scan(el);
+    }
+
+    var rs = document.querySelectorAll('.dynamic-radar-container');
+    for (i = 0; i < rs.length; i++) {
+      el = rs[i];
+      if (el.dataset.m3Radar) continue;
+      if (busy || !window.m3Radar) { pending++; continue; }
+      window.m3Radar.decorate(el);
+      if (!el.dataset.m3Radar) pending++;
+    }
+
+    try { if (window.m3WfInjectDock) window.m3WfInjectDock(); } catch (e) {}
+
+    return pending;
+  }
+
+  function schedule(delay) {
+    clearTimeout(retry.timer);
+    retry.timer = setTimeout(function () {
+      var left = 0;
+      try { left = scanOnce(); } catch (e) { left = 0; }
+      if (left > 0 && retry.n < 24) {
+        retry.n++;
+        schedule(420);
+      } else {
+        retry.n = 0;
+      }
+    }, delay || 0);
+  }
+
+  /* 包装 initDynamicWidgets：底座跑完再补扫（不修改底座内部逻辑） */
+  try {
+    if (typeof initDynamicWidgets === 'function') {
+      var m3DynBase = initDynamicWidgets;
+      initDynamicWidgets = function initDynamicWidgetsMax3() {
+        var out = m3DynBase.apply(this, arguments);
+        retry.n = 0;
+        try { schedule(60); } catch (e) {}
+        return out;
+      };
+    }
+  } catch (e) {}
+
+  /* 包装 renderChat：消息重绘后补扫（本包装位于最末，优先级最高） */
+  try {
+    if (typeof renderChat === 'function') {
+      var m3RenderChatBase = renderChat;
+      renderChat = function renderChatMax3() {
+        var out = m3RenderChatBase.apply(this, arguments);
+        retry.n = 0;
+        try { schedule(120); } catch (e) {}
+        return out;
+      };
+    }
+  } catch (e) {}
+
+  /* i18n 双写 */
+  try {
+    if (typeof I18N_DICT !== 'undefined' && I18N_DICT.zh && I18N_DICT.en) {
+      Object.assign(I18N_DICT.zh, {
+        m3_mermaid_cap: 'Mermaid 图表',
+        m3_three_cap: '原生 3D 画布',
+        m3_branch: '条件分支',
+        m3_writeback: '回写 Prompt'
+      });
+      Object.assign(I18N_DICT.en, {
+        m3_mermaid_cap: 'Mermaid diagram',
+        m3_three_cap: 'Native 3D canvas',
+        m3_branch: 'Conditional branch',
+        m3_writeback: 'Write back to prompt'
+      });
+    }
+  } catch (e) {}
+
+  /* 悬浮入口：语音 + 本地模型（仅在受支持时出现） */
+  function mountEntries() {
+    try { if (window.m3Voice && window.m3Voice.mount) window.m3Voice.mount(); } catch (e) {}
+    try {
+      if (window.m3Local && !document.getElementById('m3LocalBtn')) {
+        var cap = document.getElementById('capWrapper');
+        if (cap && cap.parentNode) {
+          var b = document.createElement('button');
+          b.id = 'm3LocalBtn';
+          b.type = 'button';
+          b.className = 'm3-voice-btn';
+          b.title = '本地小模型（WebGPU，实验性）';
+          b.setAttribute('aria-label', '本地小模型');
+          b.textContent = '🧠';
+          b.onclick = function () { window.m3Local.open(); };
+          cap.parentNode.insertBefore(b, cap);
+        }
+      }
+    } catch (e) {}
+  }
+
+  function boot() {
+    mountEntries();
+
+    if (window.m3IDB && window.m3IDB.ok) {
+      window.m3IDB.open()
+        .then(function () { return window.m3IDB.migrate(); })
+        .then(function (n) {
+          window.OMNI_MAX3.migrated = n || 0;
+          if (n > 0 && typeof showToast === 'function') {
+            showToast('已迁移 ' + n + ' 项本地数据到 IndexedDB');
+          }
+          try { if (window.m3Persist) window.m3Persist.mirrorSessions(); } catch (e) {}
+          try { if (window.m3Rag && window.m3Rag.buildIndex) window.m3Rag.buildIndex(); } catch (e) {}
+        })
+        .catch(function () {});
+    }
+
+    schedule(220);
+  }
+
+  function resetMermaid() {
+    var els = document.querySelectorAll('.m3-mermaid');
+    for (var i = 0; i < els.length; i++) {
+      els[i].dataset.m3Done = '';
+      els[i].innerHTML = '<div class="m3-pending">⏳ 图表待渲染</div>';
+    }
+    retry.n = 0;
+    schedule(80);
+  }
+
+  window.OMNI_MAX3.status = function () {
+    return {
+      version: window.OMNI_MAX3.version,
+      idb: !!(window.m3IDB && window.m3IDB.ok),
+      migrated: window.OMNI_MAX3.migrated || 0,
+      mermaid: !!window.m3Mermaid,
+      three: !!window.x3dView,
+      radar: !!window.m3Radar,
+      wfBranch: !!window.m3WfBranch,
+      rag: window.m3Rag ? window.m3Rag.status() : null,
+      voice: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+      webgpu: !!(navigator && navigator.gpu),
+      pending: retry.n
+    };
+  };
+  window.OMNI_MAX3.scan = function () { retry.n = 0; schedule(0); };
+  window.OMNI_MAX3.resetMermaid = resetMermaid;
+  window.OMNI_MAX3.modules.boot = { scan: scanOnce, status: window.OMNI_MAX3.status };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+
 initI18n();
 })();
 </script>
@@ -11322,6 +13135,76 @@ initI18n();
      · 样式一律 .omni-xk- 前缀，逻辑包在 IIFE 里，不污染既有全局作用域
      · 第三方库仅通过 CDN <script> 引入（ECharts / pdf.js）
      ===================================================================== -->
+<!-- ============================================================
+     O.M.N.I Max 3 x3D · 扩展样式层
+     命名空间隔离：全部以 m3- / x3d- 前缀，不触碰既有类名
+     注意：.toolbar-row 不加 overflow（避免裁掉 .cap-panel / .strength-expanded）
+     ============================================================ -->
+<style id="m3-style">
+/* ---------- 通用 ---------- */
+.m3-pending { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 120px; font-size: 13px; color: var(--text-muted); opacity: .75; font-style: italic; }
+.m3-btn { appearance: none; -webkit-appearance: none; border: 1px solid var(--border); background: var(--bubble-ai); color: var(--text-color); border-radius: 8px; padding: 5px 10px; font-size: 13px; font-weight: 700; line-height: 1.25; cursor: pointer; white-space: nowrap; }
+.m3-btn:active { transform: scale(.97); }
+.m3-btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* ---------- ② Mermaid 容器（禁止使用 .code-wrap，避免被 extAugmentMarkdown 正则命中）---------- */
+.m3-mermaid { position: relative; width: 100%; margin: 10px 0; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--bubble-ai); overflow: auto; -webkit-overflow-scrolling: touch; }
+.m3-mermaid svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+.m3-mermaid.m3-fail { border-style: dashed; }
+.m3-raw-code { margin: 0; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; color: var(--text-color); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.m3-raw-code-label { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; letter-spacing: .3px; }
+
+/* ---------- ③ Three.js 原生画布 ---------- */
+.m3-3d-wrap { margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #0b0d12; }
+.m3-3d-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,.09); background: rgba(120,120,128,.12); }
+.m3-3d-tag { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; color: #c9cdd6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3-3d-bar .m3-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); color: #e7eaf0; font-size: 12.5px; padding: 4px 9px; }
+.m3-3d { position: relative; width: 100%; height: 320px; touch-action: none; -webkit-user-select: none; user-select: none; }
+.m3-3d-cv { display: block; width: 100%; height: 100%; outline: none; }
+.m3-3d .m3-pending { color: #8b93a3; }
+
+/* ---------- ④ ECharts 雷达图双向绑定 ---------- */
+.m3-radar-host { position: relative; }
+.m3-radar-handles { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 3; }
+.m3-rh { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.35); pointer-events: auto; cursor: grab; touch-action: none; }
+.m3-rh.dragging { cursor: grabbing; transform: scale(1.18); }
+.m3-rh-tip { position: absolute; z-index: 6; padding: 2px 6px; border-radius: 6px; font-size: 11.5px; font-weight: 800; color: #fff; background: rgba(20,22,28,.86); pointer-events: none; opacity: 0; transition: opacity .15s; }
+.m3-rh-tip.on { opacity: 1; }
+.m3-radar-wb { position: absolute; right: 6px; top: 6px; z-index: 5; display: none; }
+.m3-radar-host.m3-dirty .m3-radar-wb { display: inline-flex; align-items: center; gap: 4px; }
+.m3-radar-badge { position: absolute; left: 6px; top: 6px; z-index: 5; font-size: 11px; font-weight: 800; color: var(--text-muted); background: rgba(120,120,128,.14); border-radius: 6px; padding: 3px 6px; opacity: 0; transition: opacity .2s; }
+.m3-radar-host.m3-dirty .m3-radar-badge { opacity: 1; }
+
+/* ---------- ⑦ 语音输入 ---------- */
+.m3-voice-btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 44px; height: 32px; padding: 0 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bubble-ai); color: var(--text-color); font-size: 16px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.m3-voice-btn.on { border-color: rgba(229,72,77,.55); background: rgba(229,72,77,.14); color: #e5484d; animation: m3pulse 1.4s ease-in-out infinite; }
+@keyframes m3pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
+/* ---------- ⑤ 工作流条件分支 ---------- */
+.m3-wf-branch-btn { margin-top: 6px; font-size: 12.5px; padding: 4px 9px; }
+.m3-is-branch { border-left: 3px solid var(--accent) !important; }
+
+/* ---------- ⑧ WebGPU 本地模型 ---------- */
+.m3-local-panel { margin: 10px 0; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.m3-local-panel b { font-weight: 800; }
+.m3-local-out { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--bubble-ai); white-space: pre-wrap; word-break: break-word; font-size: 13px; max-height: 260px; overflow: auto; }
+
+/* ---------- ① IDB 状态条 ---------- */
+.m3-idb-bar { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); font-weight: 700; }
+.m3-idb-dot { width: 7px; height: 7px; border-radius: 50%; background: #9aa0aa; flex-shrink: 0; }
+.m3-idb-dot.ok { background: #30a46c; }
+.m3-idb-dot.warn { background: #f5a524; }
+
+/* ---------- 断点 ---------- */
+@media (max-width: 767px) {
+  .m3-3d { height: 260px; }
+}
+@media (max-width: 480px) {
+  .m3-3d { height: 220px; }
+  .m3-voice-btn { height: 30px; padding: 0 8px; font-size: 16px; }
+  .m3-btn { padding: 5px 8px; font-size: 12.5px; }
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
