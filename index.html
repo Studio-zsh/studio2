@@ -2153,7 +2153,7 @@ const CAPS = {
   format:   { label: '格式规范',   prompt: '统一使用标题、有序/无序列表与加粗小标题组织内容，层级清晰，段落简短。' },
   /* [v13.7.1] 内联动态组件能力：约束 AI 输出可被前端识别并渲染的代码块 */
   ui_radar: { label: '动态雷达图', prompt: '当涉及多维数据对比时，必须输出 ```radar 代码块，代码块内严格按每行“维度名:数值(0-100)”输出，例如“准确性:88\\n逻辑性:92”。' },
-  ui_sandbox: { label: '内联沙箱', prompt: '当需要提供网页代码时，请输出 ```sandbox 代码块。内部按 HTML、---CSS---、---JS--- 顺序分隔。\n【特别强制要求】：如果生成的代码包含 Three.js 或任何 3D 场景，你【必须】在画面右下角生成一个悬浮的“⬇ 导出 3D 模型”按钮（id="export-glb-btn"）。并且必须在 JS 中通过 CDN 引入 Three.js 的 GLTFExporter 模块（例如：https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/exporters/GLTFExporter.js）。在点击按钮时，使用 GLTFExporter 将当前 3D 场景中的核心模型（不要包含背景、辅助线、环境光，只导出模型实体）导出为二进制的 .glb 文件，并触发浏览器下载。' }
+  ui_sandbox: { label: '内联沙箱', prompt: '当需要提供网页代码时，请输出 ```sandbox 代码块。内部按 HTML、---CSS---、---JS--- 顺序分隔。\n【极其重要】：如果生成的代码包含 Three.js 3D 场景，你必须使用 importmap 引入模块（包含 three 和 three/addons/）。并且必须写一段 JS，在右下角创建一个“⬇ 导出GLB”按钮，用 GLTFExporter 导出 scene 并触发下载。不要偷懒，必须写。' }
 };
 
 const CHECK_SYS = [
