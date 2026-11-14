@@ -1221,6 +1221,184 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
   pointer-events: auto; /* 确保内部可以接受拖拽事件 */
   -webkit-overflow-scrolling: touch;
 }
+
+/* ===================================================================
+   [EXT v2] 追加能力层样式（P0-1 / P0-2 / P0-3 / P1-4 / P1-5 / P1-6 / P1-7 / P2-8 / P2-9 / P2-10）
+   全部使用 .cb- / .pt- / .wf- / .pj- / .ex- 前缀，不污染宿主选择器
+   =================================================================== */
+
+/* ---------- P0-1 剪贴板长文本浮层 ---------- */
+#cbBar.cb-bar { position: absolute; left: 12px; right: 12px; top: -102px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.94); border: 1px solid var(--border); box-shadow: 0 14px 40px rgba(15,23,42,.18); -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%); opacity: 0; pointer-events: none; transform: translateY(-6px); transition: opacity .22s ease, transform .22s ease; z-index: 60; }
+#cbBar.cb-bar.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.cb-text { flex: 1 1 auto; min-width: 0; font-size: 13px; line-height: 1.45; color: var(--text-color); word-break: break-word; }
+.cb-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.cb-btn { height: 33px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer; }
+.cb-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); color: #fff; border-color: transparent; }
+.cb-btn:active { transform: scale(.96); }
+.cb-close { width: 30px; height: 30px; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text-muted); font-size: 15px; cursor: pointer; }
+body.dark #cbBar.cb-bar { background: rgba(28,28,30,.95); border-color: rgba(255,255,255,.1); box-shadow: 0 14px 40px rgba(0,0,0,.55); }
+body.dark .cb-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); color: var(--text-color); }
+body.dark .cb-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); }
+
+/* ---------- P0-3 结构化导出按钮 ---------- */
+.ex-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 3px 9px; border-radius: 8px; font-size: 11px; font-weight: 800; line-height: 1.5; color: #cbd5e1; background: rgba(148,163,184,.18); border: 1px solid rgba(148,163,184,.28); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.ex-btn:active { transform: scale(.94); }
+.ex-btn.on { color: #86efac; border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.18); }
+.code-wrap .ex-btn { position: absolute; top: 8px; right: 56px; z-index: 3; }
+.code-wrap .ex-btn ~ .ex-btn { right: 116px; }
+.md-table-wrap.ex-tbl { position: relative; }
+.md-table-wrap.ex-tbl > .ex-btn.ex-csv { position: absolute; top: 6px; right: 6px; z-index: 4; }
+body.dark .ex-btn { color: #cbd5e1; background: rgba(148,163,184,.16); border-color: rgba(148,163,184,.24); }
+
+/* ---------- P0-2 多文件补丁 ---------- */
+.ex-mpf { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--card-bg); }
+.ex-mpf-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12.5px; font-weight: 800; color: var(--text-color); background: rgba(79,109,245,.08); flex-wrap: wrap; }
+.ex-mpf-head > span { flex: 1 1 auto; min-width: 120px; }
+.ex-mpf-list { display: flex; flex-direction: column; }
+.ex-mpf-item + .ex-mpf-item { border-top: 1px solid var(--border); }
+.ex-mpf-file { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; background: transparent; border: 0; text-align: left; font-size: 12.5px; font-weight: 700; color: var(--text-color); cursor: pointer; }
+.ex-mpf-file:active { background: rgba(120,120,128,.1); }
+.ex-mpf-lang { margin-left: auto; font-size: 10.5px; font-weight: 800; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+.ex-mpf-diff { padding: 8px 10px 12px; }
+.ex-mpf-diff[hidden] { display: none !important; }
+body.dark .ex-mpf { border-color: rgba(255,255,255,.1); }
+body.dark .ex-mpf-head { background: rgba(79,109,245,.16); }
+body.dark .ex-mpf-file { color: var(--text-color); }
+
+/* ---------- P1-4 Prompt 模板库 ---------- */
+.pt-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.pt-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); }
+.pt-item-main { flex: 1 1 auto; min-width: 0; }
+.pt-name { font-size: 13px; font-weight: 800; color: var(--text-color); margin-bottom: 3px; word-break: break-word; }
+.pt-preview { font-size: 12px; color: var(--text-muted); line-height: 1.45; max-height: 38px; overflow: hidden; word-break: break-word; }
+.pt-item-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.pt-del, .pt-edit { height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 16px; font-weight: 700; cursor: pointer; }
+.pt-del { color: #dc2626; }
+.pt-empty { font-size: 12.5px; color: var(--text-muted); padding: 8px 2px; }
+.pt-form { margin-top: 12px; padding: 12px; border: 1px dashed var(--border); border-radius: 14px; display: none; }
+.pt-form.show { display: block; }
+.pt-form-row { margin-bottom: 8px; }
+.pt-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+.pt-input, .pt-body { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; font-size: 16px; line-height: 1.5; color: var(--text-color); background: var(--card-bg); font-family: inherit; }
+.pt-body { min-height: 92px; resize: vertical; }
+.pt-form-actions { display: flex; gap: 8px; margin-top: 6px; }
+.pt-btn { height: 38px; padding: 0 16px; border-radius: 11px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); font-size: 16px; font-weight: 700; cursor: pointer; }
+.pt-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); color: #fff; border-color: transparent; }
+.pt-btn:active { transform: scale(.97); }
+.pt-modal { position: fixed; inset: 0; z-index: 320; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,.42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.pt-modal.show { display: flex; }
+.pt-modal-card { width: min(460px, 100%); max-height: 82vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; border-radius: 18px; background: var(--card-bg); border: 1px solid var(--border); box-shadow: 0 18px 48px rgba(15,23,42,.28); }
+.pt-modal-title { font-size: 14px; font-weight: 800; color: var(--text-color); margin-bottom: 12px; word-break: break-word; }
+.pt-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.pt-var-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.pt-var-row > span { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.pt-var-input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; font-size: 16px; color: var(--text-color); background: var(--card-bg); font-family: inherit; }
+.prompt-row .ex-pt-chip { border-style: dashed; }
+body.dark .pt-item { border-color: rgba(255,255,255,.1); }
+body.dark .pt-input, body.dark .pt-body, body.dark .pt-var-input { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: var(--text-color); }
+body.dark .pt-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); }
+body.dark .pt-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); }
+body.dark .pt-modal-card { background: #141a24; border-color: rgba(255,255,255,.1); }
+
+/* ---------- P1-5 工作流编排 ---------- */
+#wfDock.wf-dock { display: none; }
+#chatView.wf-open:not(.hidden) { display: flex !important; flex-direction: column !important; }
+#chatView.wf-open #wfDock.wf-dock { display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 14px); }
+#chatView.wf-open #chatScroll,
+#chatView.wf-open #agentScriptPane,
+#chatView.wf-open .down-btn,
+#chatView.wf-open #brandWatermark,
+#chatView.wf-open #psDock { display: none !important; }
+.wf-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg); }
+.wf-title { font-size: 13px; font-weight: 800; color: var(--text-color); flex: 0 0 auto; }
+.wf-name { flex: 1 1 150px; min-width: 0; height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); font-size: 16px; font-family: inherit; }
+.wf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wf-btn { height: 38px; padding: 0 14px; border-radius: 11px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); font-size: 16px; font-weight: 700; cursor: pointer; }
+.wf-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); color: #fff; border-color: transparent; }
+.wf-btn:disabled { opacity: .45; }
+.wf-btn:active { transform: scale(.97); }
+.wf-body { display: flex; flex-direction: column; gap: 10px; }
+.wf-empty { font-size: 12.5px; color: var(--text-muted); padding: 12px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; }
+.wf-step { border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg); padding: 10px 12px 12px; }
+.wf-step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.wf-step-no { flex: 1 1 auto; font-size: 12.5px; font-weight: 800; color: var(--accent); }
+.wf-step-actions { display: flex; gap: 5px; }
+.wf-mini { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 800; cursor: pointer; }
+.wf-mini.danger { color: #dc2626; }
+.wf-field { margin-bottom: 8px; }
+.wf-field > label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+.wf-input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; font-size: 16px; line-height: 1.5; color: var(--text-color); background: var(--card-bg); font-family: inherit; resize: vertical; min-height: 38px; }
+.wf-model .dd, .wf-model > div:first-child { width: 100%; }
+.wf-add-row { justify-content: flex-start; }
+.wf-out { border: 1px solid var(--border); border-radius: 14px; background: var(--card-bg); padding: 10px 12px; }
+.wf-out-title { font-size: 12.5px; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; }
+.wf-out-body { font-size: 13.5px; line-height: 1.6; color: var(--text-color); word-break: break-word; }
+.wf-out-body .md { font-size: 13.5px; }
+body.dark .wf-head, body.dark .wf-step, body.dark .wf-out { border-color: rgba(255,255,255,.1); }
+body.dark .wf-name, body.dark .wf-input { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: var(--text-color); }
+body.dark .wf-btn { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); }
+body.dark .wf-btn.primary { background: linear-gradient(135deg,#4f6df5,#8b5cf6); }
+
+/* ---------- P1-6 定时任务 ---------- */
+.ex-sched-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); margin-top: 8px; }
+.ex-sched-main { flex: 1 1 auto; min-width: 0; }
+.ex-sched-name { font-size: 13px; font-weight: 800; color: var(--text-color); }
+.ex-sched-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; word-break: break-word; }
+.ex-sched-switch { flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 800; cursor: pointer; }
+.ex-sched-switch.on { background: rgba(16,185,129,.14); color: #059669; border-color: rgba(16,185,129,.35); }
+.ex-sched-switch:active { transform: scale(.95); }
+.ex-sched-note { font-size: 11.5px; line-height: 1.5; color: var(--text-muted); margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.28); }
+body.dark .ex-sched-row { border-color: rgba(255,255,255,.1); }
+body.dark .ex-sched-switch.on { background: rgba(16,185,129,.2); color: #34d399; }
+
+/* ---------- P1-7 RAG 命中可视化 ---------- */
+.ex-rag-hits { margin-top: 8px; border: 1px solid var(--border); border-radius: 12px; background: rgba(79,109,245,.05); overflow: hidden; }
+.ex-rag-hits-head { display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 11.5px; font-weight: 800; color: var(--text-muted); cursor: pointer; }
+.ex-rag-hits-body { display: none; padding: 2px 10px 10px; }
+.ex-rag-hits.expanded .ex-rag-hits-body { display: block; }
+.ex-hit { padding: 8px 0; border-top: 1px dashed var(--border); }
+.ex-hit:first-child { border-top: 0; }
+.ex-hit-title { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; color: var(--text-color); word-break: break-word; }
+.ex-hit-score { margin-left: auto; font-size: 10.5px; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; }
+.ex-hit-body { font-size: 11.5px; line-height: 1.5; color: var(--text-muted); margin-top: 3px; word-break: break-word; }
+.ex-fb { height: 26px; min-width: 30px; padding: 0 7px; border-radius: 8px; border: 1px solid var(--border); background: transparent; font-size: 13px; cursor: pointer; margin-right: 4px; }
+.ex-fb.on { background: rgba(79,109,245,.16); border-color: rgba(79,109,245,.4); }
+body.dark .ex-rag-hits { border-color: rgba(255,255,255,.1); background: rgba(79,109,245,.12); }
+body.dark .ex-hit { border-top-color: rgba(255,255,255,.1); }
+
+/* ---------- P2-9 项目维度 ---------- */
+.pj-filter { padding: 4px 8px 8px; }
+.pj-select { width: 100%; box-sizing: border-box; height: 38px; padding: 0 10px; border-radius: 11px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-color); font-size: 16px; font-family: inherit; }
+.pj-group-title { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted); padding: 10px 10px 4px; user-select: none; cursor: pointer; }
+.pj-group-title::before { content: '▾'; font-size: 10px; }
+.pj-group-title.collapsed::before { content: '▸'; }
+.pj-menu-wrap { position: fixed; inset: 0; z-index: 330; }
+.pj-menu { position: fixed; min-width: 168px; padding: 6px; border-radius: 13px; background: var(--card-bg); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(15,23,42,.24); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+.pj-menu-item { display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent; color: var(--text-color); font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.pj-menu-item:active { background: rgba(120,120,128,.16); }
+.pj-menu-item.danger { color: #dc2626; }
+body.dark .pj-select { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: var(--text-color); }
+body.dark .pj-menu { background: #141a24; border-color: rgba(255,255,255,.1); }
+
+/* ---------- 备份按钮 ---------- */
+.ex-backup-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* ---------- 移动端微调 ---------- */
+@media (max-width: 767px) {
+  #cbBar.cb-bar { top: -96px; padding: 9px 10px; }
+  .cb-text { font-size: 12px; }
+  .wf-head { padding: 8px 10px; }
+  #chatView.wf-open #wfDock.wf-dock { padding: 10px 10px calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  .ex-mpf-head { font-size: 12px; }
+  .pt-item { flex-wrap: wrap; }
+  .pt-item-actions { width: 100%; justify-content: flex-end; }
+}
+@media (max-width: 480px) {
+  .wf-btn { height: 36px; padding: 0 11px; font-size: 15px; }
+  .wf-title { font-size: 12.5px; }
+  .ex-rag-hits-head { font-size: 11px; }
+  .cb-btn { padding: 0 10px; }
+}
 </style>
 </head>
 <body>
@@ -1238,6 +1416,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
     </div>
     <button id="newChatSideBtn" class="new-chat-btn" data-i18n="btn_new_chat">＋ 新建对话</button>
     <div class="session-label" data-i18n="session_list_label">对话记录</div>
+    <div id="pjFilter" class="pj-filter"></div>
     <div id="sessionList" class="session-list"></div>
     <div class="side-nav">
       <button id="navDebateBtn" data-i18n="nav_debate">⚔️ 多 Agent 辩论</button>
@@ -1295,7 +1474,19 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
       <!-- 🎨 智能修图就地挂载点：与聊天共用同一个输入条和技能胶囊 -->
       <div id="psDock" class="ps-dock"></div>
 
+      <!-- 🔗 工作流编排就地挂载点（与 #psDock 互斥，复用同一位置） -->
+      <div id="wfDock" class="wf-dock" aria-label="工作流编排"></div>
+
       <div class="inputbar">
+        <!-- 📋 剪贴板长文本一键入库 RAG -->
+        <div id="cbBar" class="cb-bar" role="status" aria-live="polite">
+          <span class="cb-text" id="cbText"></span>
+          <div class="cb-actions">
+            <button class="cb-btn primary" type="button" data-cb="save">存入</button>
+            <button class="cb-btn" type="button" data-cb="ignore">忽略</button>
+            <button class="cb-close" type="button" data-cb="ignore" aria-label="关闭">✕</button>
+          </div>
+        </div>
         <div class="api-warning-bar" id="apiWarningBar">
           <span class="api-warning-text" id="apiWarnText" data-i18n="api_warn_nokey">该模型未绑定 API</span>
           <span class="api-warning-link" id="apiWarnLink" data-i18n="api_warn_add">去添加</span>
@@ -1308,6 +1499,7 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
           <button class="skill-chip" type="button" data-skill="debate" role="tab" data-i18n="skill_debate">⚔️ 多 Agent 辩论</button>
           <button class="skill-chip" type="button" data-skill="eval" role="tab" data-i18n="skill_eval">🏟️ 模型评估场</button>
           <button class="skill-chip" type="button" data-skill="settings" role="tab" data-i18n="skill_settings">⚙️ 模型与 Key</button>
+          <button class="skill-chip" type="button" data-skill="workflow" role="tab" data-i18n="skill_workflow">🔗 工作流</button>
         </div>
                 <!-- 快捷指令：独立一行，与技能胶囊互不干扰 -->
         <div class="prompt-row" id="promptRow" aria-label="快捷指令">
@@ -1706,9 +1898,59 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
           <div class="rag-list" id="ragList"></div>
         </section>
 
+        <section class="card set-card" id="ptCard">
+          <h3 data-i18n="pt_card_title">📝 Prompt 模板</h3>
+          <div class="pt-list" id="ptList"></div>
+          <button class="set-btn" id="ptAddBtn" type="button" data-i18n="pt_add">＋ 新增模板</button>
+          <div class="pt-form" id="ptForm">
+            <div class="pt-form-row">
+              <label class="pt-label" for="ptName" data-i18n="pt_name">模板名称</label>
+              <input class="pt-input" id="ptName" type="text" maxlength="60" autocomplete="off">
+            </div>
+            <div class="pt-form-row">
+              <label class="pt-label" for="ptBody" data-i18n="pt_body">模板内容（支持 {{变量}} 占位）</label>
+              <textarea class="pt-body" id="ptBody" rows="4"></textarea>
+            </div>
+            <div class="pt-form-actions">
+              <button class="pt-btn primary" id="ptSave" type="button" data-i18n="pt_save">保存</button>
+              <button class="pt-btn" id="ptCancel" type="button" data-i18n="pt_cancel">取消</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card set-card" id="schedCard">
+          <h3 data-i18n="sched_card_title">⏰ 定时任务</h3>
+          <div id="schedList"></div>
+          <button class="set-btn" id="schedAddBtn" type="button" data-i18n="sched_add">＋ 添加任务</button>
+          <div class="pt-form" id="schedForm">
+            <div class="pt-form-row">
+              <label class="pt-label" for="schedName" data-i18n="sched_name">任务名称</label>
+              <input class="pt-input" id="schedName" type="text" maxlength="40" autocomplete="off">
+            </div>
+            <div class="pt-form-row">
+              <label class="pt-label" for="schedTime" data-i18n="sched_time">每天执行时间 (HH:MM)</label>
+              <input class="pt-input" id="schedTime" type="text" inputmode="numeric" maxlength="5" placeholder="08:30">
+            </div>
+            <div class="pt-form-row">
+              <label class="pt-label" for="schedPrompt" data-i18n="sched_prompt">要执行的 Prompt</label>
+              <textarea class="pt-body" id="schedPrompt" rows="3"></textarea>
+            </div>
+            <div class="pt-form-actions">
+              <button class="pt-btn primary" id="schedSave" type="button" data-i18n="sched_save">保存任务</button>
+              <button class="pt-btn" id="schedCancel" type="button" data-i18n="pt_cancel">取消</button>
+            </div>
+          </div>
+          <div class="ex-sched-note" id="schedNote" data-i18n="sched_note"></div>
+        </section>
+
         <section class="card set-card">
           <h3>🗂️ 数据管理</h3>
           <button id="clearSessionsBtn" class="set-btn danger" style="margin-top:10px;">清空全部对话记录</button>
+          <div class="ex-backup-row">
+            <button id="backupExportBtn" class="set-btn" type="button" data-i18n="bk_export">⬇ 导出全量备份</button>
+            <button id="backupImportBtn" class="set-btn" type="button" data-i18n="bk_import">⬆ 导入备份</button>
+            <input type="file" id="backupImportFile" accept="application/json,.json" hidden>
+          </div>
         </section>
       </div>
     </div>
@@ -1819,6 +2061,10 @@ body.dark .md pre code { background: transparent; padding: 0; color: inherit; }
     <button class="pencil-btn primary" id="pencilSendBtn" type="button">发送到对话</button>
   </div>
 </div>
+
+<!-- 🧩 EXT v2 浮层：Prompt 变量填充 / 项目命名 -->
+<div id="cbVarModal" class="pt-modal" aria-hidden="true" role="dialog" aria-modal="true"></div>
+<div id="pjPromptModal" class="pt-modal" aria-hidden="true" role="dialog" aria-modal="true"></div>
 
 <script>
 (function () {
@@ -9032,6 +9278,2041 @@ try { enhanceSessionList(); } catch (e) { }
      [#21] 本补丁未对任何输入类元素（#chatInput / .set-input / .rag-input / textarea / select …）新增
            font-size 声明，既有 16px 规则与 -webkit-tap-highlight-color 保持不变
      ========================================================================================== */
+/* ===================================================================
+   [EXT v2] 追加能力层（P0-1 ~ P2-10）
+   纯增量：不重写任何既有函数；所有包装叠加在既有 monkey-patch 链之后。
+   本块位于 initI18n() 之前，字典在首次 applyLanguage 时即可用。
+   =================================================================== */
+
+/* ---------- 0) i18n 字典补充（zh / en 各一份，全部新增文案集中在这里） ---------- */
+Object.assign(I18N_DICT.zh, {
+  skill_workflow: '🔗 工作流',
+  cb_detected: '检测到 {n} 字文本，存入资料库（RAG）？',
+  cb_save: '存入',
+  cb_ignore: '忽略',
+  cb_saved: '已存入 {n} 块资料',
+  cb_save_fail: '入库失败：内容过短或已达上限',
+  cb_img_reading: '正在读取剪贴板图片…',
+  cb_img_fail: '图片转文字失败，请手动复制文字后再试',
+  cb_img_saved: '图片已转文字并存入 {n} 块资料',
+  cb_none: '剪贴板没有可入库的内容',
+  ex_csv: '⬇ CSV',
+  ex_json: '⬇ JSON',
+  ex_format: '格式化',
+  ex_download: '⬇ 下载',
+  ex_fmt_ok: 'JSON 已格式化',
+  ex_fmt_bad: '不是合法 JSON，无法格式化',
+  ex_no_data: '没有可导出的内容',
+  ex_already_applied: '该补丁已经应用过了',
+  ex_mpf_head: '本次共 {n} 个文件改动',
+  ex_mpf_apply_all: '✅ 应用全部',
+  ex_mpf_applied: '已应用 {n} 个文件的修改',
+  ex_mpf_cancelled: '已取消全部修改',
+  ex_patch_contract: '【多文件补丁契约】当需要改动多个文件时，可以改用 patches 数组：{"patches":[{"target":"文件名","language":"html","old":"原始代码","new":"完整新代码"}]}。每个 new 必须是可直接落地的完整内容，禁止写占位或省略。只有一个文件时仍使用原来的单个 patch 对象。',
+  rag_hits_title: '📚 本次引用 {n} 段资料',
+  rag_fb_up: '有帮助',
+  rag_fb_down: '没帮助',
+  rag_fb_saved: '已记录反馈',
+  pt_card_title: '📝 Prompt 模板',
+  pt_add: '＋ 新增模板',
+  pt_name: '模板名称',
+  pt_body: '模板内容（支持 {{变量}} 占位）',
+  pt_save: '保存',
+  pt_cancel: '取消',
+  pt_edit: '编辑',
+  pt_del: '删除',
+  pt_empty: '还没有自定义模板，点「新增模板」创建',
+  pt_need_name: '请填写模板名称',
+  pt_need_body: '请填写模板内容',
+  pt_saved: '模板已保存',
+  pt_deleted: '模板已删除',
+  pt_del_confirm: '确定删除模板「{name}」？',
+  pt_fill_title: '填写变量',
+  pt_fill_insert: '插入到输入框',
+  wf_title: '🔗 工作流',
+  wf_name_ph: '工作流名称',
+  wf_step: '步骤 {n}',
+  wf_model: '模型',
+  wf_prompt: '提示词（可用 {{变量}} 引用前面步骤的输出）',
+  wf_prompt_ph: '例如：请总结上一步的输出，给出 5 条要点',
+  wf_var: '输出变量名',
+  wf_var_ph: '例如 summary',
+  wf_add_step: '＋ 添加步骤',
+  wf_run: '▶ 运行',
+  wf_stop: '■ 中止',
+  wf_save: '保存工作流',
+  wf_export: '⬇ 导出报告',
+  wf_close: '返回对话',
+  wf_del: '删除',
+  wf_up: '上移',
+  wf_down: '下移',
+  wf_empty: '还没有步骤，先添加一步',
+  wf_need_prompt: '第 {n} 步的提示词为空',
+  wf_need_var: '第 {n} 步缺少输出变量名',
+  wf_dup_var: '输出变量名重复：{name}',
+  wf_running: '正在运行第 {n} 步…',
+  wf_done: '工作流完成',
+  wf_aborted: '工作流已中止',
+  wf_failed: '工作流失败：{msg}',
+  wf_saved: '工作流已保存',
+  wf_out: '运行输出',
+  sched_card_title: '⏰ 定时任务',
+  sched_name: '任务名称',
+  sched_time: '每天执行时间 (HH:MM)',
+  sched_prompt: '要执行的 Prompt',
+  sched_add: '＋ 添加任务',
+  sched_save: '保存任务',
+  sched_need_name: '请填写任务名称',
+  sched_need_time: '请填写时间，格式 HH:MM',
+  sched_need_prompt: '请填写要执行的 Prompt',
+  sched_saved: '任务已保存',
+  sched_deleted: '任务已删除',
+  sched_del_confirm: '确定删除任务「{name}」？',
+  sched_ran: '定时任务已执行：{name}',
+  sched_failed: '定时任务失败：{name}',
+  sched_note: '提示：单文件应用没有后台进程，页面关闭后定时任务不会执行；保持此页面打开才生效。',
+  sched_empty: '还没有定时任务',
+  sched_toast_title: 'O.M.N.I 定时任务',
+  sched_perm: '通知权限未开启，结果仍会写入会话列表',
+  pj_all: '全部会话',
+  pj_none: '未分组',
+  pj_set: '设为项目',
+  pj_clear: '取消项目',
+  pj_prompt_title: '项目名称',
+  pj_prompt_ph: '例如：客户A / 论文 / 脚本',
+  pj_ok: '确定',
+  pj_cancel: '取消',
+  pj_saved: '已归入项目：{name}',
+  pj_cleared: '已取消项目归类',
+  bk_export: '⬇ 导出全量备份',
+  bk_import: '⬆ 导入备份',
+  bk_confirm: '导入将覆盖当前所有本地数据（{n} 项），确定继续？',
+  bk_bad: '备份文件格式不正确',
+  bk_done: '备份已导出（{n} 项）',
+  bk_empty: '没有可导出的本地数据',
+  bk_imported: '导入完成，即将刷新…',
+  hot_hint: '快捷键：⌘/Ctrl+Shift+O 聚焦输入框 · ⌘/Ctrl+Shift+K 搜索会话',
+  ext_ls_fail: '本地存储写入失败，已回滚'
+});
+
+Object.assign(I18N_DICT.en, {
+  skill_workflow: '🔗 Workflow',
+  cb_detected: 'Detected {n} characters. Save to knowledge base (RAG)?',
+  cb_save: 'Save',
+  cb_ignore: 'Ignore',
+  cb_saved: 'Saved {n} chunks',
+  cb_save_fail: 'Save failed: text too short or limit reached',
+  cb_img_reading: 'Reading clipboard image…',
+  cb_img_fail: 'Image to text failed. Please copy the text manually.',
+  cb_img_saved: 'Image text saved as {n} chunks',
+  cb_none: 'Nothing to save from clipboard',
+  ex_csv: '⬇ CSV',
+  ex_json: '⬇ JSON',
+  ex_format: 'Format',
+  ex_download: '⬇ Download',
+  ex_fmt_ok: 'JSON formatted',
+  ex_fmt_bad: 'Not valid JSON',
+  ex_no_data: 'Nothing to export',
+  ex_already_applied: 'This patch was already applied',
+  ex_mpf_head: '{n} files changed in this turn',
+  ex_mpf_apply_all: '✅ Apply all',
+  ex_mpf_applied: 'Applied changes to {n} files',
+  ex_mpf_cancelled: 'All changes cancelled',
+  ex_patch_contract: '[Multi-file patch contract] When several files must change, you may answer with a patches array: {"patches":[{"target":"file name","language":"html","old":"original code","new":"full new code"}]}. Every new value must be complete and directly usable, never a placeholder. For a single file keep using one patch object.',
+  rag_hits_title: '📚 {n} sources referenced',
+  rag_fb_up: 'Helpful',
+  rag_fb_down: 'Not helpful',
+  rag_fb_saved: 'Feedback saved',
+  pt_card_title: '📝 Prompt templates',
+  pt_add: '＋ New template',
+  pt_name: 'Template name',
+  pt_body: 'Template body (supports {{var}} placeholders)',
+  pt_save: 'Save',
+  pt_cancel: 'Cancel',
+  pt_edit: 'Edit',
+  pt_del: 'Delete',
+  pt_empty: 'No custom templates yet. Tap “New template”.',
+  pt_need_name: 'Please enter a template name',
+  pt_need_body: 'Please enter template body',
+  pt_saved: 'Template saved',
+  pt_deleted: 'Template deleted',
+  pt_del_confirm: 'Delete template “{name}”?',
+  pt_fill_title: 'Fill variables',
+  pt_fill_insert: 'Insert into input',
+  wf_title: '🔗 Workflow',
+  wf_name_ph: 'Workflow name',
+  wf_step: 'Step {n}',
+  wf_model: 'Model',
+  wf_prompt: 'Prompt (use {{var}} to reference previous outputs)',
+  wf_prompt_ph: 'e.g. Summarise the previous output into 5 bullets',
+  wf_var: 'Output variable',
+  wf_var_ph: 'e.g. summary',
+  wf_add_step: '＋ Add step',
+  wf_run: '▶ Run',
+  wf_stop: '■ Stop',
+  wf_save: 'Save workflow',
+  wf_export: '⬇ Export report',
+  wf_close: 'Back to chat',
+  wf_del: 'Delete',
+  wf_up: 'Move up',
+  wf_down: 'Move down',
+  wf_empty: 'No steps yet. Add one.',
+  wf_need_prompt: 'Step {n} has an empty prompt',
+  wf_need_var: 'Step {n} is missing an output variable',
+  wf_dup_var: 'Duplicate output variable: {name}',
+  wf_running: 'Running step {n}…',
+  wf_done: 'Workflow finished',
+  wf_aborted: 'Workflow aborted',
+  wf_failed: 'Workflow failed: {msg}',
+  wf_saved: 'Workflow saved',
+  wf_out: 'Output',
+  sched_card_title: '⏰ Scheduled tasks',
+  sched_name: 'Task name',
+  sched_time: 'Daily time (HH:MM)',
+  sched_prompt: 'Prompt to run',
+  sched_add: '＋ Add task',
+  sched_save: 'Save task',
+  sched_need_name: 'Please enter a task name',
+  sched_need_time: 'Please enter time as HH:MM',
+  sched_need_prompt: 'Please enter the prompt to run',
+  sched_saved: 'Task saved',
+  sched_deleted: 'Task deleted',
+  sched_del_confirm: 'Delete task “{name}”?',
+  sched_ran: 'Scheduled task ran: {name}',
+  sched_failed: 'Scheduled task failed: {name}',
+  sched_note: 'Note: a single-file app has no background process — tasks do not run after this page is closed. Keep the page open.',
+  sched_empty: 'No scheduled tasks yet',
+  sched_toast_title: 'O.M.N.I scheduled task',
+  sched_perm: 'Notification permission not granted; results are still saved to chats',
+  pj_all: 'All chats',
+  pj_none: 'Ungrouped',
+  pj_set: 'Assign to project',
+  pj_clear: 'Remove project',
+  pj_prompt_title: 'Project name',
+  pj_prompt_ph: 'e.g. Client A / Thesis / Scripts',
+  pj_ok: 'OK',
+  pj_cancel: 'Cancel',
+  pj_saved: 'Assigned to project: {name}',
+  pj_cleared: 'Project removed',
+  bk_export: '⬇ Export full backup',
+  bk_import: '⬆ Import backup',
+  bk_confirm: 'Importing will overwrite all local data ({n} keys). Continue?',
+  bk_bad: 'Invalid backup file',
+  bk_done: 'Backup exported ({n} keys)',
+  bk_empty: 'No local data to export',
+  bk_imported: 'Import finished, reloading…',
+  hot_hint: 'Shortcuts: ⌘/Ctrl+Shift+O focus input · ⌘/Ctrl+Shift+K search chats',
+  ext_ls_fail: 'Local storage write failed, rolled back'
+});
+
+/* ---------- 1) 通用工具（存储读写 / 文案插值 / 时间戳 / 光标插入） ---------- */
+function extLSGet(key, dft) {
+  try {
+    var raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined || raw === '') return dft;
+    var v = JSON.parse(raw);
+    return (v === null || v === undefined) ? dft : v;
+  } catch (e) { return dft; }
+}
+
+function extLSSet(key, val) {
+  var had = false, prev = null;
+  try { had = localStorage.getItem(key) !== null; prev = localStorage.getItem(key); } catch (e) {}
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch (err) {
+    try { if (had) localStorage.setItem(key, prev); else localStorage.removeItem(key); } catch (e2) {}
+    try { showToast(t('ext_ls_fail')); } catch (e3) {}
+    return false;
+  }
+}
+
+function extP(key, map) {
+  var s = String(t(key));
+  var m = map || {};
+  Object.keys(m).forEach(function (k) { s = s.split('{' + k + '}').join(String(m[k])); });
+  return s;
+}
+
+function extEsc(v) {
+  var s = (v === null || v === undefined) ? '' : String(v);
+  try { return escapeHtml(s); }
+  catch (e) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+}
+
+function extPad2(n) { return (n < 10 ? '0' : '') + n; }
+
+function extStamp() {
+  var d = new Date();
+  return '' + d.getFullYear() + extPad2(d.getMonth() + 1) + extPad2(d.getDate()) + '-' + extPad2(d.getHours()) + extPad2(d.getMinutes()) + extPad2(d.getSeconds());
+}
+
+function extIsEditing() {
+  var a = document.activeElement;
+  if (!a) return false;
+  var tag = String(a.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+  return !!a.isContentEditable;
+}
+
+function extInsertAtCursor(text) {
+  var inp = $('chatInput');
+  if (!inp) return false;
+  var str = String(text === null || text === undefined ? '' : text);
+  var st = (typeof inp.selectionStart === 'number') ? inp.selectionStart : String(inp.value || '').length;
+  var en = (typeof inp.selectionEnd === 'number') ? inp.selectionEnd : st;
+  var v = String(inp.value || '');
+  inp.value = v.slice(0, st) + str + v.slice(en);
+  var pos = st + str.length;
+  try { inp.focus(); inp.setSelectionRange(pos, pos); } catch (err) {}
+  try { if (typeof ensureHeight === 'function') ensureHeight(inp); } catch (err2) {}
+  try { if (typeof updateCharCount === 'function') updateCharCount(); } catch (err3) {}
+  try { if (typeof saveDraft === 'function') saveDraft(); } catch (err4) {}
+  return true;
+}
+
+function extModelLabel(id) {
+  try { var n = modelNameOf(id); return n ? n : String(id || ''); } catch (e) { return String(id || ''); }
+}
+
+/* ---------- 2) 暴露既有能力给扩展工具台 / 全局 ---------- */
+try { window.ragSave = ragSave; } catch (e) {}
+try { window.showToast = showToast; } catch (e) {}
+window.OMNI_EXT = window.OMNI_EXT || {};
+
+/* ---------- 3) P0-1 剪贴板 / 截图一键入库 RAG ---------- */
+var extCB = { timer: 0, text: '' };
+
+function extCBEl() { return $('cbBar'); }
+
+function extCBHide() {
+  var b = extCBEl();
+  if (b) b.classList.remove('show');
+  extCB.text = '';
+  if (extCB.timer) { clearTimeout(extCB.timer); extCB.timer = 0; }
+}
+
+function extCBShow(text) {
+  var b = extCBEl();
+  if (!b) return;
+  extCB.text = String(text || '');
+  var txt = b.querySelector('.cb-text');
+  if (txt) txt.textContent = extP('cb_detected', { n: extCB.text.length });
+  var sv = b.querySelector('[data-cb="save"]');
+  if (sv) sv.textContent = t('cb_save');
+  var ig = b.querySelector('[data-cb="ignore"]');
+  if (ig) ig.textContent = t('cb_ignore');
+  b.classList.add('show');
+  if (extCB.timer) clearTimeout(extCB.timer);
+  extCB.timer = setTimeout(function () { extCBHide(); }, 5000);
+}
+
+function extRagSaveText(raw) {
+  var n = 0;
+  try { n = ragSave(String(raw || '')); } catch (e) { n = 0; }
+  if (n > 0) {
+    try { renderRagList(); } catch (e2) {}
+    showToast(extP('cb_saved', { n: n }));
+  } else {
+    showToast(t('cb_save_fail'));
+  }
+  return n;
+}
+
+function extRagFromImage(file) {
+  if (!file) return;
+  showToast(t('cb_img_reading'));
+  var p = null;
+  try { p = processImage(file, 1024); } catch (e) { p = null; }
+  if (!p || typeof p.then !== 'function') { showToast(t('cb_img_fail')); return; }
+  p.then(function (res) {
+    var url = (res && res.dataUrl) ? res.dataUrl : (typeof res === 'string' ? res : '');
+    if (!url) throw new Error('ext-no-image');
+    return describeImageWithVision(url);
+  }).then(function (res) {
+    var txt = '';
+    if (typeof res === 'string') txt = res;
+    else if (res && typeof res.text === 'string') txt = res.text;
+    else if (res && typeof res.content === 'string') txt = res.content;
+    txt = String(txt || '').trim();
+    if (!txt) { showToast(t('cb_img_fail')); return; }
+    if (extRagSaveText(txt) > 0) showToast(extP('cb_img_saved', { n: 1 }));
+  }).catch(function () { showToast(t('cb_img_fail')); });
+}
+
+document.addEventListener('paste', function (e) {
+  var dt = e.clipboardData || window.clipboardData;
+  if (!dt) return;
+  /* 焦点在任何可编辑元素内时保持原生粘贴行为，不拦截 */
+  if (extIsEditing()) return;
+  var items = dt.items ? Array.prototype.slice.call(dt.items) : [];
+  var imgFile = null;
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    if (it && it.kind === 'file' && it.type && it.type.indexOf('image/') === 0) {
+      try { imgFile = it.getAsFile(); } catch (err) { imgFile = null; }
+      if (imgFile) break;
+    }
+  }
+  if (imgFile) {
+    if (e.preventDefault) e.preventDefault();
+    extRagFromImage(imgFile);
+    return;
+  }
+  var text = '';
+  try { text = dt.getData('text/plain') || ''; } catch (err2) { text = ''; }
+  if (!text || text.length < 200) return;
+  extCBShow(text);
+}, true);
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  var cb = tgt.closest('#cbBar [data-cb]');
+  if (!cb) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var act = cb.getAttribute('data-cb');
+  if (act === 'save') { var hold = extCB.text; extCBHide(); extRagSaveText(hold); }
+  else extCBHide();
+}, true);
+
+/* ---------- 4) P0-3 结构化输出一键导出（表格 CSV / JSON / 代码下载） ---------- */
+var extMarkdownBase = renderMarkdown;
+
+function extExtOfLang(lang) {
+  var l = String(lang || '').toLowerCase();
+  if (l === 'js' || l === 'javascript' || l === 'jsx' || l === 'mjs') return 'js';
+  if (l === 'ts' || l === 'typescript' || l === 'tsx') return 'ts';
+  if (l === 'css' || l === 'scss' || l === 'less') return 'css';
+  if (l === 'json') return 'json';
+  if (l === 'py' || l === 'python') return 'py';
+  if (l === 'md' || l === 'markdown') return 'md';
+  if (l === 'html' || l === 'xml' || l === 'svg') return 'html';
+  return 'txt';
+}
+
+function extMimeOfExt(ext) {
+  var map = { js: 'text/javascript', ts: 'text/plain', css: 'text/css', json: 'application/json', py: 'text/x-python', md: 'text/markdown', html: 'text/html' };
+  return map[ext] || 'text/plain';
+}
+
+function extAugmentMarkdown(html) {
+  var out = String(html === null || html === undefined ? '' : html);
+  if (!out) return out;
+  out = out.replace(/<div class="md-table-wrap">/g,
+    '<div class="md-table-wrap ex-tbl"><button class="ex-btn ex-csv" type="button" data-ex="csv">' + extEsc(t('ex_csv')) + '</button>');
+  out = out.replace(/<div class="code-wrap">([\s\S]*?)<\/pre><\/div>/g, function (all, inner) {
+    if (inner.indexOf('data-ex="code-dl"') >= 0) return all;
+    var lm = /data-lang="([^"]*)"/.exec(inner);
+    var lang = lm ? String(lm[1] || '') : '';
+    var btns = '<button class="ex-btn" type="button" data-ex="code-dl" data-lang="' + extEsc(lang) + '">' + extEsc(t('ex_download')) + '</button>';
+    if (String(lang).toLowerCase() === 'json') {
+      btns += '<button class="ex-btn" type="button" data-ex="code-fmt">' + extEsc(t('ex_format')) + '</button>';
+    }
+    var replaced = inner.replace(/(<button class="copy-code-btn"[\s\S]*?<\/button>)/, '$1' + btns);
+    if (replaced === inner) replaced = btns + inner;
+    return '<div class="code-wrap">' + replaced + '</pre></div>';
+  });
+  return out;
+}
+
+renderMarkdown = function renderMarkdownWithExport(src) {
+  var html = extMarkdownBase.apply(this, arguments);
+  try { html = extAugmentMarkdown(html); } catch (e) {}
+  return html;
+};
+try { window.renderMarkdown = renderMarkdown; } catch (e) {}
+
+function extCsvCell(v) {
+  var s = String(v === null || v === undefined ? '' : v).replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  if (s.indexOf('"') >= 0 || s.indexOf(',') >= 0 || s.indexOf('\n') >= 0) {
+    s = '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  var btn = tgt.closest('.ex-btn');
+  if (!btn) return;
+  var kind = btn.getAttribute('data-ex') || '';
+  if (kind !== 'csv' && kind !== 'code-dl' && kind !== 'code-fmt') return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (kind === 'csv') {
+    var wrap = btn.closest('.md-table-wrap');
+    if (!wrap) { showToast(t('ex_no_data')); return; }
+    var rows = [];
+    var trs = wrap.querySelectorAll('table tr');
+    for (var i = 0; i < trs.length; i++) {
+      var cells = trs[i].querySelectorAll('th,td');
+      if (!cells.length) continue;
+      var line = [];
+      for (var j = 0; j < cells.length; j++) line.push(extCsvCell(cells[j].textContent));
+      rows.push(line.join(','));
+    }
+    if (!rows.length) { showToast(t('ex_no_data')); return; }
+    downloadFile('table-' + extStamp() + '.csv', '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
+    return;
+  }
+
+  var host = btn.closest('.code-wrap');
+  var codeEl = host ? host.querySelector('pre code') : null;
+  var code = codeEl ? String(codeEl.textContent || '') : '';
+  if (kind === 'code-fmt') {
+    var pretty = '';
+    try { pretty = JSON.stringify(JSON.parse(code), null, 2); } catch (err) { showToast(t('ex_fmt_bad')); return; }
+    if (codeEl) codeEl.textContent = pretty;
+    showToast(t('ex_fmt_ok'));
+    return;
+  }
+  var lang = btn.getAttribute('data-lang') || (codeEl ? codeEl.getAttribute('data-lang') : '') || '';
+  var ext = extExtOfLang(lang);
+  downloadFile('code-' + extStamp() + '.' + ext, code, extMimeOfExt(ext) + ';charset=utf-8');
+}, true);
+
+/* 分享/导出文本时剔除这些按钮（沿用既有 .copy-code-btn 的剔除思路） */
+var extShareBase = handleShareClick;
+handleShareClick = function handleShareClickWithExportStrip(btn) {
+  var nodes = [];
+  try { nodes = Array.prototype.slice.call(document.querySelectorAll('.ex-btn')); } catch (e) { nodes = []; }
+  for (var i = 0; i < nodes.length; i++) { try { nodes[i].style.display = 'none'; } catch (e) {} }
+  try {
+    return extShareBase.apply(this, arguments);
+  } finally {
+    setTimeout(function () {
+      for (var k = 0; k < nodes.length; k++) { try { nodes[k].style.display = ''; } catch (e) {} }
+    }, 80);
+  }
+};
+
+/* ---------- 5) P0-2 代理工作台多文件批量 patch ---------- */
+var extNormalizeBase = normalizeAgentPlan;
+
+function extNormPatchItem(p) {
+  if (!p || typeof p !== 'object') return null;
+  var nw = (p.new !== undefined && p.new !== null) ? p.new
+    : (p.modified !== undefined && p.modified !== null) ? p.modified
+      : (p.code !== undefined && p.code !== null) ? p.code
+        : (p.content !== undefined && p.content !== null) ? p.content : '';
+  var item = {
+    target: String(p.target || p.file || p.filename || p.path || p.selector || '').trim() || 'agent-patch.html',
+    language: String(p.language || p.lang || 'html').trim().toLowerCase() || 'html',
+    old: (p.old !== undefined && p.old !== null) ? String(p.old)
+      : (p.original !== undefined && p.original !== null) ? String(p.original) : '',
+    new: String(nw === null || nw === undefined ? '' : nw)
+  };
+  if (!item.new.trim() && !item.old.trim()) return null;
+  return item;
+}
+
+normalizeAgentPlan = function normalizeAgentPlanMulti(obj) {
+  var plan = null;
+  try { plan = extNormalizeBase.apply(this, arguments); } catch (e) { plan = null; }
+  try {
+    if (obj && Array.isArray(obj.patches) && obj.patches.length) {
+      var list = [];
+      for (var i = 0; i < obj.patches.length; i++) {
+        var it = extNormPatchItem(obj.patches[i]);
+        if (it) list.push(it);
+      }
+      if (list.length) {
+        if (!plan) plan = { thought: String(obj.thought || ''), context: [], summary: String(obj.summary || ''), patch: null };
+        plan.patches = list;
+        plan.patch = list[0];
+        return plan;
+      }
+    }
+    if (plan && plan.patch) plan.patches = [plan.patch];
+  } catch (e2) {}
+  return plan;
+};
+
+var extExtractBase = extractAgentPlan;
+
+extractAgentPlan = function extractAgentPlanMulti(text) {
+  var plan = null;
+  try { plan = extExtractBase.apply(this, arguments); } catch (e) { plan = null; }
+  try {
+    var raw = String(text === null || text === undefined ? '' : text);
+    if (raw.indexOf('patches') >= 0) {
+      var parsed = null;
+      try { parsed = tryJSON(stripAgentFences(raw)); } catch (e2) { parsed = null; }
+      if (!parsed) { try { parsed = repairJSON(raw); } catch (e3) { parsed = null; } }
+      if (parsed && Array.isArray(parsed.patches) && parsed.patches.length) {
+        var np = normalizeAgentPlan(parsed);
+        if (np && np.patches && np.patches.length) {
+          plan = plan || {};
+          plan.patches = np.patches;
+          plan.patch = np.patch || np.patches[0];
+          if (!plan.thought) plan.thought = np.thought || '';
+          if (!plan.summary) plan.summary = np.summary || '';
+        }
+      }
+    }
+  } catch (e4) {}
+  if (plan && plan.patch && (!plan.patches || !plan.patches.length)) {
+    try { plan.patches = [plan.patch]; } catch (e5) {}
+  }
+  return plan;
+};
+
+var extRspBase = renderScriptPane;
+
+function extRenderMultiFiles() {
+  var body = $('aspBody');
+  if (!body || !body.querySelector) return;
+  var old = body.querySelector('.ex-mpf');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+  var m = null;
+  try { m = scriptPaneMsg(); } catch (e) { m = null; }
+  var a = m && m.agent ? m.agent : null;
+  var list = (a && a.patches && a.patches.length) ? a.patches : [];
+  if (list.length < 2) return;
+  var html = '<div class="ex-mpf">' +
+    '<div class="ex-mpf-head"><span>' + extEsc(extP('ex_mpf_head', { n: list.length })) + '</span>' +
+    ((a.applied || a.cancelled) ? '' :
+      '<button class="ex-btn" type="button" data-ex="mpf-apply">' + extEsc(t('ex_mpf_apply_all')) + '</button>' +
+      '<button class="ex-btn" type="button" data-ex="mpf-cancel">' + extEsc(t('pt_cancel')) + '</button>') +
+    '</div><div class="ex-mpf-list">';
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i] || {};
+    html += '<div class="ex-mpf-item">' +
+      '<button class="ex-mpf-file" type="button" data-ex="mpf-file"><span>📄 ' + extEsc(p.target || ('file-' + (i + 1))) + '</span>' +
+      '<span class="ex-mpf-lang">' + extEsc(String(p.language || 'text').toUpperCase()) + '</span></button>' +
+      '<div class="ex-mpf-diff" hidden>' + String(renderDiff(p.old || '', p.new || '') || '') + '</div>' +
+      '</div>';
+  }
+  html += '</div></div>';
+  try { body.insertAdjacentHTML('afterbegin', html); } catch (e2) {}
+}
+
+renderScriptPane = function renderScriptPaneMulti() {
+  var r = extRspBase.apply(this, arguments);
+  try { extRenderMultiFiles(); } catch (e) {}
+  return r;
+};
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  var btn = tgt.closest('[data-ex^="mpf-"]');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var act = btn.getAttribute('data-ex');
+  if (act === 'mpf-file') {
+    var item = btn.closest('.ex-mpf-item');
+    var diff = item ? item.querySelector('.ex-mpf-diff') : null;
+    if (diff) diff.hidden = !diff.hidden;
+    return;
+  }
+  var m = null;
+  try { m = scriptPaneMsg(); } catch (err) { m = null; }
+  if (!m || !m.agent) return;
+  if (act === 'mpf-apply') applyAgentPatch(m.uid);
+  else if (act === 'mpf-cancel') cancelAgentPatch(m.uid);
+}, true);
+
+var extApplyBase = applyAgentPatch;
+
+applyAgentPatch = function applyAgentPatchMulti(uid) {
+  var m = null;
+  try { m = findMsgByUid(uid); } catch (e) { m = null; }
+  var a = m && m.agent ? m.agent : null;
+  var list = (a && a.patches && a.patches.length) ? a.patches : [];
+  if (list.length > 1) {
+    if (a.applied) { showToast(t('ex_already_applied')); return; }
+    if (!window.AGENT_STORE || typeof window.AGENT_STORE !== 'object') window.AGENT_STORE = {};
+    var slots = [];
+    try { slots = Array.prototype.slice.call(document.querySelectorAll('[data-agent-slot]')); } catch (e2) { slots = []; }
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i] || {};
+      var tg = String(p.target || '').trim();
+      if (!tg) continue;
+      var code = String(p.new || '');
+      window.AGENT_STORE[tg] = code;
+      for (var j = 0; j < slots.length; j++) {
+        if (String(slots[j].getAttribute('data-agent-slot') || '') === tg) {
+          try { slots[j].textContent = code; } catch (e3) {}
+        }
+      }
+    }
+    a.applied = true;
+    a.cancelled = false;
+    a.appliedAt = Date.now();
+    try { if (typeof saveAgentStore === 'function') saveAgentStore(); } catch (e4) {}
+    try { persistSessions(true); } catch (e5) {}
+    try { renderChat(); } catch (e6) {}
+    showToast(extP('ex_mpf_applied', { n: list.length }));
+    return;
+  }
+  return extApplyBase.apply(this, arguments);
+};
+
+var extCancelBase = cancelAgentPatch;
+
+cancelAgentPatch = function cancelAgentPatchMulti(uid) {
+  var m = null;
+  try { m = findMsgByUid(uid); } catch (e) { m = null; }
+  var a = m && m.agent ? m.agent : null;
+  var list = (a && a.patches && a.patches.length) ? a.patches : [];
+  if (list.length > 1) {
+    a.cancelled = true;
+    a.applied = false;
+    a.cancelledAt = Date.now();
+    try { persistSessions(); } catch (e2) {}
+    try { renderChat(); } catch (e3) {}
+    showToast(t('ex_mpf_cancelled'));
+    return;
+  }
+  return extCancelBase.apply(this, arguments);
+};
+
+/* AGENT_SYS 是 const，无法直接扩充 → 包装 buildSystemPrompt 追加契约说明 */
+var extSysBase = buildSystemPrompt;
+
+buildSystemPrompt = function buildSystemPromptMulti(query) {
+  var out = extSysBase.apply(this, arguments);
+  try {
+    if (agentMode) out = String(out === null || out === undefined ? '' : out) + '\n\n' + t('ex_patch_contract');
+  } catch (e) {}
+  return out;
+};
+
+/* ---------- 6) P1-7 RAG 命中可视化 + 反馈 ---------- */
+var RAG_FB_KEY = 'autoPro_ragFeedback';
+
+function extChunkKey(c) {
+  if (!c) return '';
+  if (c.id !== undefined && c.id !== null && String(c.id) !== '') return String(c.id);
+  var txt = String(c.text || '');
+  var h = 0;
+  for (var i = 0; i < txt.length; i++) h = ((h << 5) - h + txt.charCodeAt(i)) | 0;
+  return String(c.docId || 'doc') + '#' + String(c.ts || 0) + '#' + (h >>> 0).toString(36);
+}
+
+function extHitChunk(hit) {
+  if (!hit) return null;
+  if (hit.chunk && typeof hit.chunk === 'object') return hit.chunk;
+  return hit;
+}
+
+function extHitScore(hit) {
+  if (!hit) return 0;
+  var v = (hit.score !== undefined && hit.score !== null) ? hit.score : hit.s;
+  var n = Number(v);
+  return isFinite(n) ? n : 0;
+}
+
+function extRagFeedback() {
+  var fb = extLSGet(RAG_FB_KEY, {});
+  if (!fb || typeof fb !== 'object' || Array.isArray(fb)) fb = {};
+  return fb;
+}
+
+var extRagScoreBase = ragScore;
+
+ragScore = function ragScoreWithFeedback(chunk, keywords) {
+  var s = extRagScoreBase.apply(this, arguments);
+  try {
+    var v = extRagFeedback()[extChunkKey(chunk)];
+    if (v === 1) s = s * 1.15;
+    else if (v === -1) s = s * 0.85;
+  } catch (e) {}
+  return s;
+};
+
+var extBrsbBase = buildRagSystemBlock;
+
+buildRagSystemBlock = function buildRagSystemBlockHits(query) {
+  var out = extBrsbBase.apply(this, arguments);
+  try {
+    var hits = [];
+    if (out && String(out).trim()) {
+      try { hits = ragRetrieve(query, RAG_TOP_K) || []; } catch (e) { hits = []; }
+    }
+    window.__lastRagHits = hits;
+  } catch (e2) {
+    window.__lastRagHits = [];
+  }
+  return out;
+};
+
+function extAttachRagHits(el, m) {
+  if (!el || !m || m.role !== 'assistant') return;
+  var hits = window.__lastRagHits || [];
+  if (!hits || !hits.length) return;
+  var sess = null;
+  try { sess = currentSession(); } catch (e) { sess = null; }
+  if (!sess || !sess.messages || !sess.messages.length) return;
+  var lastAi = null;
+  for (var i = sess.messages.length - 1; i >= 0; i--) {
+    if (sess.messages[i] && sess.messages[i].role === 'assistant') { lastAi = sess.messages[i]; break; }
+  }
+  if (!lastAi || lastAi.uid !== m.uid) return;
+  if (el.querySelector && el.querySelector('.ex-rag-hits')) return;
+  var fb = extRagFeedback();
+  var html = '<div class="ex-rag-hits-head" data-ex="rag-toggle">' + extEsc(extP('rag_hits_title', { n: hits.length })) + '</div><div class="ex-rag-hits-body">';
+  for (var k = 0; k < hits.length; k++) {
+    var c = extHitChunk(hits[k]);
+    if (!c) continue;
+    var cid = extChunkKey(c);
+    var title = String(c.title || c.docId || ('#' + (k + 1)));
+    var prev = String(c.text || '').replace(/\s+/g, ' ');
+    var cut = prev.slice(0, 80);
+    html += '<div class="ex-hit">' +
+      '<div class="ex-hit-title"><span>📄 ' + extEsc(title) + '</span>' +
+      '<span class="ex-hit-score">' + extEsc(String(Math.round(extHitScore(hits[k]) * 100) / 100)) + '</span></div>' +
+      '<div class="ex-hit-body">' + extEsc(cut) + (prev.length > 80 ? '…' : '') + '</div>' +
+      '<div><button class="ex-fb' + (fb[cid] === 1 ? ' on' : '') + '" type="button" data-v="1" data-cid="' + extEsc(cid) + '" aria-label="' + extEsc(t('rag_fb_up')) + '">👍</button>' +
+      '<button class="ex-fb' + (fb[cid] === -1 ? ' on' : '') + '" type="button" data-v="-1" data-cid="' + extEsc(cid) + '" aria-label="' + extEsc(t('rag_fb_down')) + '">👎</button></div>' +
+      '</div>';
+  }
+  html += '</div>';
+  var box = document.createElement('div');
+  box.className = 'ex-rag-hits';
+  box.innerHTML = html;
+  try { el.appendChild(box); } catch (e2) {}
+}
+
+var extBmeBase = buildMsgEl;
+
+buildMsgEl = function buildMsgElWithRagHits(m) {
+  var el = extBmeBase.apply(this, arguments);
+  try { extAttachRagHits(el, m); } catch (e) {}
+  return el;
+};
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  var fbBtn = tgt.closest('.ex-fb');
+  if (fbBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    var cid = fbBtn.getAttribute('data-cid') || '';
+    var val = parseInt(fbBtn.getAttribute('data-v'), 10);
+    if (!cid || (val !== 1 && val !== -1)) return;
+    var fb = extRagFeedback();
+    var next = (fb[cid] === val) ? 0 : val;
+    if (next === 0) delete fb[cid]; else fb[cid] = next;
+    if (!extLSSet(RAG_FB_KEY, fb)) return;
+    var host = fbBtn.closest('.ex-hit');
+    if (host) {
+      var up = host.querySelector('.ex-fb[data-v="1"]');
+      var dn = host.querySelector('.ex-fb[data-v="-1"]');
+      if (up) up.classList.toggle('on', next === 1);
+      if (dn) dn.classList.toggle('on', next === -1);
+    }
+    showToast(t('rag_fb_saved'));
+    return;
+  }
+  var head = tgt.closest('[data-ex="rag-toggle"]');
+  if (head) {
+    e.preventDefault();
+    var box = head.closest('.ex-rag-hits');
+    if (box) box.classList.toggle('expanded');
+  }
+}, true);
+
+/* ---------- 7) P1-4 Prompt 模板库 + 变量占位 ---------- */
+var PT_KEY = 'autoPro_promptTemplates';
+var PT_BUILTIN = ['explain', 'bug', 'perf', 'review'];
+var extPT = [];
+var extPTEditId = '';
+
+function ptNorm(x) {
+  if (!x || typeof x !== 'object') return null;
+  var body = String(x.body === undefined || x.body === null ? '' : x.body);
+  if (!body.trim()) return null;
+  return {
+    id: String(x.id || ('pt' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))),
+    name: String(x.name || '').slice(0, 60) || 'Prompt',
+    body: body
+  };
+}
+
+function ptLoad() {
+  var list = extLSGet(PT_KEY, []);
+  if (!Array.isArray(list)) list = [];
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    var n = ptNorm(list[i]);
+    if (n) out.push(n);
+  }
+  extPT = out;
+}
+
+function ptPersist(prev) {
+  if (!extLSSet(PT_KEY, extPT)) {
+    if (prev) extPT = prev;
+    return false;
+  }
+  return true;
+}
+
+function ptRender() {
+  var box = $('ptList');
+  if (!box) return;
+  if (!extPT.length) {
+    box.innerHTML = '<div class="pt-empty">' + extEsc(t('pt_empty')) + '</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < extPT.length; i++) {
+    var p = extPT[i];
+    var preview = String(p.body || '').replace(/\s+/g, ' ');
+    html += '<div class="pt-item" data-ptid="' + extEsc(p.id) + '">' +
+      '<div class="pt-item-main"><div class="pt-name">' + extEsc(p.name) + '</div>' +
+      '<div class="pt-preview">' + extEsc(preview.slice(0, 90)) + (preview.length > 90 ? '…' : '') + '</div></div>' +
+      '<div class="pt-item-actions">' +
+      '<button class="pt-edit" type="button" data-pt-act="edit" data-id="' + extEsc(p.id) + '">' + extEsc(t('pt_edit')) + '</button>' +
+      '<button class="pt-del" type="button" data-pt-act="del" data-id="' + extEsc(p.id) + '">' + extEsc(t('pt_del')) + '</button>' +
+      '</div></div>';
+  }
+  box.innerHTML = html;
+}
+
+function ptRenderPromptRow() {
+  var row = $('promptRow');
+  if (!row) return;
+  var html = '';
+  for (var i = 0; i < PT_BUILTIN.length; i++) {
+    var k = PT_BUILTIN[i];
+    html += '<button class="prompt-chip" type="button" data-prompt="' + k + '" data-i18n="prompt_' + k + '">' + extEsc(t('prompt_' + k)) + '</button>';
+  }
+  for (var j = 0; j < extPT.length; j++) {
+    var p = extPT[j];
+    html += '<button class="prompt-chip ex-pt-chip" type="button" data-ptid="' + extEsc(p.id) + '" title="' + extEsc(p.name) + '">📝 ' + extEsc(p.name) + '</button>';
+  }
+  row.innerHTML = html;
+}
+
+function ptOpenForm(id) {
+  var form = $('ptForm');
+  if (!form) return;
+  var p = null;
+  if (id) {
+    for (var i = 0; i < extPT.length; i++) { if (extPT[i].id === id) p = extPT[i]; }
+  }
+  extPTEditId = p ? p.id : '';
+  if ($('ptName')) $('ptName').value = p ? p.name : '';
+  if ($('ptBody')) $('ptBody').value = p ? p.body : '';
+  form.classList.add('show');
+  setTimeout(function () { var el = $('ptName'); if (el) { try { el.focus(); } catch (e) {} } }, 40);
+}
+
+function ptCloseForm() {
+  var form = $('ptForm');
+  if (form) form.classList.remove('show');
+  extPTEditId = '';
+  if ($('ptName')) $('ptName').value = '';
+  if ($('ptBody')) $('ptBody').value = '';
+}
+
+function ptSaveForm() {
+  var nameEl = $('ptName'), bodyEl = $('ptBody');
+  var name = String(nameEl && nameEl.value ? nameEl.value : '').trim();
+  var body = String(bodyEl && bodyEl.value ? bodyEl.value : '');
+  if (!name) { showToast(t('pt_need_name')); return; }
+  if (!body.trim()) { showToast(t('pt_need_body')); return; }
+  var prev = extPT.slice();
+  if (extPTEditId) {
+    for (var i = 0; i < extPT.length; i++) {
+      if (extPT[i].id === extPTEditId) extPT[i] = { id: extPT[i].id, name: name.slice(0, 60), body: body };
+    }
+  } else {
+    extPT.push({ id: 'pt' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.slice(0, 60), body: body });
+  }
+  if (!ptPersist(prev)) return;
+  ptCloseForm();
+  ptRender();
+  ptRenderPromptRow();
+  showToast(t('pt_saved'));
+}
+
+function ptBindUI() {
+  var addBtn = $('ptAddBtn');
+  if (addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound = '1';
+    addBtn.addEventListener('click', function () { ptOpenForm(''); });
+  }
+  var saveBtn = $('ptSave');
+  if (saveBtn && !saveBtn.dataset.bound) {
+    saveBtn.dataset.bound = '1';
+    saveBtn.addEventListener('click', function (e) { e.preventDefault(); ptSaveForm(); });
+  }
+  var cancelBtn = $('ptCancel');
+  if (cancelBtn && !cancelBtn.dataset.bound) {
+    cancelBtn.dataset.bound = '1';
+    cancelBtn.addEventListener('click', function (e) { e.preventDefault(); ptCloseForm(); });
+  }
+}
+
+function ptVarsOf(body) {
+  var out = [], seen = {};
+  String(body || '').replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, function (m, name) {
+    if (!seen[name]) { seen[name] = 1; out.push(name); }
+    return m;
+  });
+  return out;
+}
+
+function ptApplyVars(body, map) {
+  return String(body || '').replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, function (m, name) {
+    var v = map ? map[name] : '';
+    return (v === undefined || v === null) ? '' : String(v);
+  });
+}
+
+function ptCloseModal() {
+  var modal = $('cbVarModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.innerHTML = '';
+  modal.dataset.body = '';
+}
+
+function ptUseTemplate(tpl) {
+  if (!tpl) return;
+  var vars = ptVarsOf(tpl.body);
+  if (!vars.length) { extInsertAtCursor(tpl.body); return; }
+  var modal = $('cbVarModal');
+  if (!modal) { extInsertAtCursor(tpl.body); return; }
+  var html = '<div class="pt-modal-card"><div class="pt-modal-title">' + extEsc(t('pt_fill_title')) + ' · ' + extEsc(tpl.name) + '</div>';
+  for (var i = 0; i < vars.length; i++) {
+    html += '<label class="pt-var-row"><span>' + extEsc(vars[i]) + '</span>' +
+      '<input class="pt-var-input" type="text" data-var="' + extEsc(vars[i]) + '" autocomplete="off" spellcheck="false"></label>';
+  }
+  html += '<div class="pt-modal-actions"><button class="pt-btn" type="button" data-pt-modal="cancel">' + extEsc(t('pt_cancel')) + '</button>' +
+    '<button class="pt-btn primary" type="button" data-pt-modal="insert">' + extEsc(t('pt_fill_insert')) + '</button></div></div>';
+  modal.innerHTML = html;
+  modal.dataset.body = String(tpl.body || '');
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(function () { var f = modal.querySelector('input'); if (f) { try { f.focus(); } catch (e) {} } }, 50);
+}
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+
+  var ptAct = tgt.closest('[data-pt-act]');
+  if (ptAct) {
+    e.preventDefault();
+    e.stopPropagation();
+    var id = ptAct.getAttribute('data-id') || '';
+    var kind = ptAct.getAttribute('data-pt-act');
+    var p = null;
+    for (var i = 0; i < extPT.length; i++) { if (extPT[i].id === id) p = extPT[i]; }
+    if (!p) return;
+    if (kind === 'edit') { ptOpenForm(id); return; }
+    if (!confirm(extP('pt_del_confirm', { name: p.name }))) return;
+    var prev = extPT.slice();
+    extPT = extPT.filter(function (x) { return x.id !== id; });
+    if (!ptPersist(prev)) return;
+    ptRender();
+    ptRenderPromptRow();
+    showToast(t('pt_deleted'));
+    return;
+  }
+
+  var chip = tgt.closest('#promptRow [data-ptid]');
+  if (chip) {
+    e.preventDefault();
+    var cid = chip.getAttribute('data-ptid') || '';
+    var tpl = null;
+    for (var j = 0; j < extPT.length; j++) { if (extPT[j].id === cid) tpl = extPT[j]; }
+    if (tpl) ptUseTemplate(tpl);
+    return;
+  }
+
+  var modalBtn = tgt.closest('[data-pt-modal]');
+  if (modalBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    var act = modalBtn.getAttribute('data-pt-modal');
+    var modal = $('cbVarModal');
+    if (act === 'cancel' || !modal) { ptCloseModal(); return; }
+    var map = {};
+    var inputs = modal.querySelectorAll('input[data-var]');
+    for (var k = 0; k < inputs.length; k++) map[inputs[k].getAttribute('data-var')] = inputs[k].value;
+    var body = ptApplyVars(modal.dataset.body || '', map);
+    ptCloseModal();
+    extInsertAtCursor(body);
+    return;
+  }
+
+  var back = $('cbVarModal');
+  if (back && back.classList.contains('show') && e.target === back) ptCloseModal();
+}, true);
+
+/* ---------- 8) P1-5 工作流编排 ---------- */
+var WF_KEY = 'autoPro_workflows';
+var extWF = { name: '', steps: [], running: false, output: '', aborter: null, live: '' };
+
+function wfNormStep(s) {
+  if (!s || typeof s !== 'object') return null;
+  return {
+    model: String(s.model || ''),
+    promptTemplate: String(s.promptTemplate === undefined || s.promptTemplate === null ? '' : s.promptTemplate),
+    outputVar: String(s.outputVar || '').slice(0, 24)
+  };
+}
+
+function wfLoad() {
+  var d = extLSGet(WF_KEY, null);
+  if (!d || typeof d !== 'object') { extWF.name = ''; extWF.steps = []; return; }
+  extWF.name = String(d.name || '');
+  var steps = Array.isArray(d.steps) ? d.steps : [];
+  var out = [];
+  for (var i = 0; i < steps.length; i++) {
+    var n = wfNormStep(steps[i]);
+    if (n) out.push(n);
+  }
+  extWF.steps = out;
+}
+
+function wfPersist(prev) {
+  var payload = { name: extWF.name || '', steps: extWF.steps };
+  if (!extLSSet(WF_KEY, payload)) {
+    if (prev) { extWF.name = prev.name; extWF.steps = prev.steps; }
+    return false;
+  }
+  return true;
+}
+
+function wfSaveSilent() { wfPersist(null); }
+
+function wfSave() {
+  var prev = { name: extWF.name, steps: extWF.steps.slice() };
+  if (!wfPersist(prev)) return;
+  showToast(t('wf_saved'));
+}
+
+function wfSetRunning(on) {
+  var r = $('wfRunBtn'), s = $('wfStopBtn');
+  if (r) r.disabled = !!on;
+  if (s) s.disabled = !on;
+}
+
+function wfStepHtml(st, i) {
+  return '<div class="wf-step" data-i="' + i + '">' +
+    '<div class="wf-step-head"><span class="wf-step-no">' + extEsc(extP('wf_step', { n: i + 1 })) + '</span>' +
+    '<span class="wf-step-actions">' +
+    '<button class="wf-mini" type="button" data-wf="up" data-i="' + i + '" aria-label="' + extEsc(t('wf_up')) + '">↑</button>' +
+    '<button class="wf-mini" type="button" data-wf="down" data-i="' + i + '" aria-label="' + extEsc(t('wf_down')) + '">↓</button>' +
+    '<button class="wf-mini danger" type="button" data-wf="del" data-i="' + i + '" aria-label="' + extEsc(t('wf_del')) + '">✕</button>' +
+    '</span></div>' +
+    '<div class="wf-field"><label>' + extEsc(t('wf_model')) + '</label><div class="wf-model" data-i="' + i + '"></div></div>' +
+    '<div class="wf-field"><label>' + extEsc(t('wf_prompt')) + '</label>' +
+    '<textarea class="wf-input" data-wf-in="prompt" data-i="' + i + '" rows="3" placeholder="' + extEsc(t('wf_prompt_ph')) + '">' + extEsc(st.promptTemplate || '') + '</textarea></div>' +
+    '<div class="wf-field"><label>' + extEsc(t('wf_var')) + '</label>' +
+    '<input class="wf-input" data-wf-in="var" data-i="' + i + '" type="text" maxlength="24" autocomplete="off" placeholder="' + extEsc(t('wf_var_ph')) + '" value="' + extEsc(st.outputVar || '') + '"></div>' +
+    '</div>';
+}
+
+function wfRenderOut() {
+  var box = $('wfOutBody');
+  if (!box) return;
+  if (extWF.live) { box.textContent = extWF.live; return; }
+  if (!String(extWF.output || '').trim()) { box.innerHTML = ''; return; }
+  var html = '';
+  try { html = renderMarkdown(extWF.output); } catch (e) { html = extEsc(extWF.output); }
+  box.innerHTML = html;
+}
+
+function wfRenderLive() {
+  var box = $('wfOutBody');
+  if (!box) return;
+  box.textContent = extWF.live;
+}
+
+function wfRender() {
+  var dock = $('wfDock');
+  if (!dock) return;
+  var html = '<div class="wf-head">' +
+    '<div class="wf-title">' + extEsc(t('wf_title')) + '</div>' +
+    '<input class="wf-name" id="wfName" type="text" maxlength="40" autocomplete="off" placeholder="' + extEsc(t('wf_name_ph')) + '" value="' + extEsc(extWF.name) + '">' +
+    '<div class="wf-actions">' +
+    '<button class="wf-btn primary" type="button" data-wf="run" id="wfRunBtn">' + extEsc(t('wf_run')) + '</button>' +
+    '<button class="wf-btn" type="button" data-wf="stop" id="wfStopBtn" disabled>' + extEsc(t('wf_stop')) + '</button>' +
+    '<button class="wf-btn" type="button" data-wf="save">' + extEsc(t('wf_save')) + '</button>' +
+    '<button class="wf-btn" type="button" data-wf="export">' + extEsc(t('wf_export')) + '</button>' +
+    '<button class="wf-btn" type="button" data-wf="close">' + extEsc(t('wf_close')) + '</button>' +
+    '</div></div><div class="wf-body">';
+  if (!extWF.steps.length) html += '<div class="wf-empty">' + extEsc(t('wf_empty')) + '</div>';
+  for (var i = 0; i < extWF.steps.length; i++) html += wfStepHtml(extWF.steps[i], i);
+  html += '</div>' +
+    '<div class="wf-actions wf-add-row"><button class="wf-btn" type="button" data-wf="add">' + extEsc(t('wf_add_step')) + '</button></div>' +
+    '<div class="wf-out"><div class="wf-out-title">' + extEsc(t('wf_out')) + '</div><div class="wf-out-body" id="wfOutBody"></div></div>';
+  dock.innerHTML = html;
+  for (var j = 0; j < extWF.steps.length; j++) {
+    var host = dock.querySelector('.wf-model[data-i="' + j + '"]');
+    if (!host) continue;
+    try {
+      createDropdown(host, extWF.steps[j].model || chatModel, (function (n) {
+        return function (m) {
+          if (extWF.steps[n]) { extWF.steps[n].model = m.id; wfSaveSilent(); }
+        };
+      })(j), {});
+    } catch (e) {}
+  }
+  wfSetRunning(extWF.running);
+  wfRenderOut();
+}
+
+function wfAbort() {
+  if (!extWF.running || !extWF.aborter) return;
+  try { extWF.aborter.abort(); } catch (e) {}
+}
+
+async function wfRun() {
+  if (extWF.running) return;
+  var steps = extWF.steps || [];
+  if (!steps.length) { showToast(t('wf_empty')); return; }
+  var seen = {};
+  for (var v = 0; v < steps.length; v++) {
+    if (!String(steps[v].promptTemplate || '').trim()) { showToast(extP('wf_need_prompt', { n: v + 1 })); return; }
+    var vn = String(steps[v].outputVar || '').trim();
+    if (!vn) { showToast(extP('wf_need_var', { n: v + 1 })); return; }
+    if (seen[vn]) { showToast(extP('wf_dup_var', { name: vn })); return; }
+    seen[vn] = 1;
+  }
+  var aborter = new AbortController();
+  extWF.aborter = aborter;
+  extWF.running = true;
+  extWF.output = '';
+  extWF.live = '';
+  wfSetRunning(true);
+  var vars = {};
+  try {
+    for (var s = 0; s < steps.length; s++) {
+      if (aborter.signal.aborted) throw new Error('aborted');
+      var st = steps[s];
+      showToast(extP('wf_running', { n: s + 1 }));
+      var prompt = ptApplyVars(String(st.promptTemplate || ''), vars);
+      extWF.live = '';
+      var outText = await streamCompletion({
+        model: st.model || chatModel,
+        messages: [{ role: 'user', content: prompt }],
+        signal: aborter.signal,
+        onDelta: function (delta) {
+          extWF.live += String(delta === null || delta === undefined ? '' : delta);
+          wfRenderLive();
+        }
+      });
+      var txt = String(outText === null || outText === undefined ? '' : outText);
+      vars[String(st.outputVar || '').trim()] = txt;
+      extWF.output += (extWF.output ? '\n\n' : '') + '### ' + (s + 1) + '. ' + String(st.outputVar || '') + '\n\n' + txt;
+      extWF.live = '';
+      wfRenderOut();
+    }
+    showToast(t('wf_done'));
+  } catch (e) {
+    var msg = (e && e.message) ? String(e.message) : '';
+    if (aborter.signal.aborted || msg === 'aborted') showToast(t('wf_aborted'));
+    else showToast(extP('wf_failed', { msg: msg || '—' }));
+  } finally {
+    extWF.running = false;
+    extWF.aborter = null;
+    extWF.live = '';
+    wfSetRunning(false);
+    wfRenderOut();
+  }
+}
+
+function wfExportMD() {
+  if (!String(extWF.output || '').trim()) { showToast(t('ex_no_data')); return; }
+  var md = '# ' + (extWF.name || t('wf_title')) + '\n\n' + extWF.output + '\n';
+  downloadFile('workflow-' + extStamp() + '.md', md, 'text/markdown;charset=utf-8');
+}
+
+function wfBind() {
+  var dock = $('wfDock');
+  if (!dock || dock.dataset.bound === '1') return;
+  dock.dataset.bound = '1';
+  dock.addEventListener('click', function (e) {
+    var tgt = e.target;
+    if (!tgt || !tgt.closest) return;
+    var btn = tgt.closest('[data-wf]');
+    if (!btn) return;
+    e.preventDefault();
+    var act = btn.getAttribute('data-wf');
+    var idx = parseInt(btn.getAttribute('data-i'), 10);
+    if (act === 'add') {
+      extWF.steps.push({ model: chatModel, promptTemplate: '', outputVar: 'step' + (extWF.steps.length + 1) });
+      wfRender(); wfSaveSilent(); return;
+    }
+    if (act === 'del' && !isNaN(idx)) { extWF.steps.splice(idx, 1); wfRender(); wfSaveSilent(); return; }
+    if (act === 'up' && !isNaN(idx) && idx > 0) {
+      var a = extWF.steps[idx - 1]; extWF.steps[idx - 1] = extWF.steps[idx]; extWF.steps[idx] = a;
+      wfRender(); wfSaveSilent(); return;
+    }
+    if (act === 'down' && !isNaN(idx) && idx < extWF.steps.length - 1) {
+      var b = extWF.steps[idx + 1]; extWF.steps[idx + 1] = extWF.steps[idx]; extWF.steps[idx] = b;
+      wfRender(); wfSaveSilent(); return;
+    }
+    if (act === 'run') { wfRun(); return; }
+    if (act === 'stop') { wfAbort(); return; }
+    if (act === 'save') { wfSave(); return; }
+    if (act === 'export') { wfExportMD(); return; }
+    if (act === 'close') { switchView('workflow'); return; }
+  });
+  dock.addEventListener('input', function (e) {
+    var tgt = e.target;
+    if (!tgt || !tgt.getAttribute) return;
+    if (tgt.id === 'wfName') { extWF.name = String(tgt.value || ''); return; }
+    var field = tgt.getAttribute('data-wf-in');
+    if (!field) return;
+    var idx = parseInt(tgt.getAttribute('data-i'), 10);
+    if (isNaN(idx) || !extWF.steps[idx]) return;
+    if (field === 'prompt') extWF.steps[idx].promptTemplate = String(tgt.value || '');
+    else if (field === 'var') extWF.steps[idx].outputVar = String(tgt.value || '').slice(0, 24);
+  });
+  dock.addEventListener('change', function (e) {
+    var tgt = e.target;
+    if (tgt && tgt.id === 'wfName') { extWF.name = String(tgt.value || ''); wfSaveSilent(); }
+  });
+}
+
+/* switchView('workflow') 不能直接下传：底层会把 currentView 记为 'chat'，
+   因此这里用 #chatView.wf-open 作为工作流的开关状态，其余视图走原逻辑。 */
+var extSwitchBase = switchView;
+
+switchView = function switchViewWithWorkflow(v) {
+  var cv = $('chatView');
+  if (v === 'workflow') {
+    var isOpen = !!(cv && cv.classList.contains('wf-open'));
+    if (isOpen) {
+      if (cv) cv.classList.remove('wf-open');
+      try { if (typeof psSyncSkillChips === 'function') psSyncSkillChips('chat'); } catch (e) {}
+      return;
+    }
+    extSwitchBase.call(this, 'chat');
+    if (cv) cv.classList.add('wf-open');
+    try { wfRender(); } catch (e2) {}
+    return;
+  }
+  extSwitchBase.apply(this, arguments);
+  if (cv) cv.classList.remove('wf-open');
+};
+try { window.switchView = switchView; } catch (e) {}
+
+/* ---------- 9) P1-6 定时任务 / 周期汇总 ---------- */
+Object.assign(I18N_DICT.zh, { sched_on: '已开启', sched_off: '已关闭' });
+Object.assign(I18N_DICT.en, { sched_on: 'On', sched_off: 'Off' });
+
+var SCHED_KEY = 'autoPro_schedules';
+var extSched = [];
+var extSchedEditId = '';
+
+function schedNorm(j) {
+  if (!j || typeof j !== 'object') return null;
+  var time = String(j.time || '').trim();
+  var m = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!m) return null;
+  var hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+  if (isNaN(hh) || isNaN(mm) || hh > 23 || mm > 59) return null;
+  return {
+    id: String(j.id || ('sc' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6))),
+    name: String(j.name || '').slice(0, 40) || 'Task',
+    time: extPad2(hh) + ':' + extPad2(mm),
+    prompt: String(j.prompt === undefined || j.prompt === null ? '' : j.prompt),
+    enabled: !!j.enabled,
+    lastRun: String(j.lastRun || '')
+  };
+}
+
+function schedLoad() {
+  var list = extLSGet(SCHED_KEY, []);
+  if (!Array.isArray(list)) list = [];
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    var n = schedNorm(list[i]);
+    if (n) out.push(n);
+  }
+  extSched = out;
+}
+
+function schedPersist(prev) {
+  if (!extLSSet(SCHED_KEY, extSched)) {
+    if (prev) extSched = prev;
+    return false;
+  }
+  return true;
+}
+
+function schedRender() {
+  var box = $('schedList');
+  if (!box) return;
+  if (!extSched.length) {
+    box.innerHTML = '<div class="pt-empty">' + extEsc(t('sched_empty')) + '</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < extSched.length; i++) {
+    var j = extSched[i];
+    html += '<div class="ex-sched-row">' +
+      '<div class="ex-sched-main"><div class="ex-sched-name">' + extEsc(j.name) + '</div>' +
+      '<div class="ex-sched-meta">' + extEsc(j.time) + ' · ' + extEsc(String(j.prompt || '').replace(/\s+/g, ' ').slice(0, 48)) + '</div></div>' +
+      '<button class="ex-sched-switch' + (j.enabled ? ' on' : '') + '" type="button" data-sched="toggle" data-id="' + extEsc(j.id) + '">' +
+      extEsc(j.enabled ? t('sched_on') : t('sched_off')) + '</button>' +
+      '<button class="pt-del" type="button" data-sched="del" data-id="' + extEsc(j.id) + '">' + extEsc(t('pt_del')) + '</button>' +
+      '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function schedAskPerm() {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+  try { Notification.requestPermission(); } catch (e) {}
+}
+
+function schedOpenForm(id) {
+  var form = $('schedForm');
+  if (!form) return;
+  var j = null;
+  if (id) {
+    for (var i = 0; i < extSched.length; i++) { if (extSched[i].id === id) j = extSched[i]; }
+  }
+  extSchedEditId = j ? j.id : '';
+  if ($('schedName')) $('schedName').value = j ? j.name : '';
+  if ($('schedTime')) $('schedTime').value = j ? j.time : '08:00';
+  if ($('schedPrompt')) $('schedPrompt').value = j ? j.prompt : '';
+  form.classList.add('show');
+  setTimeout(function () { var el = $('schedName'); if (el) { try { el.focus(); } catch (e) {} } }, 40);
+}
+
+function schedCloseForm() {
+  var form = $('schedForm');
+  if (form) form.classList.remove('show');
+  extSchedEditId = '';
+  if ($('schedName')) $('schedName').value = '';
+  if ($('schedTime')) $('schedTime').value = '';
+  if ($('schedPrompt')) $('schedPrompt').value = '';
+}
+
+function schedSaveForm() {
+  var nameEl = $('schedName'), timeEl = $('schedTime'), promptEl = $('schedPrompt');
+  var name = String(nameEl && nameEl.value ? nameEl.value : '').trim();
+  var time = String(timeEl && timeEl.value ? timeEl.value : '').trim();
+  var prompt = String(promptEl && promptEl.value ? promptEl.value : '');
+  if (!name) { showToast(t('sched_need_name')); return; }
+  var tm = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!tm) { showToast(t('sched_need_time')); return; }
+  var hh = parseInt(tm[1], 10), mm = parseInt(tm[2], 10);
+  if (isNaN(hh) || isNaN(mm) || hh > 23 || mm > 59) { showToast(t('sched_need_time')); return; }
+  if (!prompt.trim()) { showToast(t('sched_need_prompt')); return; }
+  var prev = extSched.slice();
+  var norm = { name: name.slice(0, 40), time: extPad2(hh) + ':' + extPad2(mm), prompt: prompt };
+  if (extSchedEditId) {
+    for (var i = 0; i < extSched.length; i++) {
+      if (extSched[i].id === extSchedEditId) {
+        extSched[i].name = norm.name;
+        extSched[i].time = norm.time;
+        extSched[i].prompt = norm.prompt;
+      }
+    }
+  } else {
+    extSched.push({
+      id: 'sc' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: norm.name,
+      time: norm.time,
+      prompt: norm.prompt,
+      enabled: false,
+      lastRun: ''
+    });
+  }
+  if (!schedPersist(prev)) return;
+  schedCloseForm();
+  schedRender();
+  showToast(t('sched_saved'));
+}
+
+function schedRunOne(job) {
+  var modelId = chatModel;
+  var p = null;
+  try { p = streamCompletion({ model: modelId, messages: [{ role: 'user', content: String(job.prompt || '') }] }); } catch (e) { p = null; }
+  if (!p || typeof p.then !== 'function') { showToast(extP('sched_failed', { name: job.name })); return; }
+  p.then(function (text) {
+    var txt = String(text === null || text === undefined ? '' : text);
+    var s = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      title: '⏰ ' + job.name,
+      model: modelId,
+      messages: [
+        { uid: genUid(), role: 'user', content: String(job.prompt || '') },
+        { uid: genUid(), role: 'assistant', content: txt, model: modelId, checked: false }
+      ],
+      ts: Date.now(),
+      project: ''
+    };
+    try { sessions.unshift(s); } catch (e) {}
+    try { persistSessions(true); } catch (e2) {}
+    try { renderSessions(); } catch (e3) {}
+    showToast(extP('sched_ran', { name: job.name }));
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification(t('sched_toast_title'), { body: job.name + ' · ' + txt.replace(/\s+/g, ' ').slice(0, 80) });
+      } catch (e4) {}
+    }
+  }).catch(function () {
+    showToast(extP('sched_failed', { name: job.name }));
+  });
+}
+
+function schedDayKey() {
+  var d = new Date();
+  return '' + d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function schedNowHM() {
+  var d = new Date();
+  return extPad2(d.getHours()) + ':' + extPad2(d.getMinutes());
+}
+
+function schedTick() {
+  if (!extSched.length) return;
+  var now = schedNowHM(), day = schedDayKey(), changed = false;
+  for (var i = 0; i < extSched.length; i++) {
+    var j = extSched[i];
+    if (!j.enabled) continue;
+    if (String(j.time || '') !== now) continue;
+    var key = day + ' ' + now;
+    if (j.lastRun === key) continue;
+    j.lastRun = key;
+    changed = true;
+    schedRunOne(j);
+  }
+  if (changed) schedPersist(null);
+}
+
+function schedBind() {
+  var addBtn = $('schedAddBtn');
+  if (addBtn && !addBtn.dataset.bound) {
+    addBtn.dataset.bound = '1';
+    addBtn.addEventListener('click', function () { schedOpenForm(''); });
+  }
+  var saveBtn = $('schedSave');
+  if (saveBtn && !saveBtn.dataset.bound) {
+    saveBtn.dataset.bound = '1';
+    saveBtn.addEventListener('click', function (e) { e.preventDefault(); schedSaveForm(); });
+  }
+  var cancelBtn = $('schedCancel');
+  if (cancelBtn && !cancelBtn.dataset.bound) {
+    cancelBtn.dataset.bound = '1';
+    cancelBtn.addEventListener('click', function (e) { e.preventDefault(); schedCloseForm(); });
+  }
+}
+
+document.addEventListener('click', function (e) {
+  var tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  var btn = tgt.closest('[data-sched]');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  var act = btn.getAttribute('data-sched');
+  var id = btn.getAttribute('data-id') || '';
+  var idx = -1;
+  for (var i = 0; i < extSched.length; i++) { if (extSched[i].id === id) idx = i; }
+  if (idx < 0) return;
+  if (act === 'toggle') {
+    var prev = extSched.slice();
+    extSched[idx].enabled = !extSched[idx].enabled;
+    if (!schedPersist(prev)) return;
+    if (extSched[idx].enabled) {
+      schedAskPerm();
+      if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') showToast(t('sched_perm'));
+    }
+    schedRender();
+    return;
+  }
+  if (act === 'del') {
+    if (!confirm(extP('sched_del_confirm', { name: extSched[idx].name }))) return;
+    var prev2 = extSched.slice();
+    extSched.splice(idx, 1);
+    if (!schedPersist(prev2)) return;
+    schedRender();
+    showToast(t('sched_deleted'));
+  }
+}, true);
+
+/* 60 秒轮询（页面打开时生效；关闭页面后不保证执行，已在 UI 明示） */
+try {
+  if (!window.__omniSchedTimer) window.__omniSchedTimer = setInterval(schedTick, 60000);
+} catch (e) {}
+
+/* ---------- 10) P2-9 项目 / 话题维度组织 ---------- */
+var extPJ = { filter: '', collapsed: {} };
+var extPJPress = 0;
+var extPJSuppress = false;
+
+function pjAllSessions() {
+  try { return (typeof sessions !== 'undefined' && sessions) ? sessions : []; } catch (e) { return []; }
+}
+
+function pjSessionOf(sid) {
+  if (!sid) return null;
+  try { var s = sessById(sid); if (s) return s; } catch (e) {}
+  var list = pjAllSessions();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && String(list[i].id) === String(sid)) return list[i];
+  }
+  return null;
+}
+
+function pjProjects() {
+  var map = {}, out = [];
+  var list = pjAllSessions();
+  for (var i = 0; i < list.length; i++) {
+    var p = (list[i] && list[i].project) ? String(list[i].project).trim() : '';
+    if (p && !map[p]) { map[p] = 1; out.push(p); }
+  }
+  out.sort(function (a, b) { return a.localeCompare(b); });
+  return out;
+}
+
+function pjRenderFilter() {
+  var box = $('pjFilter');
+  if (!box) return;
+  var list = pjProjects();
+  var cur = extPJ.filter || '';
+  if (cur && cur !== '__none' && list.indexOf(cur) < 0) { cur = ''; extPJ.filter = ''; }
+  var sig = list.join('\u0001') + '|' + cur;
+  if (box.dataset.sig === sig && box.querySelector('select')) return;
+  box.dataset.sig = sig;
+  var html = '<select class="pj-select" aria-label="' + extEsc(t('pj_all')) + '">' +
+    '<option value="">' + extEsc(t('pj_all')) + '</option>' +
+    '<option value="__none"' + (cur === '__none' ? ' selected' : '') + '>' + extEsc(t('pj_none')) + '</option>';
+  for (var i = 0; i < list.length; i++) {
+    html += '<option value="' + extEsc(list[i]) + '"' + (cur === list[i] ? ' selected' : '') + '>' + extEsc(list[i]) + '</option>';
+  }
+  html += '</select>';
+  box.innerHTML = html;
+  var sel = box.querySelector('select');
+  if (sel) {
+    sel.addEventListener('change', function () {
+      extPJ.filter = String(sel.value || '');
+      try { renderSessions(); } catch (e) {}
+    });
+  }
+}
+
+function pjApplyFilter() {
+  var list = $('sessionList');
+  if (!list || !list.querySelectorAll) return;
+  var items = Array.prototype.slice.call(list.querySelectorAll('.sess-item'));
+  if (!items.length) return;
+  var hadSections = list.querySelectorAll('.sess-group-title').length > 0;
+
+  var filter = extPJ.filter || '';
+  var i, s, proj, show;
+  for (i = 0; i < items.length; i++) {
+    s = pjSessionOf(items[i].getAttribute('data-sid'));
+    proj = (s && s.project) ? String(s.project).trim() : '';
+    show = !filter || (filter === '__none' ? !proj : proj === filter);
+    items[i].style.display = show ? '' : 'none';
+  }
+  if (filter) return;
+  if (hadSections) return; /* 存在置顶/归档分区时不打乱既有结构 */
+
+  var groups = {}, order = [], any = false;
+  for (i = 0; i < items.length; i++) {
+    s = pjSessionOf(items[i].getAttribute('data-sid'));
+    proj = (s && s.project) ? String(s.project).trim() : '';
+    if (proj) any = true;
+    if (!groups[proj]) { groups[proj] = []; order.push(proj); }
+    groups[proj].push(items[i]);
+  }
+  if (!any) return;
+  order.sort(function (a, b) {
+    if (!a) return 1;
+    if (!b) return -1;
+    return a.localeCompare(b);
+  });
+
+  var frag = document.createDocumentFragment();
+  for (var k = 0; k < order.length; k++) {
+    var key = order[k];
+    var arr = groups[key];
+    if (!arr || !arr.length) continue;
+    var title = document.createElement('div');
+    title.className = 'pj-group-title' + (extPJ.collapsed[key] ? ' collapsed' : '');
+    title.textContent = key || t('pj_none');
+    title.setAttribute('data-pj-group', key || '__none');
+    frag.appendChild(title);
+    for (var m2 = 0; m2 < arr.length; m2++) {
+      if (extPJ.collapsed[key]) arr[m2].style.display = 'none';
+      frag.appendChild(arr[m2]);
+    }
+  }
+  list.innerHTML = '';
+  list.appendChild(frag);
+}
+
+function pjSetProject(sid, name) {
+  var s = pjSessionOf(sid);
+  if (!s) return false;
+  var prevProject = s.project;
+  var val = String(name || '').trim().slice(0, 40);
+  s.project = val;
+  try { persistSessions(true); }
+  catch (e) {
+    s.project = prevProject;
+    showToast(t('ext_ls_fail'));
+    return false;
+  }
+  try { pjRenderFilter(); } catch (e2) {}
+  try { renderSessions(); } catch (e3) {}
+  showToast(val ? extP('pj_saved', { name: val }) : t('pj_cleared'));
+  return true;
+}
+
+function pjCloseMenu() {
+  var wrap = $('pjMenuWrap');
+  if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+}
+
+function pjOpenMenu(sid, x, y) {
+  pjCloseMenu();
+  var s = pjSessionOf(sid);
+  if (!s) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'pj-menu-wrap';
+  wrap.id = 'pjMenuWrap';
+  wrap.innerHTML = '<div class="pj-menu">' +
+    '<button class="pj-menu-item" type="button" data-pj-act="set" data-sid="' + extEsc(sid) + '">' + extEsc(t('pj_set')) + '</button>' +
+    '<button class="pj-menu-item danger" type="button" data-pj-act="clear" data-sid="' + extEsc(sid) + '">' + extEsc(t('pj_clear')) + '</button>' +
+    '</div>';
+  document.body.appendChild(wrap);
+  var menu = wrap.querySelector('.pj-menu');
+  var vw = window.innerWidth || 360, vh = window.innerHeight || 640;
+  var w = menu.offsetWidth || 180, h = menu.offsetHeight || 96;
+  var left = Math.max(8, Math.min(x || 0, vw - w - 8));
+  var top = Math.max(8, Math.min(y || 0, vh - h - 8));
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+
+function pjCloseModal() {
+  var modal = $('pjPromptModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.innerHTML = '';
+}
+
+function pjAskName(sid) {
+  var modal = $('pjPromptModal');
+  if (!modal) return;
+  var s = pjSessionOf(sid);
+  var cur = (s && s.project) ? String(s.project) : '';
+  modal.innerHTML = '<div class="pt-modal-card"><div class="pt-modal-title">' + extEsc(t('pj_prompt_title')) + '</div>' +
+    '<input id="pjNameInput" class="pt-var-input" type="text" maxlength="40" autocomplete="off" placeholder="' + extEsc(t('pj_prompt_ph')) + '" value="' + extEsc(cur) + '">' +
+    '<div class="pt-modal-actions"><button class="pt-btn" type="button" data-pj-modal="cancel">' + extEsc(t('pj_cancel')) + '</button>' +
+    '<button class="pt-btn primary" type="button" data-pj-modal="ok" data-sid="' + extEsc(sid) + '">' + extEsc(t('pj_ok')) + '</button></div></div>';
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(function () { var el = $('pjNameInput'); if (el) { try { el.focus(); } catch (e) {} } }, 40);
+}
+
+function pjBindUI() {
+  document.addEventListener('pointerdown', function (e) {
+    var tgt = e.target;
+    if (!tgt || !tgt.closest) return;
+    if (tgt.closest('button')) return;
+    var it = tgt.closest('#sessionList .sess-item');
+    if (!it) return;
+    var sid = it.getAttribute('data-sid') || '';
+    if (!sid) return;
+    var x = e.clientX || 0, y = e.clientY || 0;
+    if (extPJPress) clearTimeout(extPJPress);
+    extPJPress = setTimeout(function () {
+      extPJPress = 0;
+      extPJSuppress = true;
+      pjOpenMenu(sid, x, y);
+      setTimeout(function () { extPJSuppress = false; }, 700);
+    }, 520);
+  }, true);
+
+  document.addEventListener('pointerup', function () {
+    if (extPJPress) { clearTimeout(extPJPress); extPJPress = 0; }
+  }, true);
+
+  document.addEventListener('pointercancel', function () {
+    if (extPJPress) { clearTimeout(extPJPress); extPJPress = 0; }
+  }, true);
+
+  document.addEventListener('contextmenu', function (e) {
+    var tgt = e.target;
+    if (!tgt || !tgt.closest) return;
+    var it = tgt.closest('#sessionList .sess-item');
+    if (!it) return;
+    var sid = it.getAttribute('data-sid') || '';
+    if (!sid) return;
+    e.preventDefault();
+    pjOpenMenu(sid, e.clientX || 0, e.clientY || 0);
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    var tgt = e.target;
+    if (!tgt || !tgt.closest) return;
+
+    if (extPJSuppress && tgt.closest('#sessionList .sess-item')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    var menuAct = tgt.closest('[data-pj-act]');
+    if (menuAct) {
+      e.preventDefault();
+      e.stopPropagation();
+      var sid = menuAct.getAttribute('data-sid') || '';
+      var kind = menuAct.getAttribute('data-pj-act');
+      pjCloseMenu();
+      if (kind === 'set') pjAskName(sid);
+      else if (kind === 'clear') pjSetProject(sid, '');
+      return;
+    }
+
+    var modalBtn = tgt.closest('[data-pj-modal]');
+    if (modalBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var act2 = modalBtn.getAttribute('data-pj-modal');
+      if (act2 === 'ok') {
+        var inputEl = $('pjNameInput');
+        var sid2 = modalBtn.getAttribute('data-sid') || '';
+        var name = String(inputEl && inputEl.value ? inputEl.value : '');
+        pjCloseModal();
+        pjSetProject(sid2, name);
+        return;
+      }
+      pjCloseModal();
+      return;
+    }
+
+    var title = tgt.closest('.pj-group-title');
+    if (title) {
+      e.preventDefault();
+      e.stopPropagation();
+      var key = title.getAttribute('data-pj-group') || '';
+      var gkey = (key === '__none') ? '' : key;
+      extPJ.collapsed[gkey] = !extPJ.collapsed[gkey];
+      try { renderSessions(); } catch (err) {}
+      return;
+    }
+
+    if (tgt.id === 'pjMenuWrap') pjCloseMenu();
+    var back = $('pjPromptModal');
+    if (back && back.classList.contains('show') && e.target === back) pjCloseModal();
+  }, true);
+}
+
+var extRsBase = renderSessions;
+
+renderSessions = function renderSessionsWithProjects() {
+  var r = extRsBase.apply(this, arguments);
+  try { pjRenderFilter(); } catch (e) {}
+  try { pjApplyFilter(); } catch (e2) {}
+  return r;
+};
+
+/* ---------- 11) P2-10 全局快捷入口 ---------- */
+var HOTKEY_HINT_KEY = 'autoPro_hotkeyHintShown';
+
+function extBindHotkeys() {
+  document.addEventListener('keydown', function (e) {
+    var mod = e.metaKey || e.ctrlKey;
+    if (!mod || !e.shiftKey) return;
+    var k = String(e.key || '').toLowerCase();
+    if (k === 'o') {
+      e.preventDefault();
+      try { switchView('chat'); } catch (err) {}
+      var inp = $('chatInput');
+      if (inp) {
+        try { inp.focus(); } catch (err2) {}
+        try { inp.setSelectionRange(String(inp.value || '').length, String(inp.value || '').length); } catch (err3) {}
+      }
+      return;
+    }
+    if (k === 'k') {
+      e.preventDefault();
+      try { ensureSessSearch(); } catch (err4) {}
+      if ((window.innerWidth || 1024) < 768) {
+        var side = $('sidebar'), ov = $('overlay');
+        if (side) side.classList.add('open');
+        if (ov) ov.classList.add('show');
+      }
+      var s = $('sessSearchInput');
+      if (s) {
+        try { s.focus(); } catch (err5) {}
+        try { s.select(); } catch (err6) {}
+      }
+    }
+  }, true);
+}
+
+function extHotkeyHint() {
+  try {
+    if (localStorage.getItem(HOTKEY_HINT_KEY) === '1') return;
+    localStorage.setItem(HOTKEY_HINT_KEY, '1');
+  } catch (e) { return; }
+  setTimeout(function () { try { showToast(t('hot_hint')); } catch (e) {} }, 1500);
+}
+
+/* ---------- 12) P2-8 全量备份导入导出 ---------- */
+function extBackupCollect() {
+  var data = {};
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf('autoPro_') === 0) data[k] = localStorage.getItem(k);
+    }
+  } catch (e) {}
+  return data;
+}
+
+function extBackupExport() {
+  var data = extBackupCollect();
+  var keys = Object.keys(data);
+  if (!keys.length) { showToast(t('bk_empty')); return; }
+  var payload = { app: 'O.M.N.I', version: '13.7.1', exportedAt: new Date().toISOString(), data: data };
+  try {
+    downloadFile('omni-backup-' + extStamp() + '.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+    showToast(extP('bk_done', { n: keys.length }));
+  } catch (e) {
+    showToast(t('bk_bad'));
+  }
+}
+
+function extBackupImport(file) {
+  if (!file) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var obj = null;
+    try { obj = JSON.parse(String(rd.result || '')); } catch (e) { obj = null; }
+    if (!obj || typeof obj !== 'object') { showToast(t('bk_bad')); return; }
+    var data = (obj.data && typeof obj.data === 'object') ? obj.data : obj;
+    var keys = Object.keys(data).filter(function (k) {
+      return k.indexOf('autoPro_') === 0 && typeof data[k] === 'string';
+    });
+    if (!keys.length) { showToast(t('bk_bad')); return; }
+    if (!confirm(extP('bk_confirm', { n: keys.length }))) return;
+    try {
+      for (var i = 0; i < keys.length; i++) localStorage.setItem(keys[i], data[keys[i]]);
+    } catch (e2) {
+      showToast(t('ext_ls_fail'));
+      return;
+    }
+    showToast(t('bk_imported'));
+    setTimeout(function () { try { location.reload(); } catch (e3) {} }, 500);
+  };
+  rd.onerror = function () { showToast(t('bk_bad')); };
+  try { rd.readAsText(file); } catch (e) { showToast(t('bk_bad')); }
+}
+
+function extBindBackup() {
+  var ex = $('backupExportBtn');
+  if (ex && !ex.dataset.bound) {
+    ex.dataset.bound = '1';
+    ex.addEventListener('click', function (e) { e.preventDefault(); extBackupExport(); });
+  }
+  var im = $('backupImportBtn');
+  var fileInput = $('backupImportFile');
+  if (im && !im.dataset.bound) {
+    im.dataset.bound = '1';
+    im.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (fileInput) { try { fileInput.click(); } catch (err) {} }
+    });
+  }
+  if (fileInput && !fileInput.dataset.bound) {
+    fileInput.dataset.bound = '1';
+    fileInput.addEventListener('change', function () {
+      var f = fileInput.files && fileInput.files[0];
+      if (f) extBackupImport(f);
+      try { fileInput.value = ''; } catch (e) {}
+    });
+  }
+}
+
+/* ---------- 13) 语言切换后重渲染新增 UI ---------- */
+var extRerenderBase = rerenderAllForLang;
+
+rerenderAllForLang = function rerenderAllForLangExt() {
+  var r = extRerenderBase.apply(this, arguments);
+  try { ptRenderPromptRow(); } catch (e) {}
+  try { ptRender(); } catch (e) {}
+  try { wfRender(); } catch (e) {}
+  try { schedRender(); } catch (e) {}
+  try { pjRenderFilter(); } catch (e) {}
+  try {
+    var cbEl = extCBEl();
+    if (cbEl && cbEl.classList.contains('show') && extCB.text) {
+      var txtEl = cbEl.querySelector('.cb-text');
+      if (txtEl) txtEl.textContent = extP('cb_detected', { n: extCB.text.length });
+      var sv = cbEl.querySelector('[data-cb="save"]');
+      if (sv) sv.textContent = t('cb_save');
+      var ig = cbEl.querySelector('[data-cb="ignore"]');
+      if (ig) ig.textContent = t('cb_ignore');
+    }
+  } catch (e2) {}
+  return r;
+};
+
+/* ---------- 14) 幂等初始化 ---------- */
+function extInitAll() {
+  var root = document.body;
+  if (root && root.dataset.extInited === '1') return;
+  if (root) root.dataset.extInited = '1';
+  try { ptLoad(); } catch (e) {}
+  try { ptRenderPromptRow(); } catch (e) {}
+  try { ptRender(); } catch (e) {}
+  try { ptBindUI(); } catch (e) {}
+  try { wfLoad(); } catch (e) {}
+  try { wfRender(); } catch (e) {}
+  try { wfBind(); } catch (e) {}
+  try { schedLoad(); } catch (e) {}
+  try { schedRender(); } catch (e) {}
+  try { schedBind(); } catch (e) {}
+  try { pjRenderFilter(); } catch (e) {}
+  try { pjBindUI(); } catch (e) {}
+  try { extBindBackup(); } catch (e) {}
+  try { extBindHotkeys(); } catch (e) {}
+  try { extHotkeyHint(); } catch (e) {}
+  /* initI18n() 在本块之后执行：下一拍再按最终语言重渲染一次 */
+  setTimeout(function () {
+    try { ptRenderPromptRow(); } catch (e) {}
+    try { ptRender(); } catch (e) {}
+    try { wfRender(); } catch (e) {}
+    try { schedRender(); } catch (e) {}
+    try { pjRenderFilter(); } catch (e) {}
+    try { if ($('chatView') && $('chatView').classList.contains('wf-open')) wfRender(); } catch (e) {}
+  }, 0);
+}
+
+extInitAll();
+
+window.OMNI_EXT = {
+  version: '13.7.1-ext2',
+  ragSaveText: extRagSaveText,
+  ragFromImage: extRagFromImage,
+  promptTemplates: { load: ptLoad, render: ptRender, use: ptUseTemplate },
+  workflow: { load: wfLoad, render: wfRender, run: wfRun, abort: wfAbort, exportMD: wfExportMD, save: wfSave },
+  schedules: { load: schedLoad, render: schedRender, tick: schedTick, run: schedRunOne },
+  projects: { render: pjRenderFilter, set: pjSetProject, projects: pjProjects },
+  backup: { exportAll: extBackupExport, importFile: extBackupImport },
+  lastRagHits: function () { return window.__lastRagHits || []; }
+};
 initI18n();
 })();
 </script>
