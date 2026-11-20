@@ -2986,6 +2986,14 @@ function renderMarkdown(src) {
       );
       return '\u0000B' + (blocks.length - 1) + '\u0000';
     }
+    /* [CP] 长 HTML 代码块 -> 双态卡片占位（沿用 \u0000B n \u0000，不可直接返回 DOM） */
+    if (cpIsLongHtml(codeLang, c)) {
+      blocks.push(
+        '<div class="cp-host" data-cp-title="preview.html" data-cp-code="' +
+          encodeURIComponent(c) + '"></div>'
+      );
+      return '\u0000B' + (blocks.length - 1) + '\u0000';
+    }
     blocks.push(
       '<div class="code-wrap">' +
         '<button class="copy-code-btn" type="button" aria-label="复制代码">复制</button>' +
@@ -5923,6 +5931,8 @@ function handleShareClick(btn) {
   /* [v13.7.1] 代码块新增「复制」按钮：分享前克隆剔除，避免按钮文字混进分享内容 */
   if (shareSrc.querySelectorAll) {
     shareSrc.querySelectorAll('.copy-code-btn').forEach(function (b) { b.remove(); });
+    /* [CP] 双态卡片：克隆体里整体剔除，避免卡片按钮文案/标题混入分享内容 */
+    shareSrc.querySelectorAll('.cp-host, .cp-card, .cp-modal').forEach(function (b) { b.remove(); });
   }
   const shareBox = document.createElement('div');
   shareBox.style.cssText = 'position:fixed;left:-200vw;top:0;width:680px;opacity:0;pointer-events:none;';
@@ -13480,6 +13490,257 @@ window.OMNI_MAX3 = window.OMNI_MAX3 || { version: '3.0.0-x3d', modules: {} };
   }
 
   chatBgInit();
+
+/* ==================================================================
+   [CP] 代码 / 预览双态卡片（拆解自「零依赖双态组件」，零依赖、无 CDN）
+   - CSS 在 <style id="cp-style">，全部 .cp- 前缀
+   - renderCodePreviewCard(code, title) -> 创建好的 DOM 元素（已挂 window）
+   - renderMarkdown 输出 .cp-host 占位，落地时由 initCodePreviewCards() 实例化
+   ================================================================== */
+var CP_MIN_LINES = 30;
+
+function cpLineCount(code) {
+  var s = String(code == null ? '' : code).replace(/\r\n/g, '\n').trim();
+  return s ? s.split('\n').length : 0;
+}
+function cpIsLongHtml(lang, code) {
+  var l = String(lang == null ? '' : lang).trim().toLowerCase();
+  if (l !== 'html' && l !== 'htm') return false;
+  /* CP_MIN_LINES 用 var 声明（提升但未赋值），首次早于赋值调用时回退到字面量 30 */
+  return cpLineCount(code) > (CP_MIN_LINES || 30);
+}
+
+/* 单趟 tokenizer：先整体 escape，再对「已转义文本」着色，避免嵌套替换互相破坏 */
+var CP_RE_HTML = /&lt;!--[\s\S]*?--&gt;|&lt;!?\/?[a-zA-Z][\w:-]*|[a-zA-Z_:][\w:.-]*=(?:&quot;[^&]*&quot;|'[^']*')/g;
+var CP_RE_JS = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|&quot;(?:[^&]|&(?!quot;))*&quot;|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b(?:var|let|const|function|return|if|else|for|while|do|switch|case|break|continue|new|class|extends|this|super|try|catch|finally|throw|typeof|instanceof|delete|void|true|false|null|undefined|async|await|yield|import|export|from|default)\b|\b\d+(?:\.\d+)?\b/g;
+var CP_RE_CSS = /\/\*[\s\S]*?\*\/|--[\w-]+|#[0-9a-fA-F]{3,8}\b|\.[\w-]+|\b\d+(?:\.\d+)?(?:px|em|rem|%|s|ms|deg|vh|vw)?\b/g;
+
+function cpHighlight(code, lang) {
+  var src = String(code == null ? '' : code);
+  var l = String(lang || '').toLowerCase();
+  var re = (l === 'js' || l === 'javascript' || l === 'ts' || l === 'typescript') ? CP_RE_JS
+         : (l === 'css' || l === 'scss') ? CP_RE_CSS : CP_RE_HTML;
+  var safe = escapeHtml(src);
+  return safe.replace(re, function (m) {
+    if (/^&lt;!--/.test(m) || /^\/[*/]/.test(m)) return '<span class="cp-tk-com">' + m + '</span>';
+    if (/=[&'"]/.test(m)) return '<span class="cp-tk-attr">' + m + '</span>';
+    if (/^&lt;/.test(m)) return '<span class="cp-tk-tag">' + m + '</span>';
+    if (/^\./.test(m) || /^--/.test(m)) return '<span class="cp-tk-tag">' + m + '</span>';
+    if (/^#/.test(m) || /^\d/.test(m)) return '<span class="cp-tk-num">' + m + '</span>';
+    if (/^[&'`]/.test(m)) return '<span class="cp-tk-str">' + m + '</span>';
+    return '<span class="cp-tk-kw">' + m + '</span>';
+  });
+}
+
+/* 沙箱内高度上报钩子：独立命名空间 m3cp，避免与既有 __xkSandbox 冲突 */
+var CP_HOOK = '<script>(function(){' +
+  'function p(){try{var d=document.documentElement,b=document.body;' +
+  'var h=Math.max(d?d.scrollHeight:0,b?b.scrollHeight:0);' +
+  'parent.postMessage({m3cp:1,type:"height",h:h},"*");}catch(e){}}' +
+  'window.addEventListener("load",p);' +
+  'if(document.readyState!=="loading"){p();}else{document.addEventListener("DOMContentLoaded",p);}' +
+  'if(window.ResizeObserver){try{new ResizeObserver(p).observe(document.documentElement);}catch(e){}}' +
+  'if(window.MutationObserver){try{new MutationObserver(p).observe(document.documentElement,{childList:true,subtree:true,attributes:true});}catch(e){}}' +
+  'setInterval(p,900);})();<\/script>';
+
+function cpBuildDoc(code) {
+  var body = String(code == null ? '' : code).replace(/<\/script/gi, '<\\/script');
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<style>html,body{margin:0;padding:12px;background:#fff;color:#1e293b;' +
+    'font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;' +
+    '-webkit-text-size-adjust:100%;word-wrap:break-word}' +
+    'img,video,canvas,svg,table{max-width:100%}' +
+    'pre,code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}' +
+    '</style></head><body>' + body + '</body></html>';
+}
+function cpWithHooks(code) {
+  var doc = cpBuildDoc(code);
+  var i = doc.lastIndexOf('</body>');
+  return i >= 0 ? doc.slice(0, i) + CP_HOOK + doc.slice(i) : doc + CP_HOOK;
+}
+
+/* 要求 2：全局渲染函数，返回创建好的 DOM 元素 */
+function renderCodePreviewCard(code, title) {
+  var src = String(code == null ? '' : code);
+  var name = String(title || 'preview.html');
+  var lines = cpLineCount(src);
+  var card = document.createElement('div');
+  card.className = 'cp-card';
+  card.__cpCode = src;
+  card.innerHTML =
+    '<div class="cp-bar">' +
+      '<span class="cp-title">' + escapeHtml(name) + '</span>' +
+      '<span class="cp-badge">HTML</span>' +
+      '<span class="cp-meta">' + lines + ' 行</span>' +
+      '<span class="cp-btns">' +
+        '<button class="cp-btn" type="button" data-cp-act="reload">↻ 重载</button>' +
+        '<button class="cp-btn" type="button" data-cp-act="copy">复制</button>' +
+        '<button class="cp-btn" type="button" data-cp-act="download">下载</button>' +
+        '<button class="cp-btn" type="button" data-cp-act="open">新窗口</button>' +
+        '<button class="cp-btn primary" type="button" data-cp-act="expand">全屏</button>' +
+      '</span>' +
+    '</div>' +
+    '<div class="cp-tabs">' +
+      '<button class="cp-tab is-active" type="button" data-cp-tab="preview">预览</button>' +
+      '<button class="cp-tab" type="button" data-cp-tab="code">代码</button>' +
+    '</div>' +
+    '<div class="cp-pane is-active" data-cp-pane="preview">' +
+      '<div class="cp-stage"><iframe class="cp-frame" title="代码预览" ' +
+        'sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe></div>' +
+    '</div>' +
+    '<div class="cp-pane" data-cp-pane="code">' +
+      '<div class="cp-code"><pre class="cp-code-pre"><code>' + cpHighlight(src, 'html') + '</code></pre></div>' +
+    '</div>';
+  var fr = card.querySelector('.cp-frame');
+  if (fr) {
+    fr.removeAttribute('src');            /* 只设 srcdoc，避免双加载 */
+    try { fr.srcdoc = cpWithHooks(src); } catch (e) {}
+  }
+  return card;
+}
+
+/* 占位落地：扫描 .cp-host -> 塞入真正的卡片（沿用“先占位、后实例化”范式） */
+function initCodePreviewCards() {
+  if (typeof streaming !== 'undefined' && streaming) return;
+  var hosts = document.querySelectorAll('#chatInner .cp-host');
+  for (var i = 0; i < hosts.length; i++) {
+    var el = hosts[i];
+    if (!el || el.getAttribute('data-cp-done') === '1') continue;
+    if (el.querySelector('.cp-card')) { el.setAttribute('data-cp-done', '1'); continue; }
+    var raw = el.getAttribute('data-cp-code') || '';
+    var code = '';
+    try { code = decodeURIComponent(raw); } catch (e) { code = raw; }
+    if (!String(code).trim()) continue;
+    var title = el.getAttribute('data-cp-title') || 'preview.html';
+    try {
+      el.appendChild(renderCodePreviewCard(code, title));
+      el.setAttribute('data-cp-done', '1');
+    } catch (err) {}
+  }
+}
+
+/* 包装落地函数：Max3 ⑨ 的包装在里层，本层处于最外层，最后执行 */
+var cpInitDynBase = initDynamicWidgets;
+initDynamicWidgets = function initDynamicWidgetsWithCp() {
+  var r = cpInitDynBase.apply(this, arguments);
+  try { initCodePreviewCards(); } catch (e) {}
+  return r;
+};
+
+function cpFindCard(node) { return (node && node.closest) ? node.closest('.cp-card') : null; }
+function cpSetActive(tabName, card) {
+  if (!card) return;
+  var tabs = card.querySelectorAll('.cp-tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.toggle('is-active', tabs[i].getAttribute('data-cp-tab') === tabName);
+  }
+  var panes = card.querySelectorAll('.cp-pane');
+  for (var j = 0; j < panes.length; j++) {
+    panes[j].classList.toggle('is-active', panes[j].getAttribute('data-cp-pane') === tabName);
+  }
+}
+function cpOpenFullscreen(card) {
+  var old = document.querySelector('.cp-modal');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+  var code = String(card.__cpCode || '');
+  var titleEl = card.querySelector('.cp-title');
+  var name = titleEl ? titleEl.textContent : 'preview.html';
+  var modal = document.createElement('div');
+  modal.className = 'cp-modal show';
+  var wrap = document.createElement('div');
+  wrap.className = 'cp-modal-card';
+  var closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'cp-btn';
+  closeBtn.textContent = '✕ 关闭';
+  closeBtn.style.cssText = 'position:sticky;top:8px;float:right;margin:8px 8px 0 0;z-index:5;background:var(--cp-soft,#eef1ff)';
+  closeBtn.onclick = function () { if (modal.parentNode) modal.parentNode.removeChild(modal); };
+  wrap.appendChild(closeBtn);
+  wrap.appendChild(renderCodePreviewCard(code, name));
+  modal.appendChild(wrap);
+  modal.addEventListener('click', function (ev) {
+    if (ev.target === modal && modal.parentNode) modal.parentNode.removeChild(modal);
+  });
+  document.body.appendChild(modal);
+}
+
+/* 事件委托（capture）：只处理 data-cp-tab / data-cp-act，避免被既有委托吞掉 */
+document.addEventListener('click', function (e) {
+  var t = e.target;
+  if (!t || !t.closest) return;
+  var card = cpFindCard(t);
+  if (!card) return;
+  var tabBtn = t.closest('[data-cp-tab]');
+  if (tabBtn) {
+    e.preventDefault(); e.stopPropagation();
+    cpSetActive(tabBtn.getAttribute('data-cp-tab'), card);
+    return;
+  }
+  var actBtn = t.closest('[data-cp-act]');
+  if (!actBtn) return;
+  e.preventDefault(); e.stopPropagation();
+  var code = String(card.__cpCode || '');
+  var act = actBtn.getAttribute('data-cp-act');
+  var titleEl = card.querySelector('.cp-title');
+  var nm = titleEl ? titleEl.textContent : 'preview.html';
+  if (act === 'copy') {
+    copyTextFallback(code).then(function (ok) {
+      showToast(ok ? '✅ 代码已复制' : '复制失败，请长按选择');
+    });
+  } else if (act === 'download') {
+    try { downloadFile(agentFileName(nm, 'html') || 'preview.html', code, 'text/html;charset=utf-8'); }
+    catch (err) { showToast('下载失败：' + (err && err.message ? err.message : '未知错误')); }
+  } else if (act === 'open') {
+    try {
+      var blob = new Blob([cpWithHooks(code)], { type: 'text/html;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var w = window.open(url, '_blank', 'noopener');
+      if (!w) showToast('浏览器拦截了新窗口，请用「全屏」');
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 20000);
+    } catch (err2) { showToast('无法打开新窗口：' + (err2 && err2.message ? err2.message : '未知错误')); }
+  } else if (act === 'reload') {
+    var fr = card.querySelector('.cp-frame');
+    if (fr) { fr.removeAttribute('srcdoc'); try { fr.srcdoc = cpWithHooks(code); } catch (e) {} }
+    showToast('↻ 预览已重载');
+  } else if (act === 'expand') {
+    cpOpenFullscreen(card);
+  }
+}, true);
+
+/* 要求 4：预览 iframe 高度自适应（独立命名空间 + 只绑定一次） */
+function cpBindHeightWatcher() {
+  if (window.__cpMsgBound) return;
+  window.__cpMsgBound = 1;
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.m3cp !== 1 || d.type !== 'height') return;
+    var frames = document.querySelectorAll('iframe.cp-frame');
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow !== e.source) continue;
+      var h = Number(d.h) || 0;
+      h = Math.max(80, Math.min(h + 2, 1400));
+      frames[i].style.height = h + 'px';
+      break;
+    }
+  });
+}
+cpBindHeightWatcher();
+
+try { window.renderCodePreviewCard = renderCodePreviewCard; } catch (e) {}
+try { window.initCodePreviewCards = initCodePreviewCards; } catch (e2) {}
+try { window.OMNI_CODE_PREVIEW = { render: renderCodePreviewCard, init: initCodePreviewCards, version: '1.0-cp' }; } catch (e3) {}
+
+/* i18n（可选增强，不阻塞卡片渲染） */
+try {
+  if (typeof I18N_DICT !== 'undefined' && I18N_DICT.zh && I18N_DICT.en) {
+    Object.assign(I18N_DICT.zh, { cp_preview: '预览', cp_code: '代码', cp_copy: '复制', cp_download: '下载', cp_open: '新窗口', cp_expand: '全屏', cp_reload: '重载' });
+    Object.assign(I18N_DICT.en, { cp_preview: 'Preview', cp_code: 'Code', cp_copy: 'Copy', cp_download: 'Download', cp_open: 'New tab', cp_expand: 'Fullscreen', cp_reload: 'Reload' });
+  }
+} catch (e4) {}
+
+setTimeout(function () { try { initCodePreviewCards(); } catch (e) {} }, 0);
+
 initI18n();
 })();
 </script>
@@ -13557,6 +13818,77 @@ initI18n();
   .m3-3d { height: 220px; }
   .m3-voice-btn { height: 30px; padding: 0 8px; font-size: 16px; }
   .m3-btn { padding: 5px 8px; font-size: 12.5px; }
+}
+</style>
+<style id="cp-style">
+/* ===== [CP] 代码 / 预览双态卡片 · 作用域隔离（所有类名 .cp- 前缀，无全局选择器） ===== */
+.cp-host { display: block; margin: 12px 0; }
+.cp-card {
+  --cp-card: var(--card-bg, #fff);
+  --cp-ink: var(--text-color, #1f2937);
+  --cp-muted: var(--text-muted, #6b7280);
+  --cp-line: var(--border, rgba(15,23,42,.10));
+  --cp-accent: var(--accent, #4f6df5);
+  --cp-soft: rgba(79,109,245,.10);
+  --cp-code-bg: #0f172a;
+  --cp-shadow: var(--card-shadow, 0 4px 18px rgba(15,23,42,.05));
+  background: var(--cp-card);
+  border: 1px solid var(--cp-line);
+  border-radius: 14px;
+  box-shadow: var(--cp-shadow);
+  overflow: hidden;
+  margin: 12px 0;
+  box-sizing: border-box;
+}
+body.dark .cp-card { --cp-soft: rgba(99,132,255,.16); --cp-code-bg: #0b1020; }
+.cp-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px;
+  background: rgba(120,120,128,.07); border-bottom: 1px solid var(--cp-line); }
+.cp-title { font-size: 12.5px; font-weight: 800; color: var(--cp-ink); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 120px; }
+.cp-meta { font-size: 10.5px; font-weight: 700; color: var(--cp-muted);
+  background: rgba(120,120,128,.14); border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+.cp-badge { font-size: 9.5px; font-weight: 800; color: var(--cp-accent);
+  background: var(--cp-soft); border: 1px solid rgba(79,109,245,.35);
+  border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+.cp-btns { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+.cp-btn { appearance: none; -webkit-appearance: none; border: 1px solid var(--cp-line);
+  background: transparent; color: var(--cp-muted); border-radius: 8px; padding: 4px 9px;
+  font-size: 11.5px; font-weight: 700; line-height: 1.5; cursor: pointer; white-space: nowrap; }
+.cp-btn:active { transform: scale(.94); }
+.cp-btn.primary { background: var(--cp-soft); border-color: rgba(79,109,245,.4); color: var(--cp-accent); }
+.cp-tabs { display: flex; gap: 6px; padding: 8px 10px 0; }
+.cp-tab { border: 1px solid var(--cp-line); background: transparent; color: var(--cp-muted);
+  border-radius: 999px; padding: 4px 11px; font-size: 11.5px; font-weight: 800; cursor: pointer; }
+.cp-tab.is-active { background: var(--cp-soft); border-color: rgba(79,109,245,.45); color: var(--cp-accent); }
+.cp-pane { display: none; }
+.cp-pane.is-active { display: block; }
+.cp-stage { position: relative; overflow: hidden; contain: layout paint; background: #fff; }
+.cp-frame { display: block; width: 100%; min-height: 160px; border: 0; }
+.cp-code { background: var(--cp-code-bg); }
+/* 特异性 0,2,0 > 宿主 .md pre（0,1,1），避免被聊天区样式覆盖 */
+.cp-card .cp-code-pre { margin: 0; padding: 12px; overflow-x: auto; font-size: 12.5px;
+  line-height: 1.6; color: #e2e8f0; background: transparent; border-radius: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre; word-break: normal; tab-size: 2; }
+.cp-card .cp-code-pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+.cp-tk-tag { color: #93c5fd; }
+.cp-tk-attr { color: #fcd34d; }
+.cp-tk-str { color: #86efac; }
+.cp-tk-com { color: #64748b; font-style: italic; }
+.cp-tk-num { color: #fca5a5; }
+.cp-tk-kw { color: #c4b5fd; }
+.cp-modal { position: fixed; inset: 0; z-index: 250; display: none; align-items: center;
+  justify-content: center; padding: 14px; background: rgba(15,23,42,.46);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.cp-modal.show { display: flex; }
+.cp-modal-card { width: min(980px, 100%); max-height: 88vh; overflow: auto;
+  -webkit-overflow-scrolling: touch; border-radius: 16px; background: var(--card-bg, #fff);
+  border: 1px solid var(--border, #e2e8f0); box-shadow: 0 20px 60px rgba(15,23,42,.3); }
+body.dark .cp-stage { background: #0b1020; }
+@media (max-width: 767px) {
+  .cp-card .cp-code-pre { font-size: 12px; }
+  .cp-modal { padding: 8px; }
+  .cp-modal-card { max-height: 92vh; }
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
@@ -13942,6 +14274,8 @@ document.getElementById('b').onclick = function () {
 
     var doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll(NOISE_SELECTOR).forEach(function (n) { n.remove(); });
+    /* [CP] 双态卡片整体视为噪音（iframe / 工具条文案不进复制文本） */
+    doc.querySelectorAll('.cp-host, .cp-card, .cp-modal').forEach(function (n) { n.remove(); });
 
     // 选主体：语义化标签 > 常见正文 class > body
     var main = doc.querySelector(
