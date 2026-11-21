@@ -13543,8 +13543,12 @@ var CP_HOOK = '<script>(function(){' +
   'if(window.MutationObserver){try{new MutationObserver(p).observe(document.documentElement,{childList:true,subtree:true,attributes:true});}catch(e){}}' +
   'setInterval(p,900);})();<\/script>';
 
+/* ---------- ① 文档合成 ---------- */
+/* srcdoc 是「属性赋值」，不是 innerHTML：不需要把 script 的闭合标签改写成转义形式。
+   原来的 .replace(/<\/script/gi,'<\\/script') 会把「合法的闭合标签」一起改掉，
+   文档结构断裂后整段 body 被吞进 <script>，表现为预览区纯白。这里只清占位符。 */
 function cpBuildDoc(code) {
-  var body = String(code == null ? '' : code).replace(/<\/script/gi, '<\\/script');
+  var body = String(code == null ? '' : code).replace(/\u0000B\d+\u0000/g, '');
   return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<style>html,body{margin:0;padding:12px;background:#fff;color:#1e293b;' +
@@ -13560,9 +13564,105 @@ function cpWithHooks(code) {
   return i >= 0 ? doc.slice(0, i) + CP_HOOK + doc.slice(i) : doc + CP_HOOK;
 }
 
-/* 要求 2：全局渲染函数，返回创建好的 DOM 元素 */
+/* ---------- ② 转义自愈 ---------- */
+/* 只有当「整段代码里一个真实 < 都没有，却出现 &lt; 这类实体」时才反转义，
+   避免误伤正常正文里的 &amp;。最多两轮，兼容 &amp;lt; 双层转义。 */
+var CP_ENT_RE = /&lt;|&gt;|&quot;|&#0*39;|&#x27;|&nbsp;|&amp;lt;|&amp;quot;/i;
+function cpEntityDecode(s) {
+  return String(s)
+    .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*39;|&#x27;|&apos;/gi, "'")
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&');
+}
+function cpNormalizeCode(code) {
+  var s = String(code == null ? '' : code);
+  for (var k = 0; k < 2; k++) {
+    if (s.indexOf('<') >= 0) break;
+    if (!CP_ENT_RE.test(s)) break;
+    s = cpEntityDecode(s);
+  }
+  return s;
+}
+
+/* ---------- ③ iframe 装载（先入文档，再写 srcdoc） ---------- */
+/* WebKit/iOS：iframe 还没挂进文档时就写 srcdoc，会出现「属性有值但永远是白屏」。
+   所以这里只负责「写」，是否已入文档由 cpWatchFrame 判断。 */
+function cpFrameSandbox(fr) {
+  try {
+    fr.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-presentation');
+    fr.setAttribute('referrerpolicy', 'no-referrer');
+    fr.title = '代码预览';
+  } catch (e) {}
+  return fr;
+}
+function cpRebuildFrame(card) {
+  var old = card.querySelector('.cp-frame');
+  if (!old || !old.parentNode) return null;
+  var fr = cpFrameSandbox(document.createElement('iframe'));
+  fr.className = 'cp-frame';
+  fr.style.cssText = 'display:block;width:100%;height:300px;min-height:300px;border:0;background:#fff';
+  old.parentNode.replaceChild(fr, old);
+  return fr;
+}
+function cpWriteFrame(card) {
+  if (!card) return false;
+  var fr = card.querySelector('.cp-frame');
+  if (!fr) return false;
+  var doc = cpWithHooks(cpNormalizeCode(card.__cpCode));
+  try { fr.removeAttribute('src'); } catch (e) {}
+  try { fr.removeAttribute('srcdoc'); } catch (e) {}
+  var ok = false;
+  try { fr.srcdoc = doc; ok = !!fr.getAttribute('srcdoc'); } catch (e) {}
+  if (!ok) { try { fr.setAttribute('srcdoc', doc); ok = !!fr.getAttribute('srcdoc'); } catch (e2) {} }
+  if (!ok) {
+    /* 极端兜底：不支持 srcdoc 的旧内核走 blob */
+    try {
+      var u = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+      fr.src = u;
+      setTimeout(function () { try { URL.revokeObjectURL(u); } catch (e3) {} }, 30000);
+      ok = true;
+    } catch (e4) {}
+  }
+  return ok;
+}
+
+/* 存活探测：沙箱内 CP_HOOK 会 postMessage 回高度，收到即代表「真的渲染出来了」。
+   没收到就重写 srcdoc（第 2 次重建 iframe），共 3 次，仍失败给出可视提示。 */
+function cpWatchFrame(card, budget) {
+  if (!card) return;
+  if (card.__cpWatchRun) return;
+  var max = (budget == null ? 3 : budget);
+  card.__cpWatchRun = 1;
+  card.__cpLive = 0;
+  var tries = 0;
+  function tick() {
+    if (card.__cpLive) { card.__cpWatchRun = 0; return; }
+    if (!card.isConnected) {
+      if (tries++ < 12) setTimeout(tick, 100);
+      else card.__cpWatchRun = 0;
+      return;
+    }
+    tries++;
+    if (tries >= 2) cpRebuildFrame(card);   /* 二次仍白 → 换一个新 iframe 再写 */
+    cpWriteFrame(card);
+    if (tries >= max) {
+      card.__cpWatchRun = 0;
+      if (!card.__cpLive) {
+        var hint = card.querySelector('.cp-hint');
+        if (hint) hint.style.display = 'block';
+      }
+      return;
+    }
+    setTimeout(tick, 500);
+  }
+  setTimeout(tick, 0);
+}
+
+/* ---------- ④ 卡片构建 ---------- */
 function renderCodePreviewCard(code, title) {
-  var src = String(code == null ? '' : code);
+  var src = cpNormalizeCode(code);
   var name = String(title || 'preview.html');
   var lines = cpLineCount(src);
   var card = document.createElement('div');
@@ -13586,21 +13686,23 @@ function renderCodePreviewCard(code, title) {
       '<button class="cp-tab" type="button" data-cp-tab="code">代码</button>' +
     '</div>' +
     '<div class="cp-pane is-active" data-cp-pane="preview">' +
-      '<div class="cp-stage"><iframe class="cp-frame" title="代码预览" ' +
-        'sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe></div>' +
+      '<div class="cp-stage">' +
+        '<iframe class="cp-frame" title="代码预览" ' +
+          'sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation" ' +
+          'referrerpolicy="no-referrer" ' +
+          'style="display:block;width:100%;height:300px;min-height:300px;border:0;background:#fff"></iframe>' +
+      '</div>' +
+      '<div class="cp-hint" style="display:none">⚠️ 预览没有加载出来：可点右上角「新窗口」或「全屏」查看完整内容。</div>' +
     '</div>' +
     '<div class="cp-pane" data-cp-pane="code">' +
       '<div class="cp-code"><pre class="cp-code-pre"><code>' + cpHighlight(src, 'html') + '</code></pre></div>' +
     '</div>';
-  var fr = card.querySelector('.cp-frame');
-  if (fr) {
-    fr.removeAttribute('src');            /* 只设 srcdoc，避免双加载 */
-    try { fr.srcdoc = cpWithHooks(src); } catch (e) {}
-  }
+  /* 不再在这里写 srcdoc：交给 cpWatchFrame，等 iframe 真正入文档后再写 */
+  cpWatchFrame(card);
   return card;
 }
 
-/* 占位落地：扫描 .cp-host -> 塞入真正的卡片（沿用“先占位、后实例化”范式） */
+/* 占位落地：扫描 .cp-host -> 塞入真正的卡片 */
 function initCodePreviewCards() {
   if (typeof streaming !== 'undefined' && streaming) return;
   var hosts = document.querySelectorAll('#chatInner .cp-host');
@@ -13611,6 +13713,9 @@ function initCodePreviewCards() {
     var raw = el.getAttribute('data-cp-code') || '';
     var code = '';
     try { code = decodeURIComponent(raw); } catch (e) { code = raw; }
+    /* 双层 encodeURIComponent 自愈：解完还残留 %3C / %26lt; 就再解一次 */
+    if (/%3C|%26lt;/i.test(code)) { try { code = decodeURIComponent(code); } catch (e2) {} }
+    code = cpNormalizeCode(code);
     if (!String(code).trim()) continue;
     var title = el.getAttribute('data-cp-title') || 'preview.html';
     try {
@@ -13638,6 +13743,14 @@ function cpSetActive(tabName, card) {
   var panes = card.querySelectorAll('.cp-pane');
   for (var j = 0; j < panes.length; j++) {
     panes[j].classList.toggle('is-active', panes[j].getAttribute('data-cp-pane') === tabName);
+  }
+  /* 从「代码」切回「预览」时补一刀：display:none 期间部分内核不会触发 iframe 重算，
+     这里强制重写一次，避免切回来还是空白。 */
+  if (tabName === 'preview') {
+    var fr = card.querySelector('.cp-frame');
+    if (!fr) return;
+    var h = fr.getBoundingClientRect().height;
+    if (!card.__cpLive && h <= 0) { card.__cpWatchRun = 0; cpWatchFrame(card, 2); }
   }
 }
 function cpOpenFullscreen(card) {
@@ -13700,15 +13813,20 @@ document.addEventListener('click', function (e) {
       setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 20000);
     } catch (err2) { showToast('无法打开新窗口：' + (err2 && err2.message ? err2.message : '未知错误')); }
   } else if (act === 'reload') {
-    var fr = card.querySelector('.cp-frame');
-    if (fr) { fr.removeAttribute('srcdoc'); try { fr.srcdoc = cpWithHooks(code); } catch (e) {} }
+    var cfr = card.querySelector('.cp-frame');
+    if (cfr) { try { cfr.removeAttribute('srcdoc'); } catch (e5) {} }
+    card.__cpWatchRun = 0;
+    card.__cpLive = 0;
+    var hintEl = card.querySelector('.cp-hint');
+    if (hintEl) hintEl.style.display = 'none';
+    cpWatchFrame(card, 3);
     showToast('↻ 预览已重载');
   } else if (act === 'expand') {
     cpOpenFullscreen(card);
   }
 }, true);
 
-/* 要求 4：预览 iframe 高度自适应（独立命名空间 + 只绑定一次） */
+/* 预览 iframe 高度自适应（独立命名空间 + 只绑定一次） */
 function cpBindHeightWatcher() {
   if (window.__cpMsgBound) return;
   window.__cpMsgBound = 1;
@@ -13718,14 +13836,25 @@ function cpBindHeightWatcher() {
     var frames = document.querySelectorAll('iframe.cp-frame');
     for (var i = 0; i < frames.length; i++) {
       if (frames[i].contentWindow !== e.source) continue;
+      var card = frames[i].closest ? frames[i].closest('.cp-card') : null;
+      if (card) { card.__cpLive = 1; card.__cpWatchRun = 0; }
       var h = Number(d.h) || 0;
-      h = Math.max(80, Math.min(h + 2, 1400));
+      /* 保底 300px：内容再矮也不会塌成一条线；上限 2400 防失控 */
+      h = Math.max(300, Math.min(h + 2, 2400));
       frames[i].style.height = h + 'px';
       break;
     }
   });
 }
 cpBindHeightWatcher();
+
+/* 兜底补扫：首屏恢复历史会话时，renderChat 可能早于本模块实例化 */
+function cpSweepLater() { try { initCodePreviewCards(); } catch (e) {} }
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(cpSweepLater, 200); });
+} else {
+  setTimeout(cpSweepLater, 200);
+}
 
 try { window.renderCodePreviewCard = renderCodePreviewCard; } catch (e) {}
 try { window.initCodePreviewCards = initCodePreviewCards; } catch (e2) {}
@@ -13862,8 +13991,10 @@ body.dark .cp-card { --cp-soft: rgba(99,132,255,.16); --cp-code-bg: #0b1020; }
 .cp-tab.is-active { background: var(--cp-soft); border-color: rgba(79,109,245,.45); color: var(--cp-accent); }
 .cp-pane { display: none; }
 .cp-pane.is-active { display: block; }
-.cp-stage { position: relative; overflow: hidden; contain: layout paint; background: #fff; }
-.cp-frame { display: block; width: 100%; min-height: 160px; border: 0; }
+.cp-stage { position: relative; display: block; min-height: 300px; background: #fff; }
+.cp-frame { display: block; width: 100%; height: 300px; min-height: 300px; border: 0; background: #fff; }
+.cp-hint { display: none; padding: 8px 12px; font-size: 12px; line-height: 1.5;
+  color: var(--cp-muted); background: rgba(120,120,128,.08); border-top: 1px dashed var(--cp-line); }
 .cp-code { background: var(--cp-code-bg); }
 /* 特异性 0,2,0 > 宿主 .md pre（0,1,1），避免被聊天区样式覆盖 */
 .cp-card .cp-code-pre { margin: 0; padding: 12px; overflow-x: auto; font-size: 12.5px;
