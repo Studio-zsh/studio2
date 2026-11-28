@@ -1420,6 +1420,108 @@ body.dark #chatBgLayer .chat-bg-mask{background:rgba(18,18,18,.62);}
 #chatBgCard .chatbg-val{font-size:12px;font-weight:800;color:var(--accent);min-width:44px;text-align:right;font-variant-numeric:tabular-nums;}
 #chatBgCard .set-btn[disabled]{opacity:.45;cursor:not-allowed;}
 </style>
+<style id="ledger-style">
+/* ===================================================================
+   操作账本 / 时光机（AI Action Ledger & Rollback）  ·  全部前缀 .ldg-
+   独立 fixed 全屏面板（不进 .view 体系），z-index 340 / 确认层 350
+   =================================================================== */
+#ledgerPanel.ldg-panel{position:fixed;inset:0;z-index:340;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.42);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#ledgerPanel.ldg-panel.show{display:flex}
+.ldg-sheet{position:relative;width:100%;max-width:980px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border);border-radius:18px;box-shadow:0 18px 48px rgba(15,23,42,.28)}
+.ldg-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.ldg-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;min-width:0}
+.ldg-title-tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldg-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ldg-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-color);font-size:13px;font-weight:700;line-height:1;cursor:pointer;white-space:nowrap}
+.ldg-btn:active{transform:scale(.97)}
+.ldg-btn.primary{background:linear-gradient(135deg,#4f6df5,#8b5cf6);border-color:transparent;color:#fff}
+.ldg-btn.danger{color:#e11d48;border-color:rgba(225,29,72,.35);background:rgba(225,29,72,.08)}
+.ldg-btn[disabled]{opacity:.45;pointer-events:none}
+.ldg-filters{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(148,163,184,.06)}
+.ldg-input{height:34px;padding:0 9px;border-radius:10px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-color);font-size:16px;font-family:inherit;min-width:0}
+select.ldg-input{padding-right:6px}
+.ldg-input-s{flex:0 0 auto;max-width:170px}
+.ldg-body{flex:1 1 auto;display:flex;min-height:0;overflow:hidden}
+.ldg-list{flex:1 1 46%;min-width:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:9px}
+.ldg-detail{flex:1 1 54%;min-width:0;overflow:auto;-webkit-overflow-scrolling:touch;display:none;padding:10px 12px;border-left:1px solid var(--border)}
+.ldg-detail.show{display:block}
+.ldg-row{display:flex;flex-direction:column;gap:6px;padding:9px 10px;margin-bottom:8px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg)}
+.ldg-row.act{border-color:rgba(79,109,245,.55);box-shadow:0 0 0 2px rgba(79,109,245,.12)}
+.ldg-row-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--text-muted)}
+.ldg-time{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-color)}
+.ldg-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:99px;border:1px solid var(--border);background:rgba(148,163,184,.12);color:var(--text-muted);font-size:11px;font-weight:700;white-space:nowrap}
+.ldg-chip.ok{color:#059669;background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.32)}
+.ldg-chip.fail{color:#e11d48;background:rgba(225,29,72,.10);border-color:rgba(225,29,72,.32)}
+.ldg-chip.rb{color:#7c3aed;background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.32)}
+.ldg-chip.ai{color:#2563eb;background:rgba(37,99,235,.10);border-color:rgba(37,99,235,.30)}
+.ldg-chip.user{color:#0f766e;background:rgba(13,148,136,.10);border-color:rgba(13,148,136,.30)}
+.ldg-chip.sys{color:#475569;background:rgba(100,116,139,.12);border-color:rgba(100,116,139,.28)}
+.ldg-chip.pin{color:#b45309;background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.34)}
+.ldg-row-main{font-size:12.5px;line-height:1.5;word-break:break-word;color:var(--text-color)}
+.ldg-row-meta{font-size:11.5px;color:var(--text-muted);word-break:break-word}
+.ldg-row-acts{display:flex;gap:6px;flex-wrap:wrap}
+.ldg-mini{height:28px;padding:0 9px;border-radius:9px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-color);font-size:12px;font-weight:700;line-height:1;cursor:pointer;white-space:nowrap}
+.ldg-mini:active{transform:scale(.97)}
+.ldg-mini.pin-on{color:#b45309;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.14)}
+.ldg-mini.rb{color:#7c3aed;border-color:rgba(124,58,237,.35);background:rgba(124,58,237,.10)}
+.ldg-empty,.ldg-loading,.ldg-error{padding:30px 14px;text-align:center;font-size:13px;line-height:1.7;color:var(--text-muted)}
+.ldg-error{color:#e11d48}
+.ldg-empty-ico{display:block;font-size:30px;margin-bottom:6px}
+.ldg-foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;border-top:1px solid var(--border);background:rgba(148,163,184,.06)}
+.ldg-stat{font-size:12px;color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 详情 */
+.ldg-d-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ldg-d-title{font-size:13.5px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ldg-kv{display:grid;grid-template-columns:88px 1fr;gap:2px 8px;font-size:12px;line-height:1.55;margin-bottom:10px}
+.ldg-kv-k{color:var(--text-muted);font-weight:700}
+.ldg-kv-v{word-break:break-word}
+.ldg-d-sec{font-size:12px;font-weight:800;color:var(--text-muted);margin:10px 0 5px;display:flex;align-items:center;gap:6px}
+.ldg-d-diff{margin:0 0 8px}
+.ldg-d-diff .agent-diff{max-height:300px;border-radius:10px;border:1px solid rgba(148,163,184,.2)}
+.ldg-note{font-size:12px;color:var(--text-muted);line-height:1.6}
+/* 确认层 */
+#ledgerConfirm.ldg-confirm{position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#ledgerConfirm.ldg-confirm.show{display:flex}
+.ldg-confirm-card{width:min(460px,100%);max-height:84vh;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;border-radius:18px;background:var(--card-bg);color:var(--text-color);border:1px solid var(--border);box-shadow:0 18px 48px rgba(15,23,42,.3)}
+.ldg-confirm-title{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.ldg-confirm-body{font-size:12.5px;line-height:1.7;color:var(--text-color);margin-bottom:10px;word-break:break-word}
+.ldg-confirm-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ldg-label{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--text-muted);min-width:64px}
+.ldg-confirm-row .ldg-input{flex:1 1 auto}
+.ldg-warn{font-size:12px;line-height:1.65;color:#b45309;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+.ldg-confirm-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+/* 设置卡 */
+#ledgerSettingsCard .ldg-set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+#ledgerSettingsCard .ldg-set-item{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-muted);font-weight:700}
+#ledgerSettingsCard .ldg-set-item .ldg-input{width:100%}
+#ledgerSettingsCard .ldg-set-actions{display:flex;flex-wrap:wrap;gap:0}
+/* 深色模式微调 */
+body.dark .ldg-sheet,body.dark .ldg-confirm-card{background:#141a24;border-color:rgba(255,255,255,.1)}
+body.dark .ldg-btn,body.dark .ldg-mini{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
+body.dark .ldg-btn.danger,body.dark .ldg-mini.rb{background:rgba(225,29,72,.14)}
+body.dark .ldg-input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--text-color)}
+body.dark .ldg-filters,body.dark .ldg-foot{background:rgba(255,255,255,.04)}
+/* 移动端 */
+@media (max-width:767px){
+  #ledgerPanel.ldg-panel{padding:0;align-items:stretch;justify-content:stretch}
+  .ldg-sheet{max-width:none;max-height:none;height:100%;border-radius:0;border:none;padding-top:env(safe-area-inset-top)}
+  .ldg-head{padding:10px 12px}
+  .ldg-filters{padding:8px 12px}
+  .ldg-input-s{max-width:none;flex:1 1 45%}
+  .ldg-body{position:relative}
+  .ldg-list{flex:1 1 100%;padding:8px}
+  .ldg-detail{position:absolute;inset:0;z-index:2;background:var(--card-bg);border-left:none;padding:10px}
+  .ldg-detail.show{display:block}
+  .ldg-foot{padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+  .ldg-btn{height:36px;font-size:13.5px}
+  .ldg-mini{height:32px;font-size:12.5px}
+}
+@media (max-width:480px){
+  .ldg-title{font-size:14px}
+  .ldg-head-actions .ldg-btn{padding:0 9px;font-size:12px}
+  .ldg-kv{grid-template-columns:76px 1fr}
+}
+</style>
 </head>
 <body>
 
@@ -1443,6 +1545,7 @@ body.dark #chatBgLayer .chat-bg-mask{background:rgba(18,18,18,.62);}
       <button id="navPsBtn" data-i18n="nav_ps">🎨 智能修图</button>
       <button id="navEvalBtn" data-i18n="nav_eval">🏟️ 模型评估场</button>
       <button id="navSettingsBtn" data-i18n="nav_settings">⚙️ 设置</button>
+      <button id="navLedgerBtn" type="button" data-i18n="nav_ledger">🧭 操作账本</button>
     </div>
   </aside>
   <div id="overlay"></div>
@@ -1932,6 +2035,33 @@ body.dark #chatBgLayer .chat-bg-mask{background:rgba(18,18,18,.62);}
           </div>
         </section>
 
+                <section class="card set-card" id="ledgerSettingsCard">
+          <h3>🧭 <span data-i18n="ledger_title">操作账本 · 时光机</span><span class="status-dot ok" id="ldgStatusDot"></span></h3>
+          <p data-i18n="ledger_desc">自动记录 AI 请求、脚本区、工作流、RAG 与会话的每一次变更；快照存于本机 IndexedDB，可查看 Diff 并一键回滚。不记录明文 API Key，全部数据仅保存在本机。</p>
+          <div class="ldg-set-grid">
+            <label class="ldg-set-item"><span data-i18n="ldg_cfg_enabled">启用记录</span>
+              <select class="ldg-input" id="ldgCfgEnabled">
+                <option value="1" data-i18n="ldg_on">开启</option>
+                <option value="0" data-i18n="ldg_off">关闭</option>
+              </select>
+            </label>
+            <label class="ldg-set-item"><span data-i18n="ldg_keep_count">保留条数上限</span>
+              <input type="number" class="ldg-input" id="ldgCfgMaxEntries" min="50" max="5000" step="50" value="800">
+            </label>
+            <label class="ldg-set-item"><span data-i18n="ldg_keep_days">保留天数</span>
+              <input type="number" class="ldg-input" id="ldgCfgMaxDays" min="1" max="3650" step="1" value="30">
+            </label>
+          </div>
+          <p class="ldg-note" id="ldgStoreStat">—</p>
+          <div class="ldg-set-actions">
+            <button type="button" class="set-btn" id="ldgOpenBtn" data-i18n="ldg_open">打开账本</button>
+            <button type="button" class="set-btn" id="ldgExportJsonBtn" data-i18n="ldg_export_json">导出 JSON</button>
+            <button type="button" class="set-btn" id="ldgExportMdBtn" data-i18n="ldg_export_md">导出 Markdown</button>
+            <button type="button" class="set-btn" id="ldgCleanBtn2" data-i18n="ldg_cleanup_now">立即清理</button>
+            <button type="button" class="set-btn" id="ldgCleanAfterExportBtn" data-i18n="ldg_clean_after_export">导出后清理</button>
+            <button type="button" class="set-btn danger" id="ldgClearAllBtn" data-i18n="ldg_clear_all">清空账本</button>
+          </div>
+        </section>
         <section class="card set-card" id="ragCard">
           <h3>
             <span>📚 本地资料库 (RAG)</span>
@@ -2093,6 +2223,58 @@ body.dark #chatBgLayer .chat-bg-mask{background:rgba(18,18,18,.62);}
   <div class="assistant-core" id="assistantAvatarCore">🤖</div>
 </div>
 
+<!-- ===== 模块：操作账本 / 时光机（AI Action Ledger & Rollback）===== -->
+<div id="ledgerPanel" class="ldg-panel" role="dialog" aria-modal="true" aria-labelledby="ldgTitle">
+  <div class="ldg-sheet">
+    <div class="ldg-head">
+      <div class="ldg-title" id="ldgTitle"><span>🧭</span><span class="ldg-title-tx" data-i18n="ledger_title">操作账本 · 时光机</span></div>
+      <div class="ldg-head-actions">
+        <button type="button" class="ldg-btn" id="ldgRefreshBtn" data-i18n="ldg_refresh">刷新</button>
+        <button type="button" class="ldg-btn" id="ldgExportJsonBtn2" data-i18n="ldg_export_json">导出 JSON</button>
+        <button type="button" class="ldg-btn" id="ldgExportMdBtn2" data-i18n="ldg_export_md">导出 Markdown</button>
+        <button type="button" class="ldg-btn" id="ldgCloseBtn" data-i18n="ldg_close">关闭</button>
+      </div>
+    </div>
+    <div class="ldg-filters">
+      <select class="ldg-input ldg-input-s" id="ldgFilterObj"></select>
+      <select class="ldg-input ldg-input-s" id="ldgFilterEvt"></select>
+      <select class="ldg-input ldg-input-s" id="ldgFilterSrc"></select>
+      <input type="date" class="ldg-input ldg-input-s" id="ldgFilterFrom">
+      <input type="date" class="ldg-input ldg-input-s" id="ldgFilterTo">
+      <button type="button" class="ldg-btn" id="ldgFilterReset" data-i18n="ldg_filter_reset">重置筛选</button>
+    </div>
+    <div class="ldg-body">
+      <div class="ldg-list" id="ldgList"></div>
+      <div class="ldg-detail" id="ldgDetail"></div>
+    </div>
+    <div class="ldg-foot">
+      <div class="ldg-stat" id="ldgStat"></div>
+      <div style="display:flex;gap:8px;flex:0 0 auto;">
+        <button type="button" class="ldg-btn" id="ldgCleanBtn" data-i18n="ldg_cleanup">执行清理</button>
+        <button type="button" class="ldg-btn primary" id="ldgMoreBtn" data-i18n="ldg_more">加载更多</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="ledgerConfirm" class="ldg-confirm" role="dialog" aria-modal="true" aria-labelledby="ldgConfirmTitle">
+  <div class="ldg-confirm-card">
+    <div class="ldg-confirm-title" id="ldgConfirmTitle">⚠️ <span data-i18n="ldg_confirm_title">确认回滚</span></div>
+    <div class="ldg-confirm-body" id="ldgConfirmBody"></div>
+    <div class="ldg-warn" id="ldgConfirmWarn"></div>
+    <div class="ldg-confirm-row">
+      <span class="ldg-label" data-i18n="ldg_scope">回滚范围</span>
+      <select class="ldg-input" id="ldgScopeSel"></select>
+    </div>
+    <div class="ldg-confirm-row">
+      <span class="ldg-label" data-i18n="ldg_phase">恢复到</span>
+      <select class="ldg-input" id="ldgPhaseSel"></select>
+    </div>
+    <div class="ldg-confirm-actions">
+      <button type="button" class="ldg-btn" id="ldgConfirmCancel" data-i18n="ldg_cancel">取消</button>
+      <button type="button" class="ldg-btn danger" id="ldgConfirmOk" data-i18n="ldg_do_rollback">确认回滚</button>
+    </div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <!-- ================= 模块三：Apple Pencil 全屏画板（z-index 200） ================= -->
@@ -9209,7 +9391,68 @@ try { enhanceSessionList(); } catch (e) { }
   /* [#15] 档位阈值按「短边」每次调用求值：转屏 / 分屏后立即生效，不写死模块级常量。
      function 声明带提升，psLoadFile / psSnapshotDataURL 运行时调用一定已可用（无 TDZ 问题） */
   function mobViewportShortEdge() { return Math.min(window.innerWidth || 0, window.innerHeight || 0); }
-  function psMaxEdgeNow() { return mobViewportShortEdge() <= 480 ? 2000 : 3000; }
+  function 你是一名资深前端工程师，擅长在单文件 HTML 应用中做生产级增量改造。请基于我提供的现有 HTML 文件（Max2.5 / v13.7.2 基线）直接修改，新增“项目级操作账本 + 快照回滚（AI Action Ledger & Rollback）”功能。不要重写整个应用，不要删除或破坏现有 40 项功能，采用最小侵入方式实现。
+
+一、背景与目标
+当前应用已有：多模型对话、辩论、模型评估、代理工作台脚本区 + Diff、全文基准 Diff、工作流编排、剪贴板 RAG、变量填充、画板、修图、PWA、localStorage 多会话等。但缺少“AI 犯错后可恢复、可复盘”的能力。
+目标：为整个应用增加一个本地优先的“时光机”：AI 和用户对会话、Prompt、工作流、脚本、RAG 库、画板、修图参数、设置等关键对象的每一次变更，都自动记录前后快照，可查看 Diff，可一键回滚到任意时间点，可导出脱敏审计包。
+
+二、必须实现的功能
+1. 操作账本
+- 自动记录以下事件：AI 请求与响应摘要、工具调用、工作流节点变更、脚本区内容变更、RAG 文档增删改、画板/修图参数变更、会话与 Prompt 变更、关键设置变更。
+- 每条记录包含：id、时间戳、事件类型、对象类型、对象 id、操作来源（AI/用户/系统）、模型名、输入摘要、变更前快照引用、变更后快照引用、状态（成功/失败/已回滚）、脱敏后的元数据。
+- 严禁记录明文 API Key、完整敏感文件内容；Key 只记录“已配置/未配置”和厂商名。
+
+2. 快照与 Diff
+- 对关键对象做前后快照，存 IndexedDB，不撑爆 localStorage。
+- 复用现有“脚本区 + Diff”“全文基准 Diff”的展示风格，提供时间线视图和单条详情视图。
+- 支持按对象、事件类型、时间范围、来源筛选。
+- Diff 要能看清“改了什么”，至少支持文本/JSON 结构化对比。
+
+3. 一键回滚
+- 支持回滚到任意快照。
+- 支持“全局回滚”和“模块级回滚”（例如只恢复 RAG 库、只恢复工作流、只恢复脚本区）。
+- 回滚前必须二次确认，并明确提示影响范围。
+- 回滚本身也要记入账本，状态标记为“已回滚”，且可再次回滚到回滚前状态。
+
+4. 审计包导出
+- 支持导出 JSON 和 Markdown 两种格式。
+- 导出内容包含：时间线、事件摘要、Diff 摘要、回滚记录。
+- 导出前自动脱敏：不包含 Key、完整附件、敏感文本原文，只保留摘要或哈希。
+
+5. 容量与保留策略
+- 使用 IndexedDB 存储快照，设置默认容量上限和保留条数。
+- 超限时按“最旧且非手动标记”优先清理，手动标记的快照不自动删除。
+- 提供“清空账本”“导出后清理”“保留最近 N 天/N 条”设置。
+- 首次启用时，兼容并迁移现有 localStorage 会话数据，不丢历史。
+
+三、UI 与交互要求
+- 在顶部工具栏或侧栏新增“操作账本 / 时光机”入口，图标 + 文字，移动端底部 Tab 也可达。
+- 时间线列表：时间、来源、事件类型、对象、状态、操作按钮（查看 Diff / 回滚 / 标记保留）。
+- 详情面板：变更前后摘要、Diff、关联模型与请求 id、回滚按钮。
+- 回滚确认弹窗：说明回滚范围、将影响哪些模块、是否可撤销。
+- 空状态、加载状态、错误状态要完整；大账本要分页或虚拟滚动，避免卡顿。
+- 不改变现有视觉风格；深色模式、中英切换要兼容。
+
+四、技术约束
+- 保持单文件 HTML 可运行；优先原生 JS，不引入重型框架。
+- 存储：IndexedDB 存快照与账本，localStorage 只存轻量设置和索引。
+- 所有记录本地完成，不上传服务器；导出由用户手动触发。
+- 对高频事件做节流/合并，避免每次流式 token 都写一条记录；以“一次请求/一次提交”为记录粒度。
+- 快照采用增量或引用式存储，避免重复存大对象；大文本可存哈希 + 差量。
+- 不要破坏现有 SSE、Markdown 渲染、辩论、评估场、工作流、RAG、画板、修图、PWA 等逻辑。
+- 如果现有代码结构难以全部接入，先实现 MVP：会话、脚本区、工作流、RAG 四类对象的账本与回滚，其余对象留扩展点并列出 TODO。
+
+五、验收标准
+1. 模拟误操作：AI 覆盖脚本区、删除 RAG 文档、改坏工作流后，能在账本中找到记录并一键恢复。
+2. 刷新页面、关闭重开浏览器后，账本和快照仍在。
+3. 回滚后现有功能正常，会话、工作流、RAG、画板等不串数据。
+4. 导出审计包不含明文 Key 和敏感原文。
+5. 连续产生 100+ 条记录后，页面不卡顿，存储不超限时有清理提示。
+6. 现有 40 项功能逐项回归通过，不出现白屏、按钮失效、数据丢失。
+
+六、输出要求
+请直接给出修改后的完整 HTML 文件；如果文件过大，请给出精确的补丁式修改说明（改哪个函数、加哪些代码块、放在哪里），并附新增数据结构定义和关键代码。最后列出你已实现的功能、未完成项和回归测试清单。() { return mobViewportShortEdge() <= 480 ? 2000 : 3000; }
   function psHistoryEdgeNow() { return mobViewportShortEdge() <= 480 ? 1200 : 1600; }
 
   var CHAT_PAINT_MS = (window.innerWidth <= 480) ? 80 : 60;
@@ -13869,6 +14112,1424 @@ try {
 } catch (e4) {}
 
 setTimeout(function () { try { initCodePreviewCards(); } catch (e) {} }, 0);
+
+/* =========================================================================
+ * 操作账本 / 时光机（AI Action Ledger & Rollback）  v1.0
+ * -------------------------------------------------------------------------
+ * 设计要点
+ *  1) 独立 IndexedDB「omni_ledger」（v1），不改动 m3IDB 的 DB_VER/STORES；
+ *     store: ledger(keyPath id, 索引 ts/objType/evtType/source/status/objId)
+ *            snapshots(keyPath id)  —— 快照只存 JSON 字符串 + 哈希
+ *  2) localStorage 仅存轻量配置 autoPro_ledgerCfg（无任何 Key / 正文）
+ *  3) 记录粒度 = 一次请求 / 一次提交，绝不按 token 写库
+ *  4) 快照引用式：同一对象连续同哈希快照复用上一条 ref（不重复落盘）
+ *  5) 脱敏：meta 递归白名单化，Key 只记 configured/unset，图片只记 [media]
+ *  6) 回滚：写回活变量 → 调既有持久化 + 重绘，并把回滚本身再入账
+ *  7) MVP 覆盖对象：chat（会话）/ script（脚本区）/ rag（RAG）/ wf（工作流）
+ *     TODO(扩展点)：辩论、评估场、Prompt 模板、定时任务、项目维度、头像、
+ *                    Key 保存明细、画板/修图参数、暗色与聊天背景设置
+ * ========================================================================= */
+var LDG = (function () {
+  'use strict';
+
+  /* ------------------------------ 常量 ------------------------------ */
+  var CFG_KEY = 'autoPro_ledgerCfg';
+  var MIG_KEY = 'autoPro_ledgerMigrated';
+  var DB_NAME = 'omni_ledger';
+  var DB_VER = 1;
+  var ST_LOG = 'ledger';
+  var ST_SNAP = 'snapshots';
+  var MAX_SNAP_BYTES = 1200 * 1024;      /* 单快照上限（字符数近似） */
+  var ROLLBACKABLE = { chat: 1, script: 1, rag: 1, wf: 1 };
+  var OBJ_TYPES = ['chat', 'script', 'rag', 'wf', 'ps', 'settings', 'app'];
+  var EVT_TYPES = ['ai_request', 'session_create', 'session_delete', 'script_patch',
+                   'rag_add', 'rag_delete', 'rag_clear', 'wf_save', 'wf_run',
+                   'settings', 'baseline', 'rollback', 'other'];
+  var SOURCES = ['ai', 'user', 'system'];
+
+  /* ------------------------------ 配置 ------------------------------ */
+  var cfg = (function () {
+    var d = { enabled: true, maxEntries: 800, maxDays: 30, maxBytes: 8 * 1024 * 1024, pageSize: 40 };
+    try {
+      var raw = localStorage.getItem(CFG_KEY);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && typeof o === 'object') {
+          if (typeof o.enabled === 'boolean') d.enabled = o.enabled;
+          if (+o.maxEntries > 0) d.maxEntries = Math.max(50, Math.min(5000, Math.round(+o.maxEntries)));
+          if (+o.maxDays > 0) d.maxDays = Math.max(1, Math.min(3650, Math.round(+o.maxDays)));
+          if (+o.maxBytes > 0) d.maxBytes = Math.max(256 * 1024, Math.min(64 * 1024 * 1024, +o.maxBytes));
+          if (+o.pageSize > 0) d.pageSize = Math.max(10, Math.min(200, Math.round(+o.pageSize)));
+        }
+      }
+    } catch (e) {
+      /* 忽略：损坏则用默认值 */
+    }
+    return d;
+  })();
+  function cfgSave() { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} }
+
+  /* ------------------------------ 工具 ------------------------------ */
+  function hashStr(s) {
+    var str = String(s == null ? '' : s), h = 5381, i;
+    for (i = 0; i < str.length; i++) h = (((h << 5) + h) ^ str.charCodeAt(i)) >>> 0;
+    return (h >>> 0).toString(16) + '-' + str.length.toString(36);
+  }
+  function clip(s, n) {
+    s = String(s == null ? '' : s);
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+  function esc(s) { try { return escapeHtml(s); } catch (e) { return clip(String(s == null ? '' : s), 4000); } }
+  function T(key, fb) {
+    try { if (typeof i18nHasKey === 'function' && i18nHasKey(key)) { var s = t(key); if (s) return s; } } catch (e) {}
+    return fb != null ? fb : key;
+  }
+  function safe(fn, fb) { try { return fn(); } catch (e) { return fb; } }
+  function newId(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function fmtTime(ts) {
+    var d = new Date(ts || 0);
+    if (isNaN(d.getTime())) return '—';
+    function p(n) { return n < 10 ? '0' + n : '' + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+      ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  function toast(msg) { try { showToast(msg); } catch (e) {} }
+
+  /* --------------------------- 脱敏（白名单） --------------------------- */
+  var SECRET_RX = /(^|_|-)(api_?key|key|token|secret|password|passwd|authorization|auth|cookie|credential)$/i;
+  var DATAURL_RX = /^data:([a-z]+\/[a-z0-9.+-]+)?;?base64,/i;
+  function redactValue(v, depth) {
+    if (v == null) return v;
+    if (typeof v === 'string') {
+      if (DATAURL_RX.test(v)) return '[data-url:' + v.length + 'B]';
+      if (v.length > 240) return v.slice(0, 80) + '…[+' + (v.length - 80) + ']';
+      return v;
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') return v;
+    if (depth > 3) return '[obj]';
+    if (Object.prototype.toString.call(v) === '[object Array]') {
+      return v.slice(0, 24).map(function (x) { return redactValue(x, depth + 1); });
+    }
+    if (typeof v === 'object') {
+      var o = {}, k, n = 0;
+      for (k in v) {
+        if (!Object.prototype.hasOwnProperty.call(v, k)) continue;
+        if (++n > 24) { o['_more'] = '[truncated]'; break; }
+        if (k === 'image' || k === 'images') { o[k] = '[media]'; continue; }
+        if (SECRET_RX.test(k)) { o[k] = v[k] ? 'configured' : 'unset'; continue; }
+        o[k] = redactValue(v[k], depth + 1);
+      }
+      return o;
+    }
+    return String(v);
+  }
+
+  /* --------------------------- IndexedDB 封装 --------------------------- */
+  var memMode = (typeof indexedDB === 'undefined');
+  var dbPromise = null;
+  var memLog = [], memSnap = {};
+
+  function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(function (resolve, reject) {
+      var req;
+      try { req = indexedDB.open(DB_NAME, DB_VER); } catch (e) { reject(e); return; }
+      req.onupgradeneeded = function (ev) {
+        var db = ev.target.result;
+        try {
+          if (!db.objectStoreNames.contains(ST_LOG)) {
+            var s = db.createObjectStore(ST_LOG, { keyPath: 'id' });
+            s.createIndex('ts', 'ts', { unique: false });
+            s.createIndex('objType', 'objType', { unique: false });
+            s.createIndex('evtType', 'evtType', { unique: false });
+            s.createIndex('source', 'source', { unique: false });
+            s.createIndex('status', 'status', { unique: false });
+            s.createIndex('objId', 'objId', { unique: false });
+          }
+          if (!db.objectStoreNames.contains(ST_SNAP)) {
+            db.createObjectStore(ST_SNAP, { keyPath: 'id' });
+          }
+        } catch (e) { /* 已存在则忽略 */ }
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error || new Error('idb-open')); };
+      req.onblocked = function () { /* 其它标签页占用：不阻塞当前页面 */ };
+    });
+    return dbPromise;
+  }
+  function reqP(req) {
+    return new Promise(function (res, rej) {
+      req.onsuccess = function () { res(req.result); };
+      req.onerror = function () { rej(req.error || new Error('idb-req')); };
+    });
+  }
+  function storeP(name, mode) {
+    return openDB().then(function (db) { return db.transaction(name, mode).objectStore(name); });
+  }
+  var DB = {
+    put: function (store, val) {
+      if (memMode) {
+        if (store === ST_LOG) { var i, hit = false; for (i = 0; i < memLog.length; i++) if (memLog[i].id === val.id) { memLog[i] = val; hit = true; break; } if (!hit) memLog.push(val); }
+        else memSnap[val.id] = val;
+        return Promise.resolve(val.id);
+      }
+      return storeP(store, 'readwrite').then(function (st) { return reqP(st.put(val)); });
+    },
+    get: function (store, key) {
+      if (memMode) return Promise.resolve(store === ST_LOG ? (memLog.filter(function (r) { return r.id === key; })[0] || null) : (memSnap[key] || null));
+      return storeP(store, 'readonly').then(function (st) { return reqP(st.get(key)); });
+    },
+    all: function (store) {
+      if (memMode) return Promise.resolve(store === ST_LOG ? memLog.slice() : Object.keys(memSnap).map(function (k) { return memSnap[k]; }));
+      if (typeof IDBObjectStore !== 'undefined' && !('getAll' in IDBObjectStore.prototype)) {
+        return storeP(store, 'readonly').then(function (st) {
+          return new Promise(function (res, rej) {
+            var out = [], cur = st.openCursor();
+            cur.onsuccess = function (ev) { var c = ev.target.result; if (c) { out.push(c.value); c.continue(); } else res(out); };
+            cur.onerror = function () { rej(new Error('idb-cursor')); };
+          });
+        });
+      }
+      return storeP(store, 'readonly').then(function (st) { return reqP(st.getAll()); });
+    },
+    del: function (store, key) {
+      if (memMode) {
+        if (store === ST_LOG) memLog = memLog.filter(function (r) { return r.id !== key; });
+        else delete memSnap[key];
+        return Promise.resolve(true);
+      }
+      return storeP(store, 'readwrite').then(function (st) { return reqP(st.delete(key)); });
+    },
+    clear: function (store) {
+      if (memMode) { if (store === ST_LOG) memLog = []; else memSnap = {}; return Promise.resolve(true); }
+      return storeP(store, 'readwrite').then(function (st) { return reqP(st.clear()); });
+    }
+  };
+
+  /* --------------------------- 串行写队列 --------------------------- */
+  var q = Promise.resolve();
+  function enqueue(fn) {
+    q = q.then(function () { return fn(); }).catch(function () { return null; });
+    return q;
+  }
+
+  /* --------------------------- 快照写入 --------------------------- */
+  var hashRefs = {};    /* objType|objId -> {hash, ref}  引用式复用 */
+  function putSnapshot(objType, objId, json, ts) {
+    if (json == null) return Promise.resolve(null);
+    var h = hashStr(json);
+    var key = objType + '|' + objId;
+    var prev = hashRefs[key];
+    if (prev && prev.hash === h) return Promise.resolve({ ref: prev.ref, hash: h, bytes: json.length, reused: true });
+    if (json.length > MAX_SNAP_BYTES) return Promise.resolve({ ref: null, hash: h, bytes: json.length, tooBig: true });
+    var rec = { id: newId('s'), objType: objType, objId: String(objId == null ? '' : objId), ts: ts || Date.now(), hash: h, bytes: json.length, kind: 'json', data: json };
+    return DB.put(ST_SNAP, rec).then(function () {
+      hashRefs[key] = { hash: h, ref: rec.id };
+      return { ref: rec.id, hash: h, bytes: json.length };
+    }).catch(function () { return { ref: null, hash: h, bytes: json.length, err: true }; });
+  }
+
+  /* --------------------------- 记录写入 --------------------------- */
+  var allRecs = [], loaded = false, panelOpen = false;
+  var view = { page: 1, selId: null };
+  var pendingRollback = null;
+
+  function push(op) {
+    if (!cfg.enabled || !op) return null;
+    var objType = op.objType || 'app';
+    var objId = op.objId == null ? '' : String(op.objId);
+    enqueue(function () {
+      var ts = op.ts || Date.now();
+      var bJson = op.beforeJson == null ? null : String(op.beforeJson);
+      var aJson = op.afterJson == null ? null : String(op.afterJson);
+      return putSnapshot(objType, objId, bJson, ts).then(function (b) {
+        return putSnapshot(objType, objId, aJson, ts).then(function (a) {
+          var rec = {
+            id: newId('l'),
+            ts: ts,
+            evtType: op.evtType || 'other',
+            objType: objType,
+            objId: objId,
+            objLabel: clip(op.objLabel || '', 60),
+            source: (op.source || 'system'),
+            model: op.model ? String(op.model) : '',
+            reqId: op.reqId ? String(op.reqId) : '',
+            inputSummary: clip(op.inputSummary || '', 200),
+            beforeRef: b ? b.ref : null,
+            afterRef: a ? a.ref : null,
+            beforeHash: b ? b.hash : '',
+            afterHash: a ? a.hash : '',
+            beforeBytes: b ? b.bytes : 0,
+            afterBytes: a ? a.bytes : 0,
+            truncated: !!((b && b.tooBig) || (a && a.tooBig)),
+            status: op.status || 'ok',
+            meta: redactValue(op.meta || {}, 0),
+            pinned: false
+          };
+          allRecs.unshift(rec);
+          return DB.put(ST_LOG, rec).then(function () {
+            if (panelOpen) scheduleRender();
+            updateStat();
+            scheduleCleanup();
+            return rec;
+          });
+        });
+      });
+    });
+    return null;
+  }
+
+  function loadAll(force) {
+    if (loaded && !force) return Promise.resolve(allRecs);
+    return DB.all(ST_LOG).then(function (rows) {
+      var map = {};
+      (rows || []).forEach(function (r) { if (r && r.id) map[r.id] = r; });
+      allRecs.forEach(function (r) { if (r && r.id) map[r.id] = r; });
+      allRecs = Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      loaded = true;
+      return allRecs;
+    }).catch(function () { loaded = true; return allRecs; });
+  }
+
+  function findRec(id) {
+    for (var i = 0; i < allRecs.length; i++) if (allRecs[i].id === id) return allRecs[i];
+    return null;
+  }
+
+  /* --------------------------- 保留策略 / 清理 --------------------------- */
+  var cleaning = false, cleanTimer = null;
+  function scheduleCleanup() {
+    if (cleanTimer) return;
+    cleanTimer = setTimeout(function () { cleanTimer = null; cleanup(); }, 4000);
+  }
+  function cleanup() {
+    if (cleaning) return Promise.resolve(null);
+    cleaning = true;
+    return loadAll().then(function () { return DB.all(ST_SNAP); }).then(function (snaps) {
+      snaps = snaps || [];
+      var snapMap = {}, totalBytes = 0, i;
+      for (i = 0; i < snaps.length; i++) { snapMap[snaps[i].id] = snaps[i]; totalBytes += snaps[i].bytes || 0; }
+
+      var now = Date.now();
+      var maxAge = Math.max(1, cfg.maxDays) * 86400000;
+      var pinned = [], keep = [], drop = [];
+      allRecs.forEach(function (r) {
+        if (r.pinned) { pinned.push(r); return; }
+        if (now - (r.ts || 0) > maxAge) { drop.push(r); return; }
+        keep.push(r);
+      });
+      var room = Math.max(0, cfg.maxEntries - pinned.length);
+      if (keep.length > room) {
+        keep.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });   /* 最旧优先清理 */
+        while (keep.length > room) drop.push(keep.shift());
+      }
+
+      function liveRefs(list) {
+        var live = {};
+        list.forEach(function (r) { if (r.beforeRef) live[r.beforeRef] = 1; if (r.afterRef) live[r.afterRef] = 1; });
+        var refBytes = {}; list.forEach(function (r) { if (r.beforeRef) refBytes[r.beforeRef] = 1; if (r.afterRef) refBytes[r.afterRef] = 1; });
+        var sum = 0;
+        Object.keys(refBytes).forEach(function (k) { if (snapMap[k]) sum += snapMap[k].bytes || 0; });
+        return { live: live, bytes: sum };
+      }
+
+      /* 容量兜底：仍超 bytes 上限时，继续丢最旧的非手动保留记录 */
+      var remain = allRecs.filter(function (r) { return drop.indexOf(r) < 0; });
+      var st = liveRefs(remain);
+      if (st.bytes > cfg.maxBytes) {
+        var cand = remain.filter(function (r) { return !r.pinned; }).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+        var idx = 0;
+        while (st.bytes > cfg.maxBytes && idx < cand.length) {
+          drop.push(cand[idx]);
+          remain = remain.filter(function (r) { return r !== cand[idx]; });
+          idx++;
+          st = liveRefs(remain);
+        }
+      }
+
+      if (!drop.length && totalBytes <= cfg.maxBytes) { cleaning = false; return { removed: 0, bytes: 0 }; }
+
+      var dropIds = {};
+      drop.forEach(function (r) { dropIds[r.id] = 1; });
+      allRecs = allRecs.filter(function (r) { return !dropIds[r.id]; });
+
+      var live = liveRefs(allRecs).live;
+      var orphan = snaps.filter(function (s) { return !live[s.id]; });
+      var freed = 0;
+      orphan.forEach(function (s) { freed += s.bytes || 0; });
+      /* 被回收的快照可能仍被引用式缓存指向 → 整体失效，避免下次写入悬空 ref */
+      if (orphan.length) hashRefs = {};
+
+      var chain = Promise.resolve();
+      drop.forEach(function (r) { chain = chain.then(function () { return DB.del(ST_LOG, r.id).catch(function () {}); }); });
+      orphan.forEach(function (s) { chain = chain.then(function () { return DB.del(ST_SNAP, s.id).catch(function () {}); }); });
+
+      return chain.then(function () {
+        allRecs = allRecs.slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+        cleaning = false;
+        if (drop.length) toast(T('ldg_quota_warn', '存储接近上限：已自动清理 {n} 条最旧记录（手动标记保留的不会被删除）').replace('{n}', String(drop.length)));
+        if (panelOpen) { renderList(); updateStat(); }
+        return { removed: drop.length, bytes: freed };
+      });
+    }).catch(function () { cleaning = false; return null; });
+  }
+
+  /* --------------------------- 状态采集（活变量） --------------------------- */
+  function stripMedia(list) {
+    var stripped = 0, out = [];
+    (Object.prototype.toString.call(list) === '[object Array]' ? list : []).forEach(function (s) {
+      if (!s || typeof s !== 'object') { out.push(s); return; }
+      var ns = {}, k;
+      for (k in s) {
+        if (!Object.prototype.hasOwnProperty.call(s, k)) continue;
+        if (k === 'messages') continue;
+        ns[k] = s[k];
+      }
+      ns.messages = (Object.prototype.toString.call(s.messages) === '[object Array]' ? s.messages : []).map(function (m) {
+        if (!m || typeof m !== 'object') return m;
+        var nm = {}, k2;
+        for (k2 in m) {
+          if (!Object.prototype.hasOwnProperty.call(m, k2)) continue;
+          if (k2 === 'image' || k2 === 'images') {
+            stripped++;
+            nm[k2 + 'Count'] = Object.prototype.toString.call(m[k2]) === '[object Array]' ? m[k2].length : 1;
+            continue;
+          }
+          nm[k2] = m[k2];
+        }
+        return nm;
+      });
+      out.push(ns);
+    });
+    return { list: out, stripped: stripped };
+  }
+
+  function capChat() {
+    return safe(function () {
+      var r = stripMedia(sessions);
+      return JSON.stringify({ sessions: r.list, currentId: currentId, mediaStripped: r.stripped, count: r.list.length });
+    }, null);
+  }
+  function capScript() {
+    return safe(function () {
+      var src = window.AGENT_STORE || {}, keys = {}, n = 0, total = 0, truncated = false;
+      var ks = Object.keys(src).sort();
+      for (var i = 0; i < ks.length; i++) {
+        var k = ks[i];
+        var v = typeof src[k] === 'string' ? src[k] : safe(function () { return JSON.stringify(src[k]); }, '');
+        if (v.length > 200 * 1024) { v = v.slice(0, 200 * 1024); truncated = true; }
+        total += v.length;
+        if (total > 1000 * 1024) { truncated = true; break; }
+        keys[k] = v; n++;
+      }
+      return JSON.stringify({ keys: keys, keysCount: Object.keys(src).length, captured: n, total: total, truncated: truncated });
+    }, null);
+  }
+  function capRag() {
+    return safe(function () {
+      var arr = Object.prototype.toString.call(ragChunks) === '[object Array]' ? ragChunks : [];
+      var out = [], total = 0, truncated = false, docs = [], seen = {};
+      for (var i = 0; i < arr.length; i++) {
+        var j = safe(function () { return JSON.stringify(arr[i]); }, '');
+        total += j.length;
+        if (total > 1000 * 1024) { truncated = true; break; }
+        out.push(arr[i]);
+        if (arr[i] && arr[i].docId && !seen[arr[i].docId]) { seen[arr[i].docId] = 1; docs.push(arr[i].docId); }
+      }
+      return JSON.stringify({ all: true, chunks: out, docs: docs, totalChunks: arr.length, captured: out.length, truncated: truncated });
+    }, null);
+  }
+  function capWf() {
+    return safe(function () {
+      var name = '', steps = [];
+      if (typeof extWF !== 'undefined' && extWF) { name = extWF.name || ''; steps = extWF.steps || []; }
+      return JSON.stringify({ name: name, steps: steps });
+    }, null);
+  }
+  function capByType(objType) {
+    if (objType === 'chat') return capChat();
+    if (objType === 'script') return capScript();
+    if (objType === 'rag') return capRag();
+    if (objType === 'wf') return capWf();
+    return null;
+  }
+
+  /* --------------------------- 快照 → 可读文本（供 Diff） --------------------------- */
+  function snapText(objType, snap) {
+    if (!snap || !snap.data) return '';
+    var d;
+    try { d = JSON.parse(snap.data); } catch (e) { return String(snap.data); }
+    try {
+      if (objType === 'script') {
+        var keys = d.keys || {}, ks = Object.keys(keys).sort(), out = [];
+        if (!ks.length) return '/* （脚本区为空） */';
+        ks.forEach(function (k) { out.push('/* ===== ' + k + ' ===== */\n' + String(keys[k])); });
+        if (d.truncated) out.push('/* …快照已截断，仅包含前 ' + (d.captured || 0) + ' 个键 */');
+        return out.join('\n\n');
+      }
+      if (objType === 'chat') {
+        var ss = d.sessions || [], lines = [];
+        lines.push('/* 会话数：' + ss.length + '；图片已剔除 ' + (d.mediaStripped || 0) + ' 处 */');
+        ss.forEach(function (s) {
+          lines.push('');
+          lines.push('## ' + (s.title || '(未命名)') + '   [' + ((s.messages || []).length) + ' 条]');
+          (s.messages || []).forEach(function (m) {
+            lines.push('[' + (m.role || '?') + '] ' + clip(String(m.content == null ? (m.text || '') : m.content).replace(/\n+/g, ' ⏎ '), 220));
+          });
+        });
+        return lines.join('\n');
+      }
+      if (objType === 'rag') {
+        var ch = d.chunks || [], out2 = [];
+        out2.push('/* 文档 ' + ((d.docs || []).length) + ' 个 / 块 ' + (d.totalChunks || 0) + ' 个；快照 ' + (d.captured || 0) + ' 块 */');
+        ch.forEach(function (c) {
+          out2.push('');
+          out2.push('[' + (c.docId || 'doc') + '] ' + clip(String(c.text || ''), 300));
+        });
+        return out2.join('\n');
+      }
+      if (objType === 'wf') {
+        return 'name: ' + (d.name || '') + '\n' + JSON.stringify(d.steps || [], null, 2);
+      }
+      return JSON.stringify(d, null, 2);
+    } catch (e) {
+      return String(snap.data);
+    }
+  }
+
+  function diffSnippet(objType, bSnap, aSnap) {
+    var a = snapText(objType, bSnap), b = snapText(objType, aSnap);
+    if (!a && !b) return { html: '', adds: 0, dels: 0 };
+    try {
+      var d = renderDiff(a, b);
+      return { html: d && d.html ? d.html : '', adds: (d && d.adds) || 0, dels: (d && d.dels) || 0 };
+    } catch (e) {
+      return { html: '', adds: 0, dels: 0 };
+    }
+  }
+
+  /* --------------------------- 标签（i18n 兜底） --------------------------- */
+  function objLabel(r) {
+    var lbl = r.objLabel ? r.objLabel : '';
+    var base = T('ldg_obj_' + r.objType, r.objType);
+    return lbl ? (base + ' · ' + lbl) : base;
+  }
+  function evtLabel(e) { return T('ldg_evt_' + e, e); }
+  function srcLabel(s) { return T('ldg_src_' + s, s); }
+  function stLabel(s) {
+    if (s === 'fail') return T('ldg_st_fail', '失败');
+    if (s === 'rolledback') return T('ldg_st_rolledback', '已回滚');
+    return T('ldg_st_ok', '成功');
+  }
+  function srcCls(s) { return s === 'ai' ? 'ai' : (s === 'user' ? 'user' : 'sys'); }
+  function stCls(s) { return s === 'fail' ? 'fail' : (s === 'rolledback' ? 'rb' : 'ok'); }
+
+  /* --------------------------- i18n 字典（必须在 initI18n 之前注册） --------------------------- */
+  try {
+    if (typeof I18N_DICT !== 'undefined' && I18N_DICT.zh && I18N_DICT.en) {
+      Object.assign(I18N_DICT.zh, {
+        nav_ledger: '🧭 操作账本',
+        ledger_title: '操作账本 · 时光机',
+        ledger_desc: '自动记录 AI 请求、脚本区、工作流、RAG 与会话的每一次变更；快照存于本机 IndexedDB，可查看 Diff 并一键回滚。不记录明文 API Key，全部数据仅保存在本机。',
+        ldg_open: '打开账本', ldg_close: '关闭', ldg_refresh: '刷新',
+        ldg_more: '加载更多', ldg_cleanup: '执行清理', ldg_cleanup_now: '立即清理',
+        ldg_filter_reset: '重置筛选', ldg_export_json: '导出 JSON', ldg_export_md: '导出 Markdown',
+        ldg_clean_after_export: '导出后清理', ldg_clear_all: '清空账本',
+        ldg_cfg_enabled: '启用记录', ldg_keep_count: '保留条数上限', ldg_keep_days: '保留天数',
+        ldg_on: '开启', ldg_off: '关闭',
+        ldg_empty: '暂无记录：AI 请求、脚本区、工作流、RAG 的变更会自动出现在这里。',
+        ldg_loading: '正在读取账本…', ldg_error: '读取账本失败（IndexedDB 不可用或已损坏）',
+        ldg_st_ok: '成功', ldg_st_fail: '失败', ldg_st_rolledback: '已回滚',
+        ldg_src_ai: 'AI', ldg_src_user: '用户', ldg_src_system: '系统',
+        ldg_obj_chat: '会话', ldg_obj_script: '脚本区', ldg_obj_rag: 'RAG 库',
+        ldg_obj_wf: '工作流', ldg_obj_ps: '修图', ldg_obj_settings: '设置', ldg_obj_app: '应用',
+        ldg_evt_ai_request: 'AI 请求', ldg_evt_session_create: '新建会话', ldg_evt_session_delete: '删除会话',
+        ldg_evt_script_patch: '脚本区写入', ldg_evt_rag_add: 'RAG 新增', ldg_evt_rag_delete: 'RAG 删除',
+        ldg_evt_rag_clear: 'RAG 清空', ldg_evt_wf_save: '工作流保存', ldg_evt_wf_run: '工作流运行',
+        ldg_evt_settings: '设置变更', ldg_evt_baseline: '基线快照', ldg_evt_rollback: '回滚', ldg_evt_other: '其它',
+        ldg_view_diff: '查看 Diff', ldg_rollback: '回滚', ldg_pin: '标记保留', ldg_unpin: '取消保留', ldg_pinned: '已保留',
+        ldg_confirm_title: '确认回滚',
+        ldg_scope: '回滚范围', ldg_phase: '恢复到',
+        ldg_phase_before: '变更前的状态（撤销这次操作）', ldg_phase_after: '变更后的状态（重做这次操作）',
+        ldg_scope_this: '仅该对象', ldg_scope_module_rag: '整个 RAG 知识库', ldg_scope_module_script: '整个脚本区',
+        ldg_cancel: '取消', ldg_do_rollback: '确认回滚',
+        ldg_no_snap: '该记录没有可用的快照',
+        ldg_done_rollback: '已回滚：{n}',
+        ldg_quota_warn: '存储接近上限：已自动清理 {n} 条最旧记录（手动标记保留的不会被删除）',
+        ldg_exported: '审计包已导出（已自动脱敏）',
+        ldg_cleared: '账本已清空',
+        ldg_media_warn: '该会话快照已剔除图片附件，回滚后图片不会恢复（文本与结构完整）。',
+        ldg_trunc_warn: '该快照过大或已被截断，回滚可能不完整。'
+      });
+      Object.assign(I18N_DICT.en, {
+        nav_ledger: '🧭 Ledger',
+        ledger_title: 'Action Ledger · Time Machine',
+        ledger_desc: 'Records every change to AI requests, script pane, workflows, RAG and sessions. Snapshots live in local IndexedDB; diff and roll back with one click. No plaintext API keys are stored.',
+        ldg_open: 'Open ledger', ldg_close: 'Close', ldg_refresh: 'Refresh',
+        ldg_more: 'Load more', ldg_cleanup: 'Run cleanup', ldg_cleanup_now: 'Clean now',
+        ldg_filter_reset: 'Reset filters', ldg_export_json: 'Export JSON', ldg_export_md: 'Export Markdown',
+        ldg_clean_after_export: 'Clean after export', ldg_clear_all: 'Clear ledger',
+        ldg_cfg_enabled: 'Recording', ldg_keep_count: 'Max entries', ldg_keep_days: 'Keep days',
+        ldg_on: 'On', ldg_off: 'Off',
+        ldg_empty: 'No records yet. AI requests, script, workflow and RAG changes will show up here.',
+        ldg_loading: 'Reading ledger…', ldg_error: 'Failed to read ledger (IndexedDB unavailable or corrupted)',
+        ldg_st_ok: 'Success', ldg_st_fail: 'Failed', ldg_st_rolledback: 'Rolled back',
+        ldg_src_ai: 'AI', ldg_src_user: 'User', ldg_src_system: 'System',
+        ldg_obj_chat: 'Session', ldg_obj_script: 'Script', ldg_obj_rag: 'RAG',
+        ldg_obj_wf: 'Workflow', ldg_obj_ps: 'Photo', ldg_obj_settings: 'Settings', ldg_obj_app: 'App',
+        ldg_evt_ai_request: 'AI request', ldg_evt_session_create: 'Session created', ldg_evt_session_delete: 'Session deleted',
+        ldg_evt_script_patch: 'Script written', ldg_evt_rag_add: 'RAG added', ldg_evt_rag_delete: 'RAG deleted',
+        ldg_evt_rag_clear: 'RAG cleared', ldg_evt_wf_save: 'Workflow saved', ldg_evt_wf_run: 'Workflow run',
+        ldg_evt_settings: 'Settings', ldg_evt_baseline: 'Baseline', ldg_evt_rollback: 'Rollback', ldg_evt_other: 'Other',
+        ldg_view_diff: 'Diff', ldg_rollback: 'Rollback', ldg_pin: 'Pin', ldg_unpin: 'Unpin', ldg_pinned: 'Pinned',
+        ldg_confirm_title: 'Confirm rollback',
+        ldg_scope: 'Scope', ldg_phase: 'Restore to',
+        ldg_phase_before: 'State before the change (undo)', ldg_phase_after: 'State after the change (redo)',
+        ldg_scope_this: 'This object only', ldg_scope_module_rag: 'Whole RAG library', ldg_scope_module_script: 'Whole script pane',
+        ldg_cancel: 'Cancel', ldg_do_rollback: 'Roll back',
+        ldg_no_snap: 'No snapshot available for this record',
+        ldg_done_rollback: 'Rolled back: {n}',
+        ldg_quota_warn: 'Storage near limit: {n} oldest records cleaned (pinned are kept)',
+        ldg_exported: 'Audit package exported (redacted)',
+        ldg_cleared: 'Ledger cleared',
+        ldg_media_warn: 'This session snapshot excluded image attachments; images will not be restored (text & structure intact).',
+        ldg_trunc_warn: 'This snapshot is too large or truncated; rollback may be incomplete.'
+      });
+    }
+  } catch (e) { /* i18n 失败不影响功能 */ }
+
+  /* --------------------------- 列表 / 详情渲染 --------------------------- */
+  var FILTERS = { obj: '', evt: '', src: '', from: '', to: '' };
+  var renderTimer = null;
+  function scheduleRender() {
+    if (renderTimer) return;
+    renderTimer = setTimeout(function () { renderTimer = null; try { renderList(); } catch (e) {} }, 60);
+  }
+
+  function filtered() {
+    var from = FILTERS.from ? new Date(FILTERS.from + 'T00:00:00').getTime() : 0;
+    var to = FILTERS.to ? new Date(FILTERS.to + 'T23:59:59').getTime() : 0;
+    return allRecs.filter(function (r) {
+      if (FILTERS.obj && r.objType !== FILTERS.obj) return false;
+      if (FILTERS.evt && r.evtType !== FILTERS.evt) return false;
+      if (FILTERS.src && r.source !== FILTERS.src) return false;
+      if (from && (r.ts || 0) < from) return false;
+      if (to && (r.ts || 0) > to) return false;
+      return true;
+    });
+  }
+
+  function rowHtml(r) {
+    var canRb = !!(ROLLBACKABLE[r.objType] && (r.beforeRef || r.afterRef));
+    var html = '<div class="ldg-row' + (view.selId === r.id ? ' act' : '') + '" data-ldg-id="' + esc(r.id) + '">';
+    html += '<div class="ldg-row-top">';
+    html += '<span class="ldg-time">' + esc(fmtTime(r.ts)) + '</span>';
+    html += '<span class="ldg-chip ' + srcCls(r.source) + '">' + esc(srcLabel(r.source)) + '</span>';
+    html += '<span class="ldg-chip">' + esc(evtLabel(r.evtType)) + '</span>';
+    html += '<span class="ldg-chip">' + esc(objLabel(r)) + '</span>';
+    html += '<span class="ldg-chip ' + stCls(r.status) + '">' + esc(stLabel(r.status)) + '</span>';
+    if (r.pinned) html += '<span class="ldg-chip pin">' + esc(T('ldg_pinned', '已保留')) + '</span>';
+    html += '</div>';
+    html += '<div class="ldg-row-main">' + esc(clip(r.inputSummary || '—', 180)) + '</div>';
+    if (r.model || r.reqId) {
+      html += '<div class="ldg-row-meta">' + esc(r.model || '') + (r.reqId ? (' · ' + esc(clip(r.reqId, 26))) : '') + '</div>';
+    }
+    html += '<div class="ldg-row-acts">';
+    html += '<button type="button" class="ldg-mini" data-ldg-act="view" data-ldg-id="' + esc(r.id) + '">' + esc(T('ldg_view_diff', '查看 Diff')) + '</button>';
+    if (canRb) html += '<button type="button" class="ldg-mini rb" data-ldg-act="rollback" data-ldg-id="' + esc(r.id) + '">' + esc(T('ldg_rollback', '回滚')) + '</button>';
+    html += '<button type="button" class="ldg-mini' + (r.pinned ? ' pin-on' : '') + '" data-ldg-act="pin" data-ldg-id="' + esc(r.id) + '">' + esc(r.pinned ? T('ldg_unpin', '取消保留') : T('ldg_pin', '标记保留')) + '</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderList() {
+    var list = $('ldgList');
+    if (!list) return;
+    if (!loaded) { list.innerHTML = '<div class="ldg-loading">' + esc(T('ldg_loading', '正在读取账本…')) + '</div>'; return; }
+    var rows;
+    try { rows = filtered(); } catch (e) { rows = allRecs.slice(); }
+    if (!rows.length) {
+      list.innerHTML = '<div class="ldg-empty"><span class="ldg-empty-ico">🕰️</span>' + esc(T('ldg_empty', '暂无记录')) + '</div>';
+      var mb0 = $('ldgMoreBtn'); if (mb0) mb0.disabled = true;
+      return;
+    }
+    var n = Math.min(rows.length, Math.max(1, view.page) * cfg.pageSize);
+    var html = '';
+    for (var i = 0; i < n; i++) html += rowHtml(rows[i]);
+    list.innerHTML = html;
+    var mb = $('ldgMoreBtn');
+    if (mb) { mb.disabled = rows.length <= n; mb.textContent = T('ldg_more', '加载更多') + (rows.length > n ? ' (' + (rows.length - n) + ')' : ''); }
+  }
+
+  function detailHtml(r, bSnap, aSnap) {
+    var html = '<div class="ldg-d-head"><div class="ldg-d-title">' + esc(objLabel(r)) + '</div>' +
+      '<button type="button" class="ldg-mini" data-ldg-act="closedetail">' + esc(T('ldg_close', '关闭')) + '</button></div>';
+    html += '<div class="ldg-kv">';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_time', '时间')) + '</div><div class="ldg-kv-v">' + esc(fmtTime(r.ts)) + '</div>';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_evt', '事件')) + '</div><div class="ldg-kv-v">' + esc(evtLabel(r.evtType)) + '</div>';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_source', '来源')) + '</div><div class="ldg-kv-v">' + esc(srcLabel(r.source)) + '</div>';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_model', '模型')) + '</div><div class="ldg-kv-v">' + esc(r.model || '—') + '</div>';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_reqid', '请求 id')) + '</div><div class="ldg-kv-v">' + esc(r.reqId || '—') + '</div>';
+    html += '<div class="ldg-kv-k">' + esc(T('ldg_status', '状态')) + '</div><div class="ldg-kv-v">' + esc(stLabel(r.status)) + '</div>';
+    html += '</div>';
+    html += '<div class="ldg-d-sec">' + esc(T('ldg_before', '变更前摘要')) + '</div><div class="ldg-note">' +
+      esc(bSnap ? (bSnap.bytes + ' chars · ' + bSnap.hash) : T('ldg_none', '无')) + '</div>';
+    html += '<div class="ldg-d-sec">' + esc(T('ldg_after', '变更后摘要')) + '</div><div class="ldg-note">' +
+      esc(aSnap ? (aSnap.bytes + ' chars · ' + aSnap.hash) : T('ldg_none', '无')) + '</div>';
+    if (r.meta && Object.keys(r.meta).length) {
+      html += '<div class="ldg-d-sec">' + esc(T('ldg_meta', '脱敏元数据')) + '</div><div class="ldg-note">' +
+        esc(clip(JSON.stringify(r.meta), 600)) + '</div>';
+    }
+    if (bSnap || aSnap) {
+      var d = diffSnippet(r.objType, bSnap, aSnap);
+      html += '<div class="ldg-d-sec">' + esc(T('ldg_diff', 'Diff')) +
+        (d.html ? ' <span class="ldg-chip ok">+' + d.adds + '</span> <span class="ldg-chip fail">-' + d.dels + '</span>' : '') + '</div>';
+      html += '<div class="ldg-d-diff">' + (d.html || '<div class="ldg-note">' + esc(T('ldg_both_empty', '前后内容一致或无快照正文')) + '</div>') + '</div>';
+    }
+    if (r.truncated) html += '<div class="ldg-warn">' + esc(T('ldg_trunc_warn', '该快照过大或已被截断，回滚可能不完整。')) + '</div>';
+    if (ROLLBACKABLE[r.objType] && (r.beforeRef || r.afterRef)) {
+      html += '<div class="ldg-confirm-actions" style="justify-content:flex-start">' +
+        '<button type="button" class="ldg-btn danger" data-ldg-act="rollback" data-ldg-id="' + esc(r.id) + '">' + esc(T('ldg_rollback', '回滚')) + '</button>' +
+        '<button type="button" class="ldg-mini' + (r.pinned ? ' pin-on' : '') + '" data-ldg-act="pin" data-ldg-id="' + esc(r.id) + '">' +
+        esc(r.pinned ? T('ldg_unpin', '取消保留') : T('ldg_pin', '标记保留')) + '</button></div>';
+    }
+    return html;
+  }
+
+  function openDetail(id) {
+    view.selId = id;
+    var box = $('ldgDetail');
+    if (!box) return;
+    box.classList.add('show');
+    var r = findRec(id);
+    if (!r) { box.innerHTML = '<div class="ldg-error">' + esc(T('ldg_error', '读取失败')) + '</div>'; return; }
+    box.innerHTML = '<div class="ldg-loading">' + esc(T('ldg_loading', '读取中…')) + '</div>';
+    Promise.all([
+      r.beforeRef ? DB.get(ST_SNAP, r.beforeRef).catch(function () { return null; }) : Promise.resolve(null),
+      r.afterRef ? DB.get(ST_SNAP, r.afterRef).catch(function () { return null; }) : Promise.resolve(null)
+    ]).then(function (arr) {
+      try { box.innerHTML = detailHtml(r, arr[0], arr[1]); }
+      catch (e) { box.innerHTML = '<div class="ldg-error">' + esc(T('ldg_error', '读取失败')) + '</div>'; }
+      scheduleRender();
+    }).catch(function () {
+      box.innerHTML = '<div class="ldg-error">' + esc(T('ldg_error', '读取失败')) + '</div>';
+    });
+  }
+  function closeDetail() {
+    view.selId = null;
+    var box = $('ldgDetail');
+    if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+    scheduleRender();
+  }
+
+  /* --------------------------- 筛选器 --------------------------- */
+  function opt(v, label, sel) {
+    return '<option value="' + esc(v) + '"' + (sel === v ? ' selected' : '') + '>' + esc(label) + '</option>';
+  }
+  function fillFilterOptions() {
+    var fo = $('ldgFilterObj');
+    if (fo) {
+      var h = opt('', T('ldg_all', '全部对象'), FILTERS.obj);
+      OBJ_TYPES.forEach(function (o) { h += opt(o, T('ldg_obj_' + o, o), FILTERS.obj); });
+      fo.innerHTML = h; fo.value = FILTERS.obj;
+    }
+    var fe = $('ldgFilterEvt');
+    if (fe) {
+      var h2 = opt('', T('ldg_all_evt', '全部事件'), FILTERS.evt);
+      EVT_TYPES.forEach(function (o) { h2 += opt(o, T('ldg_evt_' + o, o), FILTERS.evt); });
+      fe.innerHTML = h2; fe.value = FILTERS.evt;
+    }
+    var fs = $('ldgFilterSrc');
+    if (fs) {
+      var h3 = opt('', T('ldg_all_src', '全部来源'), FILTERS.src);
+      SOURCES.forEach(function (o) { h3 += opt(o, T('ldg_src_' + o, o), FILTERS.src); });
+      fs.innerHTML = h3; fs.value = FILTERS.src;
+    }
+    var ff = $('ldgFilterFrom'); if (ff) ff.value = FILTERS.from || '';
+    var ft = $('ldgFilterTo'); if (ft) ft.value = FILTERS.to || '';
+  }
+
+  /* --------------------------- 统计 --------------------------- */
+  var bytesCache = 0;
+  function refreshBytes() {
+    return DB.all(ST_SNAP).then(function (rows) {
+      var sum = 0;
+      (rows || []).forEach(function (s) { sum += s.bytes || 0; });
+      bytesCache = sum;
+      updateStat();
+    }).catch(function () {});
+  }
+  function kb(n) { return (n / 1024).toFixed(1) + ' KB'; }
+  function updateStat() {
+    var pinnedN = allRecs.filter(function (r) { return r.pinned; }).length;
+    var txt = allRecs.length + ' ' + T('ldg_entries', '条') +
+      ' · ' + T('ldg_pinned_n', '保留') + ' ' + pinnedN +
+      ' · ' + T('ldg_bytes', '快照占用') + ' ' + kb(bytesCache) +
+      ' · ' + T('ldg_limits', '上限') + ' ' + cfg.maxEntries + '/' + cfg.maxDays + 'd';
+    var st = $('ldgStat'); if (st) st.textContent = txt;
+    var ss = $('ldgStoreStat'); if (ss) ss.textContent = txt;
+    var dot = $('ldgStatusDot');
+    if (dot) { dot.classList.toggle('ok', !!cfg.enabled); dot.title = cfg.enabled ? T('ldg_on', '开启') : T('ldg_off', '关闭'); }
+  }
+
+  /* --------------------------- 面板开关 --------------------------- */
+  function openPanel() {
+    var p = $('ledgerPanel');
+    if (!p) return;
+    panelOpen = true;
+    p.classList.add('show');
+    try {
+      var sb = $('sidebar'); if (sb) sb.classList.remove('open');
+      var ov = $('overlay'); if (ov) ov.classList.remove('show');
+    } catch (e) {}
+    fillFilterOptions();
+    $('ldgList') && ($('ldgList').innerHTML = '<div class="ldg-loading">' + esc(T('ldg_loading', '正在读取账本…')) + '</div>');
+    loadAll(true).then(function () {
+      renderList(); updateStat(); refreshBytes();
+      if (view.selId) openDetail(view.selId);
+    }).catch(function () {
+      var l = $('ldgList');
+      if (l) l.innerHTML = '<div class="ldg-error">' + esc(T('ldg_error', '读取账本失败')) + '</div>';
+    });
+  }
+  function closePanel() {
+    panelOpen = false;
+    var p = $('ledgerPanel'); if (p) p.classList.remove('show');
+    closeDetail();
+  }
+
+  /* --------------------------- 标记保留 --------------------------- */
+  function togglePin(id) {
+    var r = findRec(id);
+    if (!r) return;
+    r.pinned = !r.pinned;
+    DB.put(ST_LOG, r).catch(function () {});
+    if (view.selId === id) openDetail(id); else scheduleRender();
+    updateStat();
+  }
+
+  /* --------------------------- 回滚：确认弹窗 --------------------------- */
+  function fillPhase() {
+    var s = $('ldgPhaseSel');
+    if (!s) return;
+    s.innerHTML = opt('before', T('ldg_phase_before', '变更前的状态（撤销）'), 'before') +
+      opt('after', T('ldg_phase_after', '变更后的状态（重做）'), 'before');
+  }
+  function fillScope(r) {
+    var s = $('ldgScopeSel');
+    if (!s) return;
+    var h = opt('this', T('ldg_scope_this', '仅该对象'), 'this');
+    if (r.objType === 'rag') h += opt('module', T('ldg_scope_module_rag', '整个 RAG 知识库'), '');
+    if (r.objType === 'script') h += opt('module', T('ldg_scope_module_script', '整个脚本区'), '');
+    s.innerHTML = h;
+    s.value = 'this';
+  }
+  function askRollback(id) {
+    var r = findRec(id);
+    if (!r) return;
+    if (!ROLLBACKABLE[r.objType] || (!r.beforeRef && !r.afterRef)) { toast(T('ldg_no_snap', '该记录没有可用的快照')); return; }
+    pendingRollback = id;
+    var body = $('ldgConfirmBody');
+    if (body) {
+      var lines = [];
+      lines.push('<b>' + esc(objLabel(r)) + '</b> · ' + esc(evtLabel(r.evtType)) + ' · ' + esc(srcLabel(r.source)));
+      lines.push(esc(fmtTime(r.ts)));
+      lines.push(esc(clip(r.inputSummary || '', 160)));
+      lines.push(esc(T('ldg_impact', '将影响模块') + '：' + T('ldg_obj_' + r.objType, r.objType)));
+      body.innerHTML = lines.join('<br>');
+    }
+    var warn = $('ldgConfirmWarn');
+    if (warn) {
+      var w = T('ldg_rb_warn', '回滚会覆盖当前该对象的实时状态。回滚本身也会记入账本，可再次回滚到回滚前状态。');
+      if (r.truncated) w += ' ' + T('ldg_trunc_warn', '该快照不完整。');
+      if (r.objType === 'chat') w += ' ' + T('ldg_media_warn', '会话图片不会被恢复。');
+      warn.textContent = w;
+    }
+    fillPhase();
+    fillScope(r);
+    var c = $('ledgerConfirm'); if (c) c.classList.add('show');
+  }
+  function closeConfirm() {
+    pendingRollback = null;
+    var c = $('ledgerConfirm'); if (c) c.classList.remove('show');
+  }
+
+  /* --------------------------- 回滚：执行 --------------------------- */
+  function applyRestore(objType, data, scope) {
+    if (!data) return false;
+    if (objType === 'chat') {
+      if (Object.prototype.toString.call(data.sessions) !== '[object Array]') return false;
+      sessions = data.sessions;
+      if (data.currentId) {
+        var exists = false;
+        for (var i = 0; i < sessions.length; i++) if (sessions[i] && sessions[i].id === data.currentId) { exists = true; break; }
+        if (exists) currentId = data.currentId;
+      }
+      if (!sessions.length) { newSession(); }
+      else {
+        var cur = null;
+        for (var j = 0; j < sessions.length; j++) if (sessions[j] && sessions[j].id === currentId) { cur = sessions[j]; break; }
+        if (!cur) currentId = sessions[0].id;
+      }
+      safe(function () { persistSessions(true); });
+      safe(function () { renderSessions(); });
+      safe(function () { renderChat(); });
+      return true;
+    }
+    if (objType === 'script') {
+      if (!data.keys) return false;
+      window.AGENT_STORE = window.AGENT_STORE || {};
+      Object.keys(window.AGENT_STORE).forEach(function (k) {
+        if (!Object.prototype.hasOwnProperty.call(data.keys, k)) delete window.AGENT_STORE[k];
+      });
+      Object.keys(data.keys).forEach(function (k) { window.AGENT_STORE[k] = data.keys[k]; });
+      safe(function () { saveAgentStore(); });
+      safe(function () { renderScriptPane(); });
+      return true;
+    }
+    if (objType === 'rag') {
+      if (scope !== 'module' && !data.all && data.docId) {
+        ragChunks = (Array.isArray(ragChunks) ? ragChunks : []).filter(function (c) { return c && c.docId !== data.docId; }).concat(data.chunks || []);
+      } else {
+        if (Object.prototype.toString.call(data.chunks) !== '[object Array]') return false;
+        ragChunks = data.chunks.slice();
+      }
+      var ok = safe(function () { return ragPersist(); }, null);
+      safe(function () { renderRagList(); });
+      /* 仅当明确返回 false 才提示（部分扩展层改写 ragPersist 后不返回值） */
+      if (ok === false) toast(T('ldg_rag_persist_fail', 'RAG 持久化失败：内存已恢复，但本地存储未写入'));
+      return true;
+    }
+    if (objType === 'wf') {
+      if (typeof extWF === 'undefined' || !extWF) return false;
+      extWF.name = data.name || '';
+      extWF.steps = (Object.prototype.toString.call(data.steps) === '[object Array]') ? JSON.parse(JSON.stringify(data.steps)) : [];
+      safe(function () { wfPersist(null); });
+      safe(function () { wfRender(); });
+      return true;
+    }
+    return false;
+  }
+
+  function doRollback(id, phase, scope) {
+    var r = findRec(id);
+    if (!r) return Promise.resolve(false);
+    var ref = phase === 'after' ? r.afterRef : r.beforeRef;
+    if (!ref) { toast(T('ldg_no_snap', '该记录没有可用的快照')); return Promise.resolve(false); }
+    var preJson = capByType(r.objType);
+    return DB.get(ST_SNAP, ref).then(function (snap) {
+      if (!snap || !snap.data) throw new Error('snapshot-missing');
+      var data = JSON.parse(snap.data);
+      var ok = applyRestore(r.objType, data, scope);
+      if (!ok) throw new Error('restore-unsupported');
+      var postJson = capByType(r.objType);
+      push({
+        evtType: 'rollback',
+        objType: r.objType,
+        objId: r.objId,
+        objLabel: r.objLabel,
+        source: 'user',
+        inputSummary: T('ldg_do_rollback', '确认回滚') + ' → ' + fmtTime(r.ts) + ' · ' + (phase === 'after' ? T('ldg_phase_after', '变更后') : T('ldg_phase_before', '变更前')),
+        beforeJson: preJson,
+        afterJson: postJson,
+        status: 'rolledback',
+        meta: { targetId: r.id, targetTs: r.ts, phase: phase, scope: scope || 'this' }
+      });
+      toast(T('ldg_done_rollback', '已回滚：{n}').replace('{n}', objLabel(r)));
+      return true;
+    }).catch(function (e) {
+      push({
+        evtType: 'rollback', objType: r.objType, objId: r.objId, source: 'user',
+        inputSummary: T('ldg_do_rollback', '回滚') + ' → ' + fmtTime(r.ts),
+        status: 'fail', beforeJson: preJson, afterJson: null,
+        meta: { targetId: r.id, error: clip(String(e && e.message || e || ''), 160) }
+      });
+      toast(T('ldg_rb_fail', '回滚失败：快照缺失或结构不支持'));
+      return false;
+    });
+  }
+
+  /* --------------------------- 导出审计包 --------------------------- */
+  function buildAudit() {
+    return loadAll().then(function () { return DB.all(ST_SNAP); }).then(function (snaps) {
+      var snapMap = {};
+      (snaps || []).forEach(function (s) { snapMap[s.id] = s; });
+      var list = allRecs.slice(0, 2000);
+      var timeline = list.map(function (r) {
+        return {
+          id: r.id, ts: r.ts, time: fmtTime(r.ts),
+          evtType: r.evtType, objType: r.objType, objId: r.objId, objLabel: r.objLabel,
+          source: r.source, status: r.status, model: r.model, reqId: r.reqId,
+          inputSummary: r.inputSummary,
+          before: r.beforeRef ? { ref: r.beforeRef, hash: r.beforeHash, bytes: r.beforeBytes } : null,
+          after: r.afterRef ? { ref: r.afterRef, hash: r.afterHash, bytes: r.afterBytes } : null,
+          pinned: !!r.pinned,
+          meta: r.meta || {}
+        };
+      });
+      /* Diff 摘要：仅对最近 80 条、且前后快照都在时计算，避免导出卡顿 */
+      var diffCount = 0;
+      for (var i = 0; i < timeline.length && diffCount < 80; i++) {
+        var t = timeline[i], rec = list[i];
+        if (!rec.beforeRef || !rec.afterRef) continue;
+        var bs = snapMap[rec.beforeRef], as = snapMap[rec.afterRef];
+        if (!bs || !as) continue;
+        try {
+          var d = renderDiff(snapText(rec.objType, bs), snapText(rec.objType, as));
+          t.diffSummary = { adds: (d && d.adds) || 0, dels: (d && d.dels) || 0 };
+        } catch (e) { t.diffSummary = null; }
+        diffCount++;
+      }
+      var rollbacks = timeline.filter(function (t) { return t.evtType === 'rollback' || t.status === 'rolledback'; });
+      return {
+        app: 'O.M.N.I',
+        kind: 'omni-ledger-audit',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        note: 'Redacted locally. Contains hashes & summaries only — no API keys, no attachments, no raw sensitive text.',
+        config: { enabled: cfg.enabled, maxEntries: cfg.maxEntries, maxDays: cfg.maxDays, maxBytes: cfg.maxBytes },
+        counts: { total: allRecs.length, exported: timeline.length, rollbacks: rollbacks.length, pinned: allRecs.filter(function (r) { return r.pinned; }).length },
+        timeline: timeline,
+        rollbacks: rollbacks
+      };
+    });
+  }
+
+  function exportJSON() {
+    return buildAudit().then(function (a) {
+      var name = 'omni-ledger-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.json';
+      safe(function () { downloadFile(name, JSON.stringify(a, null, 2), 'application/json'); });
+      toast(T('ldg_exported', '审计包已导出（已自动脱敏）'));
+      return a;
+    }).catch(function () { toast(T('ldg_export_fail', '导出失败')); });
+  }
+  function exportMD() {
+    return buildAudit().then(function (a) {
+      var L = [];
+      L.push('# O.M.N.I 操作账本审计包 / Action Ledger Audit');
+      L.push('');
+      L.push('- 导出时间 / Exported: ' + a.exportedAt);
+      L.push('- 记录总数 / Total: ' + a.counts.total + '（导出 ' + a.counts.exported + '）');
+      L.push('- 回滚记录 / Rollbacks: ' + a.counts.rollbacks);
+      L.push('- 手动保留 / Pinned: ' + a.counts.pinned);
+      L.push('- 保留策略 / Retention: ' + a.config.maxEntries + ' 条 / ' + a.config.maxDays + ' 天 / ' + kb(a.config.maxBytes));
+      L.push('');
+      L.push('> 已本地脱敏：不含 API Key、不含附件与敏感原文，仅保留摘要与哈希。');
+      L.push('');
+      L.push('## 时间线 / Timeline');
+      L.push('');
+      L.push('| 时间 | 来源 | 事件 | 对象 | 状态 | 摘要 | 模型 | 请求 id | Diff |');
+      L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+      a.timeline.forEach(function (t) {
+        L.push('| ' + t.time + ' | ' + srcLabel(t.source) + ' | ' + evtLabel(t.evtType) + ' | ' +
+          (T('ldg_obj_' + t.objType, t.objType) + (t.objLabel ? ' · ' + t.objLabel : '')) + ' | ' +
+          stLabel(t.status) + ' | ' + String(t.inputSummary || '').replace(/\|/g, '\\|').replace(/\n/g, ' ') + ' | ' +
+          (t.model || '—') + ' | ' + (t.reqId || '—') + ' | ' +
+          (t.diffSummary ? ('+' + t.diffSummary.adds + ' / -' + t.diffSummary.dels) : '—') + ' |');
+      });
+      L.push('');
+      L.push('## 快照索引 / Snapshot index');
+      L.push('');
+      a.timeline.forEach(function (t) {
+        if (!t.before && !t.after) return;
+        L.push('- `' + t.id + '` before=' + (t.before ? t.before.hash + '(' + t.before.bytes + ')' : '—') +
+          ' after=' + (t.after ? t.after.hash + '(' + t.after.bytes + ')' : '—'));
+      });
+      L.push('');
+      L.push('## 回滚记录 / Rollbacks');
+      L.push('');
+      if (!a.rollbacks.length) L.push('- 无');
+      a.rollbacks.forEach(function (t) {
+        L.push('- ' + t.time + ' · ' + (T('ldg_obj_' + t.objType, t.objType)) + ' · ' + stLabel(t.status) +
+          ' · target=' + (t.meta && t.meta.targetId ? t.meta.targetId : '—') + ' · phase=' + (t.meta && t.meta.phase ? t.meta.phase : '—'));
+      });
+      L.push('');
+      var name = 'omni-ledger-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.md';
+      safe(function () { downloadFile(name, L.join('\n'), 'text/markdown'); });
+      toast(T('ldg_exported', '审计包已导出（已自动脱敏）'));
+      return a;
+    }).catch(function () { toast(T('ldg_export_fail', '导出失败')); });
+  }
+
+  function clearAll() {
+    var ok = false;
+    try { ok = window.confirm(T('ldg_clear_confirm', '清空全部账本记录与快照？此操作不可撤销（已导出的审计包不受影响）。')); } catch (e) { ok = false; }
+    if (!ok) return Promise.resolve(false);
+    return Promise.all([DB.clear(ST_LOG).catch(function () {}), DB.clear(ST_SNAP).catch(function () {})]).then(function () {
+      allRecs = []; hashRefs = {}; bytesCache = 0;
+      renderList(); updateStat();
+      toast(T('ldg_cleared', '账本已清空'));
+      return true;
+    });
+  }
+
+  /* --------------------------- 基线迁移（首启） --------------------------- */
+  function baseline() {
+    var done = false;
+    try { done = localStorage.getItem(MIG_KEY) === '1'; } catch (e) { done = false; }
+    if (done) return;
+    var ts = Date.now();
+    var chat = capChat(), rag = capRag(), wf = capWf(), script = capScript();
+    if (chat) push({ evtType: 'baseline', objType: 'chat', objId: 'sessions', objLabel: T('ldg_obj_chat', '会话'), source: 'system', inputSummary: T('ldg_baseline_chat', '首次启用：迁移并记录既有会话基线'), afterJson: chat, status: 'ok', ts: ts, meta: { migrated: 'autoPro_sessions' } });
+    if (rag) push({ evtType: 'baseline', objType: 'rag', objId: 'lib', objLabel: T('ldg_obj_rag', 'RAG 库'), source: 'system', inputSummary: T('ldg_baseline_rag', '首次启用：记录 RAG 基线'), afterJson: rag, status: 'ok', ts: ts, meta: { migrated: 'autoPro_ragChunks' } });
+    if (wf) push({ evtType: 'baseline', objType: 'wf', objId: 'wf', objLabel: T('ldg_obj_wf', '工作流'), source: 'system', inputSummary: T('ldg_baseline_wf', '首次启用：记录工作流基线'), afterJson: wf, status: 'ok', ts: ts, meta: { migrated: 'autoPro_workflows' } });
+    if (script) push({ evtType: 'baseline', objType: 'script', objId: 'agentStore', objLabel: T('ldg_obj_script', '脚本区'), source: 'system', inputSummary: T('ldg_baseline_script', '首次启用：记录脚本区基线'), afterJson: script, status: 'ok', ts: ts, meta: { migrated: 'autoPro_agentStore' } });
+    try { localStorage.setItem(MIG_KEY, '1'); } catch (e) {}
+  }
+
+  /* --------------------------- 事件接线（monkey-patch，追加在最外层） --------------------------- */
+  function rebindIfSame(el, orig, next) {
+    try { if (el && el.onclick === orig) el.onclick = next; } catch (e) {}
+  }
+  function wire() {
+    /* ---- ① 发送消息：一次请求一条记录（含耗时 / 模型 / 消息增量） ---- */
+    try {
+      var oSend = sendMessage;
+      var wSend = function () {
+        var t0 = Date.now();
+        var model = safe(function () { return chatModel ? String(chatModel) : ''; }, '');
+        var beforeJson = capChat();
+        var beforeLen = safe(function () { var s = currentSession(); return s && s.messages ? s.messages.length : 0; }, 0);
+        var p = oSend.apply(this, arguments);
+        if (!p || typeof p.then !== 'function') return p;
+        return p.then(function (v) {
+          var afterJson = capChat();
+          push({
+            evtType: 'ai_request', objType: 'chat', objId: safe(function () { return currentId; }, '') || 'session',
+            objLabel: safe(function () { return clip((currentSession() || {}).title || '', 40); }, ''),
+            source: 'ai', model: model,
+            inputSummary: safe(function () {
+              var s = currentSession(); var ms = (s && s.messages) || [];
+              var last = ms[ms.length - 1];
+              return last ? clip(String(last.content == null ? (last.text || '') : last.content), 160) : '';
+            }, ''),
+            beforeJson: beforeJson, afterJson: afterJson, status: 'ok',
+            meta: {
+              durationMs: Date.now() - t0,
+              msgDelta: safe(function () { var s = currentSession(); return (s && s.messages ? s.messages.length : 0) - beforeLen; }, 0)
+            }
+          });
+          return v;
+        }, function (e) {
+          push({
+            evtType: 'ai_request', objType: 'chat', objId: safe(function () { return currentId; }, '') || 'session',
+            source: 'ai', model: model, inputSummary: '',
+            beforeJson: beforeJson, afterJson: capChat(), status: 'fail',
+            meta: { durationMs: Date.now() - t0, error: clip(String((e && e.message) || e || ''), 160) }
+          });
+          throw e;
+        });
+      };
+      sendMessage = wSend;
+      rebindIfSame($('sendBtn'), oSend, wSend);
+    } catch (e) { try { console.warn('[ledger] wire sendMessage', e); } catch (e2) {} }
+
+    /* ---- ② 会话新建 / 删除 ---- */
+    try {
+      var oNew = newSession;
+      var wNew = function () {
+        var b = capChat();
+        var r = oNew.apply(this, arguments);
+        var a = capChat();
+        if (b !== a) push({ evtType: 'session_create', objType: 'chat', objId: safe(function () { return currentId; }, ''), objLabel: safe(function () { return clip((currentSession() || {}).title || '', 40); }, ''), source: 'user', inputSummary: T('ldg_evt_session_create', '新建会话'), beforeJson: b, afterJson: a, status: 'ok' });
+        return r;
+      };
+      newSession = wNew;
+      rebindIfSame($('newChatSideBtn'), oNew, wNew);
+      rebindIfSame($('newChatBtn'), oNew, wNew);
+    } catch (e) {}
+
+    try {
+      var oDel = deleteSession;
+      deleteSession = function (id) {
+        var b = capChat();
+        var title = safe(function () { for (var i = 0; i < sessions.length; i++) if (sessions[i].id === id) return clip(sessions[i].title || '', 40); return ''; }, '');
+        var r = oDel.apply(this, arguments);
+        var a = capChat();
+        if (b !== a) push({ evtType: 'session_delete', objType: 'chat', objId: String(id || ''), objLabel: title, source: 'user', inputSummary: T('ldg_evt_session_delete', '删除会话') + (title ? '：' + title : ''), beforeJson: b, afterJson: a, status: 'ok' });
+        return r;
+      };
+    } catch (e) {}
+
+    /* ---- ③ 脚本区（AI 写入 / 应用补丁） ---- */
+    try {
+      var oPatch = applyAgentPatch;
+      applyAgentPatch = function (uid) {
+        var b = capScript();
+        var r = oPatch.apply(this, arguments);
+        var a = capScript();
+        if (b !== a) push({ evtType: 'script_patch', objType: 'script', objId: String(uid || ''), objLabel: clip(uid || '', 24), source: 'ai', inputSummary: T('ldg_evt_script_patch', 'AI 写入脚本区') + (uid ? '：' + clip(uid, 40) : ''), beforeJson: b, afterJson: a, status: 'ok' });
+        return r;
+      };
+    } catch (e) {}
+
+    /* ---- ④ RAG 增 / 删 / 清空 ---- */
+    try {
+      var oRagSave = ragSave;
+      ragSave = function (raw) {
+        var b = capRag();
+        var out = oRagSave.apply(this, arguments);
+        var a = capRag();
+        if (b !== a) push({ evtType: 'rag_add', objType: 'rag', objId: 'lib', objLabel: T('ldg_obj_rag', 'RAG 库'), source: 'user', inputSummary: clip(String(raw == null ? '' : raw), 140), beforeJson: b, afterJson: a, status: out ? 'ok' : 'fail', meta: { chunks: out || 0 } });
+        return out;
+      };
+      var oRagDel = ragDeleteDoc;
+      ragDeleteDoc = function (docId) {
+        var b = capRag();
+        var out = oRagDel.apply(this, arguments);
+        var a = capRag();
+        if (b !== a) push({ evtType: 'rag_delete', objType: 'rag', objId: String(docId || ''), objLabel: clip(String(docId || ''), 24), source: 'user', inputSummary: T('ldg_evt_rag_delete', '删除 RAG 文档') + (docId ? '：' + clip(String(docId), 40) : ''), beforeJson: b, afterJson: a, status: 'ok' });
+        return out;
+      };
+      var oRagClear = ragClearAll;
+      var wRagClear = function () {
+        var b = capRag();
+        var out = oRagClear.apply(this, arguments);
+        var a = capRag();
+        if (b !== a) push({ evtType: 'rag_clear', objType: 'rag', objId: 'lib', objLabel: T('ldg_obj_rag', 'RAG 库'), source: 'user', inputSummary: T('ldg_evt_rag_clear', '清空 RAG 库'), beforeJson: b, afterJson: a, status: 'ok' });
+        return out;
+      };
+      ragClearAll = wRagClear;
+      rebindIfSame($('ragClearBtn'), oRagClear, wRagClear);
+    } catch (e) {}
+
+    /* ---- ⑤ 工作流：保存 / 运行 ---- */
+    try {
+      var oWfSave = wfSave;
+      wfSave = function () {
+        var b = capWf();
+        var r = oWfSave.apply(this, arguments);
+        var a = capWf();
+        if (b !== a) push({ evtType: 'wf_save', objType: 'wf', objId: safe(function () { return (extWF && extWF.name) || 'wf'; }, 'wf'), objLabel: safe(function () { return clip((extWF && extWF.name) || '', 40); }, ''), source: 'user', inputSummary: T('ldg_evt_wf_save', '保存工作流'), beforeJson: b, afterJson: a, status: 'ok', meta: { steps: safe(function () { return extWF.steps.length; }, 0) } });
+        return r;
+      };
+      var oWfSilent = wfSaveSilent;
+      wfSaveSilent = function () {
+        var b = capWf();
+        var r = oWfSilent.apply(this, arguments);
+        var a = capWf();
+        if (b !== a) push({ evtType: 'wf_save', objType: 'wf', objId: safe(function () { return (extWF && extWF.name) || 'wf'; }, 'wf'), objLabel: safe(function () { return clip((extWF && extWF.name) || '', 40); }, ''), source: 'user', inputSummary: T('ldg_evt_wf_save', '保存工作流'), beforeJson: b, afterJson: a, status: 'ok' });
+        return r;
+      };
+    } catch (e) {}
+
+    try {
+      var oWfRun = wfRun;
+      wfRun = function () {
+        var t0 = Date.now();
+        var p = oWfRun.apply(this, arguments);
+        if (!p || typeof p.then !== 'function') return p;
+        return p.then(function (v) {
+          push({ evtType: 'wf_run', objType: 'wf', objId: safe(function () { return (extWF && extWF.name) || 'wf'; }, 'wf'), objLabel: safe(function () { return clip((extWF && extWF.name) || '', 40); }, ''), source: 'ai', inputSummary: T('ldg_evt_wf_run', '运行工作流'), beforeJson: capWf(), afterJson: capWf(), status: 'ok', meta: { durationMs: Date.now() - t0, outLen: safe(function () { return String(extWF.output || '').length; }, 0) } });
+          return v;
+        }, function (e) {
+          push({ evtType: 'wf_run', objType: 'wf', objId: safe(function () { return (extWF && extWF.name) || 'wf'; }, 'wf'), source: 'ai', inputSummary: T('ldg_evt_wf_run', '运行工作流'), status: 'fail', afterJson: capWf(), meta: { durationMs: Date.now() - t0, error: clip(String((e && e.message) || e || ''), 160) } });
+          throw e;
+        });
+      };
+    } catch (e) {}
+
+    /* ---- ⑥ 关键设置变更：API Key（只记厂商 + 已配置/未配置，绝不记录明文值） ---- */
+    try {
+      var sc = $('settingsScroll');
+      if (sc) {
+        sc.addEventListener('click', function (e) {
+          var b = e.target && e.target.closest ? e.target.closest('[data-pk-save],button') : null;
+          if (!b) return;
+          var p = b.getAttribute ? b.getAttribute('data-pk-save') : null;
+          var bid = b.id || '';
+          if (!p && !/^saveKey/.test(bid)) return;
+          setTimeout(function () {
+            try {
+              var prov = p || '', name = prov || bid;
+              try { if (prov && API_CONFIG[prov]) name = API_CONFIG[prov].name || prov; } catch (e1) {}
+              var configured = null;
+              try {
+                if (prov && API_CONFIG[prov] && API_CONFIG[prov].keyLS) {
+                  var rawKey = localStorage.getItem(API_CONFIG[prov].keyLS);
+                  configured = !!(rawKey && String(rawKey).trim());   /* 只判真假，明文不入记录 */
+                }
+              } catch (e2) { configured = null; }
+              push({
+                evtType: 'settings', objType: 'settings', objId: prov || bid,
+                objLabel: clip(name, 30), source: 'user',
+                inputSummary: T('ldg_evt_settings', '设置变更') + '：API Key · ' + clip(name, 24),
+                status: 'ok',
+                meta: { provider: prov || bid, configured: configured }
+              });
+            } catch (e3) {}
+          }, 30);
+        }, true);
+      }
+    } catch (e) {}
+
+    /* ---- ⑦ 语言切换：重绘动态文案 ---- */
+    try {
+      var oRL = rerenderAllForLang;
+      rerenderAllForLang = function () {
+        var r = oRL.apply(this, arguments);
+        try {
+          fillFilterOptions(); updateStat();
+          if (panelOpen) { renderList(); if (view.selId) openDetail(view.selId); }
+          if ($('ledgerConfirm') && $('ledgerConfirm').classList.contains('show')) fillPhase();
+        } catch (e) {}
+        return r;
+      };
+    } catch (e) {}
+
+    /* TODO(扩展点)：辩论 / 评估场 / Prompt 模板 / 定时任务 / 项目维度 / 头像 /
+       画板 / 修图参数 / 暗色与聊天背景设置 —— 接入方式同上，
+       统一用 push({evtType,objType,objId,source,beforeJson,afterJson}) 即可。 */
+  }
+
+  /* --------------------------- UI 绑定 --------------------------- */
+  function bindUI() {
+    var nav = $('navLedgerBtn'); if (nav) nav.onclick = openPanel;
+    var op = $('ldgOpenBtn'); if (op) op.onclick = openPanel;
+    var cl = $('ldgCloseBtn'); if (cl) cl.onclick = closePanel;
+    var rf = $('ldgRefreshBtn'); if (rf) rf.onclick = function () { loadAll(true).then(function () { renderList(); updateStat(); refreshBytes(); }); };
+    var mb = $('ldgMoreBtn'); if (mb) mb.onclick = function () { view.page++; renderList(); };
+    var rs = $('ldgFilterReset'); if (rs) rs.onclick = function () { FILTERS = { obj: '', evt: '', src: '', from: '', to: '' }; view.page = 1; fillFilterOptions(); renderList(); };
+    var cb = $('ldgCleanBtn'); if (cb) cb.onclick = function () { cleanup().then(function (r) { if (r) toast(T('ldg_clean_done', '清理完成：删除 {n} 条').replace('{n}', String(r.removed || 0))); renderList(); updateStat(); refreshBytes(); }); };
+    var cb2 = $('ldgCleanBtn2'); if (cb2) cb2.onclick = cb ? cb.onclick : null;
+
+    var ej1 = $('ldgExportJsonBtn'); if (ej1) ej1.onclick = function () { exportJSON().then(refreshBytes); };
+    var ej2 = $('ldgExportJsonBtn2'); if (ej2) ej2.onclick = ej1 ? ej1.onclick : null;
+    var em1 = $('ldgExportMdBtn'); if (em1) em1.onclick = function () { exportMD().then(refreshBytes); };
+    var em2 = $('ldgExportMdBtn2'); if (em2) em2.onclick = em1 ? em1.onclick : null;
+
+    var cae = $('ldgCleanAfterExportBtn');
+    if (cae) cae.onclick = function () { exportJSON().then(function () { return cleanup(); }).then(function () { renderList(); updateStat(); refreshBytes(); }); };
+    var ca = $('ldgClearAllBtn'); if (ca) ca.onclick = clearAll;
+
+    var fo = $('ldgFilterObj'); if (fo) fo.onchange = function () { FILTERS.obj = fo.value; view.page = 1; renderList(); };
+    var fe = $('ldgFilterEvt'); if (fe) fe.onchange = function () { FILTERS.evt = fe.value; view.page = 1; renderList(); };
+    var fs = $('ldgFilterSrc'); if (fs) fs.onchange = function () { FILTERS.src = fs.value; view.page = 1; renderList(); };
+    var ff = $('ldgFilterFrom'); if (ff) ff.onchange = function () { FILTERS.from = ff.value; view.page = 1; renderList(); };
+    var ft = $('ldgFilterTo'); if (ft) ft.onchange = function () { FILTERS.to = ft.value; view.page = 1; renderList(); };
+
+    var list = $('ldgList');
+    if (list) list.addEventListener('click', function (e) {
+      var t = e.target;
+      var b = t && t.closest ? t.closest('[data-ldg-act]') : null;
+      if (!b) return;
+      e.preventDefault();
+      var act = b.getAttribute('data-ldg-act'), id = b.getAttribute('data-ldg-id');
+      if (act === 'view') openDetail(id);
+      else if (act === 'pin') togglePin(id);
+      else if (act === 'rollback') askRollback(id);
+      else if (act === 'closedetail') closeDetail();
+    });
+    var dbox = $('ldgDetail');
+    if (dbox) dbox.addEventListener('click', function (e) {
+      var t = e.target;
+      var b = t && t.closest ? t.closest('[data-ldg-act]') : null;
+      if (!b) return;
+      var act = b.getAttribute('data-ldg-act'), id = b.getAttribute('data-ldg-id');
+      if (act === 'pin') togglePin(id);
+      else if (act === 'rollback') askRollback(id);
+      else if (act === 'closedetail') closeDetail();
+    });
+
+    var ok = $('ldgConfirmOk');
+    if (ok) ok.onclick = function () {
+      var id = pendingRollback;
+      var phase = $('ldgPhaseSel') ? $('ldgPhaseSel').value : 'before';
+      var scope = $('ldgScopeSel') ? $('ldgScopeSel').value : 'this';
+      closeConfirm();
+      if (id) doRollback(id, phase, scope).then(function () { if (panelOpen) { renderList(); updateStat(); refreshBytes(); } });
+    };
+    var cc = $('ldgConfirmCancel'); if (cc) cc.onclick = closeConfirm;
+    var cdlg = $('ledgerConfirm');
+    if (cdlg) cdlg.addEventListener('click', function (e) { if (e.target === cdlg) closeConfirm(); });
+
+    var pnl = $('ledgerPanel');
+    if (pnl) pnl.addEventListener('click', function (e) { if (e.target === pnl) closePanel(); });
+
+    document.addEventListener('keydown', function (e) {
+      if (!panelOpen) return;
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        if ($('ledgerConfirm') && $('ledgerConfirm').classList.contains('show')) { closeConfirm(); }
+        else { closePanel(); }
+        e.stopPropagation();
+        try { e.preventDefault(); } catch (e2) {}
+      }
+    }, true);
+  }
+
+  function bindSettings() {
+    var en = $('ldgCfgEnabled');
+    if (en) {
+      en.value = cfg.enabled ? '1' : '0';
+      en.onchange = function () { cfg.enabled = en.value === '1'; cfgSave(); updateStat(); toast(cfg.enabled ? T('ldg_on', '开启') : T('ldg_off', '关闭')); };
+    }
+    var me = $('ldgCfgMaxEntries');
+    if (me) {
+      me.value = String(cfg.maxEntries);
+      me.onchange = function () {
+        var v = parseInt(me.value, 10);
+        if (!(v > 0)) v = 800;
+        cfg.maxEntries = Math.max(50, Math.min(5000, v));
+        me.value = String(cfg.maxEntries);
+        cfgSave(); cleanup().then(function () { updateStat(); refreshBytes(); if (panelOpen) renderList(); });
+      };
+    }
+    var md = $('ldgCfgMaxDays');
+    if (md) {
+      md.value = String(cfg.maxDays);
+      md.onchange = function () {
+        var v = parseInt(md.value, 10);
+        if (!(v > 0)) v = 30;
+        cfg.maxDays = Math.max(1, Math.min(3650, v));
+        md.value = String(cfg.maxDays);
+        cfgSave(); cleanup().then(function () { updateStat(); refreshBytes(); if (panelOpen) renderList(); });
+      };
+    }
+  }
+
+  /* --------------------------- 初始化 --------------------------- */
+  function hoist() {
+    /* #app 带 z-index:1 形成层叠上下文，会把内部 340 压到 omni-xk(300) 之下；
+       把账本面板与确认层上提到 body，确保它们始终位于最上层 */
+    try {
+      var p = $('ledgerPanel');
+      if (p && p.parentNode !== document.body) document.body.appendChild(p);
+      var c = $('ledgerConfirm');
+      if (c && c.parentNode !== document.body) document.body.appendChild(c);
+    } catch (e) {}
+  }
+  function init() {
+    hoist();
+    if (memMode) {
+      try { showToast('⚠️ IndexedDB 不可用：操作账本仅保存在内存中（刷新后丢失）'); } catch (e) {}
+    }
+    bindUI();
+    bindSettings();
+    wire();
+    loadAll().then(function () { updateStat(); refreshBytes(); }).catch(function () {});
+    baseline();
+  }
+
+  var api = {
+    version: '1.0-ldg',
+    open: openPanel,
+    close: closePanel,
+    record: push,
+    cleanup: cleanup,
+    exportJSON: exportJSON,
+    exportMD: exportMD,
+    clearAll: clearAll,
+    rollback: doRollback,
+    reload: function () { return loadAll(true); },
+    config: cfg,
+    isMemoryMode: function () { return memMode; }
+  };
+
+  try { init(); } catch (e) { try { console.warn('[ledger] init', e); } catch (e2) {} }
+
+  return api;
+})();
+try { window.OMNI_LEDGER = LDG; } catch (e) {}
 
 initI18n();
 })();
